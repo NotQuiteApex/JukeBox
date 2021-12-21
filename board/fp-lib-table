@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "USB4085-GF-A")(type "KiCad")(uri "${KIPRJMOD}/footprints")(options "")(descr ""))
+)
