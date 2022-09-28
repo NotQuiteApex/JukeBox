@@ -2236,7 +2236,7 @@
     (uuid 8bb352fe-5b3d-4124-a7b4-72612a8bc725)
     (property "Reference" "J1" (id 0) (at 49.53 55.88 0))
     (property "Value" "USB_C_Receptacle_USB2.0" (id 1) (at 49.53 58.42 0))
-    (property "Footprint" "USB4085-GF-A:GCT_USB4085-GF-A_REVA4" (id 2) (at 53.34 78.74 0)
+    (property "Footprint" "jukebox-footprints:GCT_USB4085-GF-A_REVA4" (id 2) (at 53.34 78.74 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "https://www.usb.org/sites/default/files/documents/usb_type-c.zip" (id 3) (at 53.34 78.74 0)
@@ -2771,7 +2771,7 @@
       (reference "D12") (unit 1) (value "DIODE") (footprint "Diode_THT:D_DO-15_P10.16mm_Horizontal")
     )
     (path "/8bb352fe-5b3d-4124-a7b4-72612a8bc725"
-      (reference "J1") (unit 1) (value "USB_C_Receptacle_USB2.0") (footprint "USB4085-GF-A:GCT_USB4085-GF-A_REVA4")
+      (reference "J1") (unit 1) (value "USB_C_Receptacle_USB2.0") (footprint "jukebox-footprints:GCT_USB4085-GF-A_REVA4")
     )
     (path "/d6465750-cb6e-4018-93ee-99d8be33c243"
       (reference "J2") (unit 1) (value "Conn_01x02") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical")
