@@ -1,14 +1,15 @@
 # JukeBox Board
 A board that exposes the keys F13-24 for use with macros, or hotkeys for streaming (or anything, really).
 
-# Printed Circuit Board
+## Printed Circuit Board
 ATmega8u2 (Microcontroller logic), USB4085-GF-A (USB-C Receptacle), AS-16.000-20-EXT (16MHz Crystal oscillator for USB comms). See `board` directory.
 
 Footprints for Kailh Choc's can be found [here](https://github.com/daprice/keyswitches.pretty)
 
-# 3D Printed Parts
+## 3D Printed Parts
+Created with OpenSCAD. See `prints` directory.
 
-# Microcontroller Code
+## Microcontroller Code
 Programmed with PlatformIO with VSCode. See `mcu` directory.
 
 # License
