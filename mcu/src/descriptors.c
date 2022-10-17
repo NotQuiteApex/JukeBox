@@ -15,7 +15,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
 	.Endpoint0Size = FIXED_CONTROL_ENDPOINT_SIZE,
 
 	.VendorID      = 0x03EB, // TODO: 
-	.ProductID     = 0x2042,
+	.ProductID     = 0x2FEE,
 	.ReleaseNumber = VERSION_BCD(0,0,1),
 
 	.ManufacturerStrIndex = STRING_ID_Manufacturer,
@@ -36,13 +36,29 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
 		.MaxPowerConsumption = USB_CONFIG_POWER_MA(200),
 	},
 	.HID_Interface = {
-
+		.Header = { .Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface },
+		.InterfaceNumber = INTERFACE_ID_Keyboard,
+		.AlternateSetting = 0x0,
+		.TotalEndpoints = 1,
+		.Class = HID_CSCP_HIDClass,
+		.SubClass = HID_CSCP_BootSubclass,
+		.Protocol = HID_CSCP_KeyboardBootProtocol,
+		.InterfaceStrIndex = NO_DESCRIPTOR,
 	},
 	.HID_KeyboardHID = {
-
+		.Header = { .Size = sizeof(USB_HID_Descriptor_HID_t), .Type = HID_DTYPE_HID },
+		.HIDSpec = VERSION_BCD(1,1,1),
+		.CountryCode = 0x0,
+		.TotalReportDescriptors = 1,
+		.HIDReportType = HID_DTYPE_Report,
+		.HIDReportLength = sizeof(KeyboardReport),
 	},
 	.HID_ReportINEndpoint = {
-
+		.Header = { .Size = sizeof(USB_Descriptor_Endpoint_t), .Type = DTYPE_Endpoint },
+		.EndpointAddress = KEYBOARD_EPADDR,
+		.Attributes = (EP_TYPE_INTERRUPT | ENDPOINT_ATTR_NO_SYNC | ENDPOINT_USAGE_DATA),
+		.EndpointSize = KEYBOARD_EPSIZE,
+		.PollingIntervalMS = 0x05,
 	},
 };
 
