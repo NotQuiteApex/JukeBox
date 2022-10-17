@@ -14,8 +14,8 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
 
 	.Endpoint0Size = FIXED_CONTROL_ENDPOINT_SIZE,
 
-	.VendorID      = 0x03EB, // TODO: 
-	.ProductID     = 0x2FEE,
+	.VendorID      = USB_DEVICE_VID,
+	.ProductID     = USB_DEVICE_PID,
 	.ReleaseNumber = VERSION_BCD(0,0,1),
 
 	.ManufacturerStrIndex = STRING_ID_Manufacturer,
@@ -63,8 +63,8 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
 };
 
 const USB_Descriptor_String_t PROGMEM LanguageString = USB_STRING_DESCRIPTOR_ARRAY(LANGUAGE_ID_ENG);
-const USB_Descriptor_String_t PROGMEM ManufacturerString = USB_STRING_DESCRIPTOR(L"Friend Team Inc.");
-const USB_Descriptor_String_t PROGMEM ProductString = USB_STRING_DESCRIPTOR(L"JukeBox V3");
+const USB_Descriptor_String_t PROGMEM ManufacturerString = USB_STRING_DESCRIPTOR(USB_DEVICE_MANUFACTURER);
+const USB_Descriptor_String_t PROGMEM ProductString = USB_STRING_DESCRIPTOR(USB_DEVICE_PRODUCT);
 
 uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue, const uint16_t wIndex,
 	const void** const DescriptorAddress, uint8_t* const DescriptorMemorySpace)
