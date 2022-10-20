@@ -1,12 +1,13 @@
 {
-    "name": "ATmega8U2",
+    "name": "JukeBox-ATmega8U2",
 
     "build": {
         "mcu": "atmega8u2",
         "f_cpu": "16000000L",
         "extra_flags": "-D__AVR_ATmega8U2__=1 -DF_CPU_FREQ=F_CPU -DF_USB=F_CPU",
         "hwids": [
-            ["0x03eb", "0x2fee"]
+            ["0x03eb", "0x2fee"],
+            ["0x1209", "0xf209"]
         ]
     },
 

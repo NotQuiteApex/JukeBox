@@ -1,5 +1,8 @@
 #include "descriptors.h"
 
+// TODO: add descriptors for serial device communication
+// https://groups.google.com/g/lufa-support/c/axkQqopa_t4
+
 const USB_Descriptor_HIDReport_Datatype_t PROGMEM KeyboardReport[] = {
 	HID_DESCRIPTOR_KEYBOARD(6) // Max of 6 simultaneous keys
 };
