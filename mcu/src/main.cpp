@@ -46,16 +46,20 @@ USB_ClassInfo_HID_Device_t Keyboard_HID_Interface = {
 int main() {
 	// setup pins
 	// Set all the keyboard pins as inputs with pullup (0 on DDR for input, 1 on PORTn for pullup)
-	// set all to inputs
-	DDRD &= NIT(DD4) & NIT(DD3) & NIT(DD2) & NIT(DD1) & NIT(DD0);
+	
+	// set as inputs (COLUMNS, D2 D1 D4 C7)
+	DDRD &= NIT(DD4) & NIT(DD2) & NIT(DD1);
 	DDRC &= NIT(DD7);
-	// set some to use pullups (ROWS, D3 D0 C6)
-	PORTD |= BIT(PORT3) | BIT(PORT0);
-	PORTC |= BIT(PORT6);
-	// set some to not use pullups (COLUMNS, D2 D1 D4 C7)
+	// pull em low
 	PORTD &= NIT(PORT4) & NIT(PORT2) & NIT(PORT1);
 	PORTC &= NIT(PORT7);
 
+	// setting outputs (ROWS, D3 D0 C6)
+	DDRD |= BIT(DD3) | BIT(DD0);
+	DDRC |= BIT(DD6);
+	// pull em high
+	PORTD |= BIT(PORT3) | BIT(PORT0);
+	PORTC |= BIT(PORT6);
 
 	// disable timers and clock divisers
 	wdt_disable();
@@ -126,37 +130,20 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 	// PC7 - COL_4
 	// PC6 - ROW_3
 
-	uint8_t COL_1 = PIND & BIT(PIND2);
-	uint8_t COL_2 = PIND & BIT(PIND1);
-	uint8_t COL_3 = PIND & BIT(PIND4);
-	uint8_t COL_4 = PINC & BIT(PINC7);
+	uint8_t pind = PIND;
+	uint8_t pinc = PINC;
 
-	uint8_t ROW_1 = PIND & BIT(PIND3);
-	uint8_t ROW_2 = PIND & BIT(PIND0);
-	uint8_t ROW_3 = PINC & BIT(PINC6);
+	uint8_t COL_1 = pind & BIT(PIN2);
+	uint8_t COL_2 = pind & BIT(PIN1);
+	uint8_t COL_3 = pind & BIT(PIN4);
+	uint8_t COL_4 = pinc & BIT(PIN7);
 
-	// KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F13;
-	if (COL_4)
+	uint8_t ROW_1 = (pind & BIT(PIN3));
+	uint8_t ROW_2 = ~(pind | NIT(PIN0));
+	uint8_t ROW_3 = ~(pinc | NIT(PIN6));
+
+	if (ROW_1 && COL_1)
 		KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F13;
-
-	// if (JoyStatus_LCL & JOY_UP)
-	//   KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_A;
-	// else if (JoyStatus_LCL & JOY_DOWN)
-	//   KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_B;
-
-	// if (JoyStatus_LCL & JOY_LEFT)
-	//   KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_C;
-	// else if (JoyStatus_LCL & JOY_RIGHT)
-	//   KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_D;
-
-	// if (JoyStatus_LCL & JOY_PRESS)
-	//   KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_E;
-
-	// if (ButtonStatus_LCL & BUTTONS_BUTTON1)
-	//   KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F;
-
-	// if (UsedKeyCodes)
-	//   KeyboardReport->Modifier = HID_KEYBOARD_MODIFIER_LEFTSHIFT;
 
 	*ReportSize = sizeof(USB_KeyboardReport_Data_t);
 	return false;
