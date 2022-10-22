@@ -4,16 +4,16 @@
 // https://groups.google.com/g/lufa-support/c/axkQqopa_t4
 
 const USB_Descriptor_HIDReport_Datatype_t PROGMEM KeyboardReport[] = {
-	HID_DESCRIPTOR_KEYBOARD(6) // Max of 6 simultaneous keys
+	HID_DESCRIPTOR_KEYBOARD(MAX_NUMBER_OF_KEYS) // Max of 6 simultaneous keys
 };
 
 const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
 	.Header = { .Size = sizeof(USB_Descriptor_Device_t), .Type = DTYPE_Device },
 
 	.USBSpecification = VERSION_BCD(1,1,0),
-	.Class    = USB_CSCP_NoDeviceClass | CDC_CSCP_CDCClass,
-	.SubClass = USB_CSCP_NoDeviceSubclass | CDC_CSCP_NoSpecificSubclass,
-	.Protocol = USB_CSCP_NoDeviceProtocol | CDC_CSCP_NoSpecificProtocol,
+	.Class    = USB_CSCP_NoDeviceClass, // | CDC_CSCP_CDCClass,
+	.SubClass = USB_CSCP_NoDeviceSubclass, // | CDC_CSCP_NoSpecificSubclass,
+	.Protocol = USB_CSCP_NoDeviceProtocol, // | CDC_CSCP_NoSpecificProtocol,
 
 	.Endpoint0Size = FIXED_CONTROL_ENDPOINT_SIZE,
 
@@ -23,7 +23,7 @@ const USB_Descriptor_Device_t PROGMEM DeviceDescriptor = {
 
 	.ManufacturerStrIndex = STRING_ID_Manufacturer,
 	.ProductStrIndex = STRING_ID_Product,
-	.SerialNumStrIndex = NO_DESCRIPTOR | USE_INTERNAL_SERIAL,
+	.SerialNumStrIndex = NO_DESCRIPTOR, //| USE_INTERNAL_SERIAL,
 
 	.NumberOfConfigurations = FIXED_NUM_CONFIGURATIONS,
 };
@@ -66,6 +66,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
 		.PollingIntervalMS = 0x05,
 	},
 
+#ifdef SERIAL_COMMS
 	// Serial Interface
 	.CDC_CCI_Interface = {
 		.Header = { .Size = sizeof(USB_Descriptor_Interface_t), .Type = DTYPE_Interface },
@@ -124,6 +125,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
 		.EndpointSize = CDC_TXRX_EPSIZE,
 		.PollingIntervalMS = 0x05,
 	},
+#endif
 };
 
 const USB_Descriptor_String_t PROGMEM LanguageString = USB_STRING_DESCRIPTOR_ARRAY(LANGUAGE_ID_ENG);

@@ -14,7 +14,8 @@
     "platforms": ["atmelavr"],
 
     "upload": {
-        "maximum_size": 8192,
+        "comment": "max size is 4096 because the bootloader takes up the other 4096, total flash is 8192",
+        "maximum_size": 4096,
         "maximum_ram_size": 512,
 
         "protocol": "custom"

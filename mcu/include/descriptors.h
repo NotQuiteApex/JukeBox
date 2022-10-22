@@ -5,11 +5,16 @@
 
 #include "config.h"
 
+#define KEYBOARD_EPADDR (ENDPOINT_DIR_IN | 1)
+#define KEYBOARD_EPSIZE (8)
+
+#ifdef SERIAL_COMMS
 #define CDC_NOTIFICATION_EPADDR (ENDPOINT_DIR_IN | 2)
 #define CDC_TX_EPADDR (ENDPOINT_DIR_IN | 3)
 #define CDC_RX_EPADDR (ENDPOINT_DIR_OUT | 4)
 #define CDC_NOTIFICATION_EPSIZE 8
 #define CDC_TXRX_EPSIZE 16
+#endif
 
 typedef struct {
     USB_Descriptor_Configuration_Header_t Config;
@@ -19,6 +24,7 @@ typedef struct {
     USB_HID_Descriptor_HID_t   HID_KeyboardHID;
     USB_Descriptor_Endpoint_t  HID_ReportINEndpoint;
 
+#ifdef SERIAL_COMMS
     // Serial Interface (control)
     USB_Descriptor_Interface_t CDC_CCI_Interface;
     USB_CDC_Descriptor_FunctionalHeader_t CDC_Functional_Header;
@@ -30,6 +36,7 @@ typedef struct {
     USB_Descriptor_Interface_t CDC_DCI_Interface;
     USB_Descriptor_Endpoint_t CDC_DataOutEndpoint;
     USB_Descriptor_Endpoint_t CDC_DataInEndpoint;
+#endif
 } USB_Descriptor_Configuration_t;
 
 enum InterfaceDescriptors_t {
@@ -43,9 +50,6 @@ enum StringDescriptors_t {
     STRING_ID_Manufacturer = 1,
     STRING_ID_Product = 2,
 };
-
-#define KEYBOARD_EPADDR (ENDPOINT_DIR_IN | 1)
-#define KEYBOARD_EPSIZE (8)
 
 uint16_t CALLBACK_USB_GetDescriptor(const uint16_t wValue, const uint16_t wIndex,
     const void** const DescriptorAddress, uint8_t* const DescriptorMemorySpace)

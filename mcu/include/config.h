@@ -8,6 +8,8 @@
 #define FIXED_CONTROL_ENDPOINT_SIZE 8
 #define FIXED_NUM_CONFIGURATIONS    1
 
+#define MAX_NUMBER_OF_KEYS 6
+
 // General config
 #define USB_DEVICE_VID 0x1209
 #define USB_DEVICE_PID 0xF209
