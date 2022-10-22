@@ -84,7 +84,7 @@ int main() {
 	// disable timers and clock divisers
 	wdt_disable();
 	clock_prescale_set(clock_div_1);
-	// GlobalInterruptEnable();
+	GlobalInterruptEnable();
 
 	// setup usb interfaces
 	//Joystick_Init();

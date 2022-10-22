@@ -41,8 +41,8 @@ typedef struct {
 
 enum InterfaceDescriptors_t {
     INTERFACE_ID_Keyboard = 0, // Keyboard interface descriptor ID
-    INTERFACE_ID_CDC_CCI = 1, // Serial control interface
-    INTERFACE_ID_CDC_DCI = 2, // Serial data interface
+    //INTERFACE_ID_CDC_CCI = 1, // Serial control interface
+    //INTERFACE_ID_CDC_DCI = 2, // Serial data interface
 };
 
 enum StringDescriptors_t {

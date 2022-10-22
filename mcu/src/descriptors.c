@@ -32,7 +32,7 @@ const USB_Descriptor_Configuration_t PROGMEM ConfigurationDescriptor = {
 	.Config = {
 		.Header = { .Size = sizeof(USB_Descriptor_Configuration_Header_t), .Type = DTYPE_Configuration },
 		.TotalConfigurationSize = sizeof(USB_Descriptor_Configuration_t),
-		.TotalInterfaces = 3,
+		.TotalInterfaces = 1,
 		.ConfigurationNumber = 1,
 		.ConfigurationStrIndex = NO_DESCRIPTOR,
 		.ConfigAttributes = USB_CONFIG_ATTR_RESERVED,
