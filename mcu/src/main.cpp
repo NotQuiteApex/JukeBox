@@ -1,5 +1,6 @@
 // Based on code from the LUFA project here:
 // https://github.com/abcminiuser/lufa/tree/master/Demos/Device/ClassDriver/Keyboard
+// https://github.com/abcminiuser/lufa/tree/master/Demos/Device/ClassDriver/VirtualSerial
 
 // PINOUT
 // - KEYS FOR KEYBOARD -
@@ -32,15 +33,33 @@ USB_ClassInfo_HID_Device_t Keyboard_HID_Interface = {
 	.Config = {
 		.InterfaceNumber = INTERFACE_ID_Keyboard,
 		.ReportINEndpoint = {
-			.Address = KEYBOARD_EPADDR,
-			.Size = KEYBOARD_EPSIZE,
-			.Type = 0,
-			.Banks = 1,
+			.Address = KEYBOARD_EPADDR, .Size = KEYBOARD_EPSIZE,
+			.Type = 0, .Banks = 1,
 		},
 		.PrevReportINBuffer = PrevKeyboardHIDReportBuffer,
 		.PrevReportINBufferSize = sizeof(PrevKeyboardHIDReportBuffer),
 	}
 };
+
+USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
+	.Config = {
+		.ControlInterfaceNumber = INTERFACE_ID_CDC_CCI,
+		.DataINEndpoint = {
+			.Address = CDC_TX_EPADDR, .Size = CDC_TXRX_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+		.DataOUTEndpoint = {
+			.Address = CDC_RX_EPADDR, .Size = CDC_TXRX_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+		.NotificationEndpoint = {
+			.Address = CDC_NOTIFICATION_EPADDR, .Size = CDC_NOTIFICATION_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+	},
+};
+
+static FILE USBSerialStream;
 
 
 int main() {
@@ -69,6 +88,7 @@ int main() {
 	//Joystick_Init();
 	//Buttons_Init();
 	USB_Init(USE_STATIC_OPTIONS);
+	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
 
 	GlobalInterruptEnable();
 
