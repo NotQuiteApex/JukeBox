@@ -138,9 +138,9 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 	uint8_t COL_3 = pind & BIT(PIN4);
 	uint8_t COL_4 = pinc & BIT(PIN7);
 
-	uint8_t ROW_1 = (pind & BIT(PIN3));
-	uint8_t ROW_2 = ~(pind | NIT(PIN0));
-	uint8_t ROW_3 = ~(pinc | NIT(PIN6));
+	uint8_t ROW_1 = pind & BIT(PIN3);
+	uint8_t ROW_2 = pind & NIT(PIN0);
+	uint8_t ROW_3 = pinc & NIT(PIN6);
 
 	if (ROW_1 && COL_1)
 		KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F13;
