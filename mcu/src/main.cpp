@@ -22,8 +22,12 @@
 #define BIT(x) (1<<x)
 #define NIT(x) (~(1<<x))
 
+#define _NOP() do { __asm__ __volatile__ ("nop"); } while (0)
+
 #include "keyboard.h"
 
+
+// uint8_t 
 
 static uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
 
@@ -77,7 +81,7 @@ int main() {
 	// setting outputs (ROWS, D3 D0 C6)
 	DDRD |= BIT(DD3) | BIT(DD0);
 	DDRC |= BIT(DD6);
-	// pull em low for now
+	// pull em low (for now)
 	PORTD &= NIT(PORT3) & NIT(PORT0);
 	PORTC &= NIT(PORT6);
 
@@ -136,7 +140,7 @@ void EVENT_USB_Device_Disconnect() {
 void EVENT_USB_Device_ConfigurationChanged() {
 	bool success = true;
 	success &= HID_Device_ConfigureEndpoints(&Keyboard_HID_Interface);
-	USB_Device_EnableSOFEvents();
+	// USB_Device_EnableSOFEvents();
 }
 
 
@@ -145,9 +149,9 @@ void EVENT_USB_Device_ControlRequest() {
 }
 
 
-void EVENT_USB_Device_StartOfFrame() {
-	HID_Device_MillisecondElapsed(&Keyboard_HID_Interface);
-}
+// void EVENT_USB_Device_StartOfFrame() {
+// 	HID_Device_MillisecondElapsed(&Keyboard_HID_Interface);
+// }
 
 
 bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDInterfaceInfo,
@@ -168,30 +172,29 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 	// PC6 - ROW_3
 
 	// row is pulled high, column is checked, key press is added if check passed, and then row is pulled low
-#define CHECK_KEY(INPORTX, INPIN, KEY) \
+#define CHECK_KEY_1(INPORTX, INPIN, KEY) \
+	if (INPORTX & BIT(INPIN)) \
+		KeyboardReport->KeyCode[UsedKeyCodes++] = KEY;
+#define CHECK_KEY_2(INPORTX, INPIN, KEY) \
 	if (INPORTX & BIT(INPIN) && UsedKeyCodes < MAX_NUMBER_OF_KEYS) \
-		KeyboardReport->KeyCode[UsedKeyCodes++] = KEY; \
+		KeyboardReport->KeyCode[UsedKeyCodes++] = KEY;
 
-	PORTD |= BIT(PORT3);
-	CHECK_KEY(PIND, PIN2, HID_KEYBOARD_SC_F13);
-	CHECK_KEY(PIND, PIN1, HID_KEYBOARD_SC_F14);
-	CHECK_KEY(PIND, PIN4, HID_KEYBOARD_SC_F15);
-	CHECK_KEY(PINC, PIN7, HID_KEYBOARD_SC_F16);
-	PORTD &= NIT(PORT3);
-
-	PORTD |= BIT(PORT0);
-	CHECK_KEY(PIND, PIN2, HID_KEYBOARD_SC_F17);
-	CHECK_KEY(PIND, PIN1, HID_KEYBOARD_SC_F18);
-	CHECK_KEY(PIND, PIN4, HID_KEYBOARD_SC_F19);
-	CHECK_KEY(PINC, PIN7, HID_KEYBOARD_SC_F20);
-	PORTD &= NIT(PORT0);
-
-	PORTC |= BIT(PORT6);
-	CHECK_KEY(PIND, PIN2, HID_KEYBOARD_SC_F21);
-	CHECK_KEY(PIND, PIN1, HID_KEYBOARD_SC_F22);
-	CHECK_KEY(PIND, PIN4, HID_KEYBOARD_SC_F23);
-	CHECK_KEY(PINC, PIN7, HID_KEYBOARD_SC_F24);
-	PORTC &= NIT(PORT6);
+	PORTD = BIT(PORT3); _NOP(); _NOP(); _NOP(); // row 1
+	CHECK_KEY_1(PIND, PIN2, HID_KEYBOARD_SC_F13); // col 1
+	CHECK_KEY_1(PIND, PIN1, HID_KEYBOARD_SC_F14); // col 2
+	CHECK_KEY_1(PIND, PIN4, HID_KEYBOARD_SC_F15); // col 3
+	CHECK_KEY_1(PINC, PIN7, HID_KEYBOARD_SC_F16); // col 4
+	PORTD = BIT(PORT0); _NOP(); _NOP(); _NOP(); // row 2
+	CHECK_KEY_1(PIND, PIN2, HID_KEYBOARD_SC_F17);
+	CHECK_KEY_1(PIND, PIN1, HID_KEYBOARD_SC_F18);
+	CHECK_KEY_2(PIND, PIN4, HID_KEYBOARD_SC_F19);
+	CHECK_KEY_2(PINC, PIN7, HID_KEYBOARD_SC_F20);
+	PORTD = 0; PORTC = BIT(PORT6); _NOP(); _NOP(); _NOP(); // row 3
+	CHECK_KEY_2(PIND, PIN2, HID_KEYBOARD_SC_F21);
+	CHECK_KEY_2(PIND, PIN1, HID_KEYBOARD_SC_F22);
+	CHECK_KEY_2(PIND, PIN4, HID_KEYBOARD_SC_F23);
+	CHECK_KEY_2(PINC, PIN7, HID_KEYBOARD_SC_F24);
+	PORTC = 0; _NOP(); _NOP(); _NOP();
 
 #undef CHECK_KEY
 

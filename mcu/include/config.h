@@ -13,5 +13,5 @@
 // General config
 #define USB_DEVICE_VID 0x1209
 #define USB_DEVICE_PID 0xF209
-#define USB_DEVICE_PRODUCT L"JukeBox V3"
-#define USB_DEVICE_MANUFACTURER L"Friend Team Inc."
+#define USB_DEVICE_PRODUCT L""
+#define USB_DEVICE_MANUFACTURER L""
