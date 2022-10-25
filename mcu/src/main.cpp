@@ -74,16 +74,12 @@ int main() {
 	// set as inputs (COLUMNS, D2 D1 D4 C7)
 	DDRD &= NIT(DD4) & NIT(DD2) & NIT(DD1);
 	DDRC &= NIT(DD7);
-	// pull em low
-	PORTD &= NIT(PORT4) & NIT(PORT2) & NIT(PORT1);
-	PORTC &= NIT(PORT7);
-
+	// pull em low, all low (3, 0, and 6 are rows)
+	PORTD &= NIT(PORT4) & NIT(PORT2) & NIT(PORT1) & NIT(PORT3) & NIT(PORT0);
+	PORTC &= NIT(PORT7) & NIT(PORT6);
 	// setting outputs (ROWS, D3 D0 C6)
 	DDRD |= BIT(DD3) | BIT(DD0);
 	DDRC |= BIT(DD6);
-	// pull em low (for now)
-	PORTD &= NIT(PORT3) & NIT(PORT0);
-	PORTC &= NIT(PORT6);
 
 	// disable timers and clock divisers
 	wdt_disable();
@@ -160,43 +156,30 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 	USB_KeyboardReport_Data_t* KeyboardReport = (USB_KeyboardReport_Data_t*)ReportData;
 
 	uint8_t UsedKeyCodes = 0;
-
-	// KEYS TO USE
-	// HID_KEYBOARD_SC_F13-F24, _MEDIA_VOLUME_UP-DOWN (?)
-	// PD4 - COL_3
-	// PD3 - ROW_1
-	// PD2 - COL_1
-	// PD1 - COL_2
-	// PD0 - ROW_2
-	// PC7 - COL_4
-	// PC6 - ROW_3
+	
+	static volatile uint8_t * ports[] = {&PORTD, &PORTD, &PORTC};
+	static uint8_t opins[] = {BIT(PORT3), BIT(PORT0), BIT(PORT6)};
+	static volatile uint8_t * pins[] = {&PIND, &PIND, &PIND, &PINC};
+	static uint8_t ipins[] = {BIT(PIN2), BIT(PIN1), BIT(PIN4), BIT(PIN7)};
 
 	// row is pulled high, column is checked, key press is added if check passed, and then row is pulled low
-#define CHECK_KEY_1(INPORTX, INPIN, KEY) \
-	if (INPORTX & BIT(INPIN)) \
-		KeyboardReport->KeyCode[UsedKeyCodes++] = KEY;
-#define CHECK_KEY_2(INPORTX, INPIN, KEY) \
-	if (INPORTX & BIT(INPIN) && UsedKeyCodes < MAX_NUMBER_OF_KEYS) \
-		KeyboardReport->KeyCode[UsedKeyCodes++] = KEY;
+	uint8_t k = 0;
+	for (size_t i=0; i<3; i++) {
+		*(ports[i]) = opins[i];
+		_NOP(); _NOP(); _NOP(); // remove if not necessary
+		for (size_t j=0; j<4; j++) {
+			if (UsedKeyCodes >= MAX_NUMBER_OF_KEYS) {
+				break;
+			}
+			if (*(pins[j]) & ipins[j]) {
+				KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F13 + k;
+			}
+			k++;
+		}
+	}
 
-	PORTD = BIT(PORT3); _NOP(); _NOP(); _NOP(); // row 1
-	CHECK_KEY_1(PIND, PIN2, HID_KEYBOARD_SC_F13); // col 1
-	CHECK_KEY_1(PIND, PIN1, HID_KEYBOARD_SC_F14); // col 2
-	CHECK_KEY_1(PIND, PIN4, HID_KEYBOARD_SC_F15); // col 3
-	CHECK_KEY_1(PINC, PIN7, HID_KEYBOARD_SC_F16); // col 4
-	PORTD = BIT(PORT0); _NOP(); _NOP(); _NOP(); // row 2
-	CHECK_KEY_1(PIND, PIN2, HID_KEYBOARD_SC_F17);
-	CHECK_KEY_1(PIND, PIN1, HID_KEYBOARD_SC_F18);
-	CHECK_KEY_2(PIND, PIN4, HID_KEYBOARD_SC_F19);
-	CHECK_KEY_2(PINC, PIN7, HID_KEYBOARD_SC_F20);
-	PORTD = 0; PORTC = BIT(PORT6); _NOP(); _NOP(); _NOP(); // row 3
-	CHECK_KEY_2(PIND, PIN2, HID_KEYBOARD_SC_F21);
-	CHECK_KEY_2(PIND, PIN1, HID_KEYBOARD_SC_F22);
-	CHECK_KEY_2(PIND, PIN4, HID_KEYBOARD_SC_F23);
-	CHECK_KEY_2(PINC, PIN7, HID_KEYBOARD_SC_F24);
-	PORTC = 0; _NOP(); _NOP(); _NOP();
-
-#undef CHECK_KEY
+	*(ports[0]) = 0;
+	*(ports[2]) = 0;
 
 	*ReportSize = sizeof(USB_KeyboardReport_Data_t);
 	return false;
