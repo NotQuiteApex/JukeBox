@@ -27,7 +27,20 @@
 #include "keyboard.h"
 
 
-// uint8_t 
+// debounce utils
+#define DEBOUNCE_TIMER_MAX 100
+bool states[3][4] = {
+	{0, 0, 0, 0},
+	{0, 0, 0, 0},
+	{0, 0, 0, 0}
+};
+uint8_t debounce[3][4] = {
+	{0, 0, 0, 0},
+	{0, 0, 0, 0},
+	{0, 0, 0, 0}
+};
+
+
 
 static uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
 
@@ -171,7 +184,22 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 			if (UsedKeyCodes >= MAX_NUMBER_OF_KEYS) {
 				break;
 			}
-			if (*(pins[j]) & ipins[j]) {
+
+			bool state = (*(pins[j]) & ipins[j]) != 0;
+			bool prevstate = states[i][j];
+			if (prevstate != state) {
+				// state is unstable, reset timer
+				debounce[i][j] = 0;
+			} else {
+				// state is stable, set
+				debounce[i][j]++;
+				if (debounce[i][j] >= DEBOUNCE_TIMER_MAX) {
+					debounce[i][j] = 0;
+					states[i][j] = state;
+				}
+			}
+
+			if (states[i][j]) {
 				KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F13 + k;
 			}
 			k++;
