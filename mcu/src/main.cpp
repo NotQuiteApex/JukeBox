@@ -28,6 +28,7 @@
 
 
 // debounce utils
+// timer max should be adjusted if doing 8mhz or 16mhz clock
 #define DEBOUNCE_TIMER_MAX 100
 bool states[3][4] = {
 	{0, 0, 0, 0},
@@ -81,17 +82,12 @@ USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
 
 int main() {
 	// setup pins
-	// Set all the keyboard pins as inputs with pullup (0 on DDR for input, 1 on PORTn for pullup)
-	
-	// set as inputs (COLUMNS, D2 D1 D4 C7)
-	DDRD &= NIT(DD4) & NIT(DD2) & NIT(DD1);
-	DDRC &= NIT(DD7);
+	// setting inputs and outputs (COLUMNS, D2 D1 D4 C7; ROWS, D3 D0 C6)
+	DDRD = (BIT(DD3) | BIT(DD0)) & (NIT(DD4) & NIT(DD2) & NIT(DD1));
+	DDRC = BIT(DD6) & NIT(DD7);
 	// pull em low, all low (3, 0, and 6 are rows)
-	PORTD &= NIT(PORT4) & NIT(PORT2) & NIT(PORT1) & NIT(PORT3) & NIT(PORT0);
-	PORTC &= NIT(PORT7) & NIT(PORT6);
-	// setting outputs (ROWS, D3 D0 C6)
-	DDRD |= BIT(DD3) | BIT(DD0);
-	DDRC |= BIT(DD6);
+	PORTD = NIT(PORT4) & NIT(PORT2) & NIT(PORT1) & NIT(PORT3) & NIT(PORT0);
+	PORTC = NIT(PORT7) & NIT(PORT6);
 
 	// disable timers and clock divisers
 	wdt_disable();
@@ -178,7 +174,7 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 	uint8_t k = 0;
 	for (size_t i=0; i<3; i++) {
 		*(ports[i]) = opins[i];
-		_NOP(); _NOP(); _NOP(); // remove if not necessary
+		_NOP(); _NOP(); _NOP();
 		for (size_t j=0; j<4; j++) {
 			// check on all states
 			bool state = (*(pins[j]) & ipins[j]) != 0;
