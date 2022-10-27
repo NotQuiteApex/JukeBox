@@ -41,7 +41,6 @@ uint8_t debounce[3][4] = {
 };
 
 
-
 static uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
 
 USB_ClassInfo_HID_Device_t Keyboard_HID_Interface = {
@@ -181,22 +180,23 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 		*(ports[i]) = opins[i];
 		_NOP(); _NOP(); _NOP(); // remove if not necessary
 		for (size_t j=0; j<4; j++) {
-			if (UsedKeyCodes >= MAX_NUMBER_OF_KEYS) {
-				break;
-			}
-
+			// check on all states
 			bool state = (*(pins[j]) & ipins[j]) != 0;
 			bool prevstate = states[i][j];
 			if (prevstate != state) {
 				// state is unstable, reset timer
 				debounce[i][j] = 0;
 			} else {
-				// state is stable, set
+				// state is stable, set debounced state
 				debounce[i][j]++;
 				if (debounce[i][j] >= DEBOUNCE_TIMER_MAX) {
 					debounce[i][j] = 0;
 					states[i][j] = state;
 				}
+			}
+
+			if (UsedKeyCodes >= MAX_NUMBER_OF_KEYS) {
+				continue;
 			}
 
 			if (states[i][j]) {
