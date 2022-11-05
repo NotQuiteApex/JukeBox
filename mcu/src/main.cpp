@@ -20,7 +20,7 @@
 // PB1 - CLK (sck)
 
 #define BIT(x) (1<<x)
-#define NIT(x) (~(1<<x))
+#define NIT(x) ((unsigned char)~(1<<x))
 
 #define _NOP() do { __asm__ __volatile__ ("nop"); } while (0)
 
@@ -169,41 +169,52 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 	static uint8_t opins[] = {BIT(PORT3), BIT(PORT0), BIT(PORT6)};
 	static volatile uint8_t * pins[] = {&PIND, &PIND, &PIND, &PINC};
 	static uint8_t ipins[] = {BIT(PIN2), BIT(PIN1), BIT(PIN4), BIT(PIN7)};
+	static uint8_t keys [] = {
+		HID_KEYBOARD_SC_F13, HID_KEYBOARD_SC_F14, HID_KEYBOARD_SC_F15, HID_KEYBOARD_SC_F16,
+		HID_KEYBOARD_SC_F17, HID_KEYBOARD_SC_F18, HID_KEYBOARD_SC_F19, HID_KEYBOARD_SC_F20,
+		HID_KEYBOARD_SC_F21, HID_KEYBOARD_SC_F22, HID_KEYBOARD_SC_F23, HID_KEYBOARD_SC_F24,
+	};
 
 	// row is pulled high, column is checked, key press is added if check passed, and then row is pulled low
 	uint8_t k = 0;
 	for (size_t i=0; i<3; i++) {
 		*(ports[i]) = opins[i];
 		_NOP(); _NOP(); _NOP();
+		// _NOP(); _NOP(); _NOP(); _NOP(); _NOP(); _NOP();
+		// _NOP(); _NOP(); _NOP(); _NOP(); _NOP(); _NOP();
+		// _NOP(); _NOP(); _NOP(); _NOP(); _NOP(); _NOP();
 		for (size_t j=0; j<4; j++) {
 			// check on all states
 			bool state = (*(pins[j]) & ipins[j]) != 0;
-			bool prevstate = states[i][j];
-			if (prevstate != state) {
-				// state is unstable, reset timer
-				debounce[i][j] = 0;
-			} else {
-				// state is stable, set debounced state
-				debounce[i][j]++;
-				if (debounce[i][j] >= DEBOUNCE_TIMER_MAX) {
-					debounce[i][j] = 0;
-					states[i][j] = state;
-				}
-			}
+			// bool prevstate = states[i][j];
+			// if (prevstate != state) {
+			// 	// state is unstable, reset timer
+			// 	debounce[i][j] = 0;
+			// } else {
+			// 	// state is stable, set debounced state
+			// 	debounce[i][j]++;
+			// 	if (debounce[i][j] >= DEBOUNCE_TIMER_MAX) {
+			// 		debounce[i][j] = 0;
+			// 		states[i][j] = state;
+			// 	}
+			// }
 
 			if (UsedKeyCodes >= MAX_NUMBER_OF_KEYS) {
 				continue;
 			}
 
-			if (states[i][j]) {
-				KeyboardReport->KeyCode[UsedKeyCodes++] = HID_KEYBOARD_SC_F13 + k;
+			if (state) {
+			// if (states[i][j]) {
+				KeyboardReport->KeyCode[UsedKeyCodes++] = keys[k];
 			}
 			k++;
 		}
+		*(ports[i]) = 0;
+		_NOP(); _NOP(); _NOP();
 	}
 
-	*(ports[0]) = 0;
-	*(ports[2]) = 0;
+	// *(ports[0]) = 0;
+	// *(ports[2]) = 0;
 
 	*ReportSize = sizeof(USB_KeyboardReport_Data_t);
 	return false;
