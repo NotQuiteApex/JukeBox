@@ -1,5 +1,5 @@
-# Programming the Microcontroller From Scratch (On Windows)
-This is to document how I got to programming the ATMEGA8U2 on the JukeBox, because this was a tedious, not well documented process due to lack of instructions on how to install the drivers. Presumably there is no such issue on MacOS or Linux.
+# Programming the Microcontroller From Scratch with FLIP (On Windows)
+This is to document how I got to programming the ATMEGA8U2 on the JukeBox, because this was a tedious, not well documented process due to lack of instructions on how to install the drivers. Presumably there is no such issue on MacOS or Linux. This is only for programming via FLIP, not through AVRDUDE.
 
 ## 0. Getting started
 You will need:
