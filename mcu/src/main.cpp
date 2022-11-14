@@ -1,51 +1,228 @@
-#include <Arduino.h>
-#include <Keyboard.h>
-#include <Bounce2.h>
+// Based on code from the LUFA project here:
+// https://github.com/abcminiuser/lufa/tree/master/Demos/Device/ClassDriver/Keyboard
+// https://github.com/abcminiuser/lufa/tree/master/Demos/Device/ClassDriver/VirtualSerial
 
-#define DEBOUNCE_INTERVAL 20
+// PINOUT
+// - KEYS FOR KEYBOARD -
+// PD4 - COL_3
+// PD3 - ROW_1
+// PD2 - COL_1
+// PD1 - COL_2
+// PD0 - ROW_2
+// PC7 - COL_4
+// PC6 - ROW_3
+// - CONNECTIONS FOR SCREEN -
+// PB7 - CS (chip select)
+// PB6 - DC
+// PB5 - RST (reset)
+// PB4 - BL
+// PB2 - DIN (mosi)
+// PB1 - CLK (sck)
 
-Bounce btns[12] = {};
-int pins[] = {
-	 2,  3,  4,  5,
-	 6,  7,  8,  9,
-	15, 14, 16, 10,
+#define BIT(x) (1<<x)
+#define NIT(x) ((unsigned char)~(1<<x))
+
+#define _NOP() do { __asm__ __volatile__ ("nop"); } while (0)
+
+#include "keyboard.h"
+
+
+// debounce utils
+// timer max should be adjusted if doing 8mhz or 16mhz clock
+#define DEBOUNCE_TIMER_MAX 100
+bool states[3][4] = {
+	{0, 0, 0, 0},
+	{0, 0, 0, 0},
+	{0, 0, 0, 0}
 };
-int k_fn[] = {
-	KEY_F13, KEY_F14, KEY_F15, KEY_F16,
-	KEY_F17, KEY_F18, KEY_F19, KEY_F20,
-	KEY_F21, KEY_F22, KEY_F23, KEY_F24
+uint8_t debounce[3][4] = {
+	{0, 0, 0, 0},
+	{0, 0, 0, 0},
+	{0, 0, 0, 0}
 };
 
-void setup() {
-	// put your setup code here, to run once:
 
-	// setup all the debouncing
-	for (byte i = 0; i < 12; i++) {
-		btns[i] = Bounce();
-		btns[i].attach(pins[i], INPUT_PULLUP);
-		btns[i].interval(DEBOUNCE_INTERVAL);
+static uint8_t PrevKeyboardHIDReportBuffer[sizeof(USB_KeyboardReport_Data_t)];
+
+USB_ClassInfo_HID_Device_t Keyboard_HID_Interface = {
+	.Config = {
+		.InterfaceNumber = INTERFACE_ID_Keyboard,
+		.ReportINEndpoint = {
+			.Address = KEYBOARD_EPADDR, .Size = KEYBOARD_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+		.PrevReportINBuffer = PrevKeyboardHIDReportBuffer,
+		.PrevReportINBufferSize = sizeof(PrevKeyboardHIDReportBuffer),
+	}
+};
+
+
+#ifdef SERIAL_COMMS
+#include <stdio.h>
+static FILE USBSerialStream;
+USB_ClassInfo_CDC_Device_t VirtualSerial_CDC_Interface = {
+	.Config = {
+		.ControlInterfaceNumber = INTERFACE_ID_CDC_CCI,
+		.DataINEndpoint = {
+			.Address = CDC_TX_EPADDR, .Size = CDC_TXRX_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+		.DataOUTEndpoint = {
+			.Address = CDC_RX_EPADDR, .Size = CDC_TXRX_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+		.NotificationEndpoint = {
+			.Address = CDC_NOTIFICATION_EPADDR, .Size = CDC_NOTIFICATION_EPSIZE,
+			.Type = 0, .Banks = 1,
+		},
+	},
+};
+#endif
+
+
+int main() {
+	// setup pins
+	// setting inputs and outputs (COLUMNS, D2 D1 D4 C7; ROWS, D3 D0 C6)
+	DDRD = (BIT(DD3) | BIT(DD0)) & (NIT(DD4) & NIT(DD2) & NIT(DD1));
+	DDRC = BIT(DD6) & NIT(DD7);
+	// pull em low, all low (3, 0, and 6 are rows)
+	PORTD = NIT(PORT4) & NIT(PORT2) & NIT(PORT1) & NIT(PORT3) & NIT(PORT0);
+	PORTC = NIT(PORT7) & NIT(PORT6);
+
+	// disable timers and clock divisers
+	wdt_disable();
+	clock_prescale_set(clock_div_1);
+	GlobalInterruptEnable();
+
+	// setup usb interfaces
+	//Joystick_Init();
+	//Buttons_Init();
+	USB_Init(USE_STATIC_OPTIONS);
+
+#ifdef SERIAL_COMMS
+	CDC_Device_CreateStream(&VirtualSerial_CDC_Interface, &USBSerialStream);
+#endif
+
+	while (true) {
+#ifdef SERIAL_COMMS
+		// get stream size, malloc, and append to storage
+		uint16_t size = CDC_Device_BytesReceived(&VirtualSerial_CDC_Interface);
+		if (size > 0) {
+			fprintf(&USBSerialStream, "len:%d",size);
+			for (uint16_t i=0; i<size; i++) {
+				uint16_t c = CDC_Device_ReceiveByte(&VirtualSerial_CDC_Interface);
+				fprintf(&USBSerialStream, "char:%d(%c)", c, c);
+			}
+		}
+
+		// Handle serial events
+		CDC_Device_USBTask(&VirtualSerial_CDC_Interface);
+#endif
+
+		// Handle keyboard events
+		HID_Device_USBTask(&Keyboard_HID_Interface);
+		// Handle general USB stuff
+		USB_USBTask();
 	}
 
-	// setup keyboard over usb
-	Keyboard.begin();
+	return 0;
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  // update all the buttons first
-  for (byte i=0; i<12; i++) {
-    btns[i].update();
-  }
 
-  // check all the buttons states
-  for (byte i = 0; i < 12; i++) {
-    if (btns[i].changed()) {
-      int read = btns[i].read();
-      if (read == HIGH) {
-        Keyboard.release(k_fn[i]);
-      } else {
-        Keyboard.press(k_fn[i]);
-      }
-    }
-  }
+void EVENT_USB_Device_Connect() {
+	// When a USB connection is established.
+	// Nothing yet!
+}
+
+
+void EVENT_USB_Device_Disconnect() {
+	// When a USB connection is lost.
+	// Nothing yet!
+}
+
+
+void EVENT_USB_Device_ConfigurationChanged() {
+	bool success = true;
+	success &= HID_Device_ConfigureEndpoints(&Keyboard_HID_Interface);
+	// USB_Device_EnableSOFEvents();
+}
+
+
+void EVENT_USB_Device_ControlRequest() {
+	HID_Device_ProcessControlRequest(&Keyboard_HID_Interface);
+}
+
+
+// void EVENT_USB_Device_StartOfFrame() {
+// 	HID_Device_MillisecondElapsed(&Keyboard_HID_Interface);
+// }
+
+
+bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDInterfaceInfo,
+	uint8_t* const ReportID, const uint8_t ReportType, void* ReportData, uint16_t* const ReportSize)
+{
+	USB_KeyboardReport_Data_t* KeyboardReport = (USB_KeyboardReport_Data_t*)ReportData;
+
+	uint8_t UsedKeyCodes = 0;
+	
+	static volatile uint8_t * ports[] = {&PORTD, &PORTD, &PORTC};
+	static uint8_t opins[] = {BIT(PORT3), BIT(PORT0), BIT(PORT6)};
+	static volatile uint8_t * pins[] = {&PIND, &PIND, &PIND, &PINC};
+	static uint8_t ipins[] = {BIT(PIN2), BIT(PIN1), BIT(PIN4), BIT(PIN7)};
+	static uint8_t keys [] = {
+		HID_KEYBOARD_SC_F13, HID_KEYBOARD_SC_F14, HID_KEYBOARD_SC_F15, HID_KEYBOARD_SC_F16,
+		HID_KEYBOARD_SC_F17, HID_KEYBOARD_SC_F18, HID_KEYBOARD_SC_F19, HID_KEYBOARD_SC_F20,
+		HID_KEYBOARD_SC_F21, HID_KEYBOARD_SC_F22, HID_KEYBOARD_SC_F23, HID_KEYBOARD_SC_F24,
+	};
+
+	// row is pulled high, column is checked, key press is added if check passed, and then row is pulled low
+	uint8_t k = 0;
+	for (size_t i=0; i<3; i++) {
+		*(ports[i]) = opins[i];
+		_NOP(); _NOP(); _NOP();
+		// _NOP(); _NOP(); _NOP(); _NOP(); _NOP(); _NOP();
+		// _NOP(); _NOP(); _NOP(); _NOP(); _NOP(); _NOP();
+		// _NOP(); _NOP(); _NOP(); _NOP(); _NOP(); _NOP();
+		for (size_t j=0; j<4; j++) {
+			// check on all states
+			bool state = (*(pins[j]) & ipins[j]) != 0;
+			// bool prevstate = states[i][j];
+			// if (prevstate != state) {
+			// 	// state is unstable, reset timer
+			// 	debounce[i][j] = 0;
+			// } else {
+			// 	// state is stable, set debounced state
+			// 	debounce[i][j]++;
+			// 	if (debounce[i][j] >= DEBOUNCE_TIMER_MAX) {
+			// 		debounce[i][j] = 0;
+			// 		states[i][j] = state;
+			// 	}
+			// }
+
+			if (UsedKeyCodes >= MAX_NUMBER_OF_KEYS) {
+				continue;
+			}
+
+			if (state) {
+			// if (states[i][j]) {
+				KeyboardReport->KeyCode[UsedKeyCodes++] = keys[k];
+			}
+			k++;
+		}
+		*(ports[i]) = 0;
+		_NOP(); _NOP(); _NOP();
+	}
+
+	// *(ports[0]) = 0;
+	// *(ports[2]) = 0;
+
+	*ReportSize = sizeof(USB_KeyboardReport_Data_t);
+	return false;
+}
+
+
+void CALLBACK_HID_Device_ProcessHIDReport(USB_ClassInfo_HID_Device_t* const HIDInterfaceInfo,
+	const uint8_t ReportID, const uint8_t ReportType, const void* ReportData, const uint16_t ReportSize)
+{
+	// Nobody here but us chickens.
 }

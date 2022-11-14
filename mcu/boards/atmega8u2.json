@@ -1,0 +1,26 @@
+{
+    "name": "JukeBox-ATmega8U2",
+
+    "build": {
+        "mcu": "atmega8u2",
+        "f_cpu": "16000000L",
+        "extra_flags": "-D__AVR_ATmega8U2__=1 -DF_CPU_FREQ=F_CPU -DF_USB=F_CPU",
+        "hwids": [
+            ["0x03eb", "0x2fee"],
+            ["0x1209", "0xf209"]
+        ]
+    },
+
+    "platforms": ["atmelavr"],
+
+    "upload": {
+        "comment": "max size is 4096 because the bootloader takes up the other 4096, total flash is 8192",
+        "maximum_size": 4096,
+        "maximum_ram_size": 512,
+
+        "protocol": "custom"
+    },
+
+    "url": "https://www.microchip.com/en-us/product/ATmega8U2",
+    "vendor": "Microchip"
+}
