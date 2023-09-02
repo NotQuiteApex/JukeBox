@@ -18,7 +18,7 @@ You will need to print 1 case bottom, 2 case legs, 1 case top for Cherry MX swit
 Programmed with PlatformIO with VSCode. See `mcu` directory.
 
 # License
-Copyright (c) 2020-2022 Logan Hickok-Dickson
+Copyright (c) 2020-2023 Logan "NotQuiteApex" Hickok-Dickson
 
 This project has two discrete parts, the CAD files and the programming files. Programming files, generally found in the MCU folder, are licensed under the MIT license. All CAD files, generally found in the Board folder, (unless provided by an external source, such as PCB footprints and STEP models) are licensed under [CC BY-SA-NC](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 

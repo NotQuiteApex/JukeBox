@@ -1,7 +1,0 @@
-# udev rule for automatically allowing write access to ATmega8U2 while in DFU mode.
-# drop this in /etc/udev/rules.d/ to use.
-
-# ATmega8U2
-SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2fee", MODE="0666"
-# ATmega16U2
-SUBSYSTEM=="usb", ATTRS{idVendor}=="03eb", ATTRS{idProduct}=="2fef", MODE="0666"
