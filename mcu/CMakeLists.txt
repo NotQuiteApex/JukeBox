@@ -15,7 +15,10 @@ add_executable(jukebox_firmware
 )
 
 # Add pico_stdlib library which aggregates commonly used features
-target_link_libraries(jukebox_firmware pico_stdlib)
+target_link_libraries(jukebox_firmware
+    pico_stdlib
+    tinyusb_device
+)
 
 # create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(jukebox_firmware)
