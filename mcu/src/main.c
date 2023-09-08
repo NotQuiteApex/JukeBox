@@ -43,6 +43,8 @@ void blinking_task(void) {
     #endif
 }
 
+void hid_task(void);
+
 int main() {
     setup_default_uart();
     printf("Hello, world!\n");
