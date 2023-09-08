@@ -46,8 +46,8 @@ void blinking_task(void) {
 void hid_task(void);
 
 int main() {
-    setup_default_uart();
-    printf("Hello, world!\n");
+    // setup_default_uart();
+    // printf("Hello, world!\n");
 
     #ifdef PICO_DEFAULT_LED_PIN
         gpio_init(LED_PIN);
@@ -146,18 +146,6 @@ void hid_task(void) {
         tud_remote_wakeup();
     } else if (!tud_hid_ready()) {
         tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycodes);
-    }
-
-    uint32_t const btn = gpio_get(KB_COL); //board_button_read();
-
-    // Remote wakeup
-    if ( tud_suspended() && btn ) {
-        // Wake up host if we are in suspend mode
-        // and REMOTE_WAKEUP feature is enabled by host
-        tud_remote_wakeup();
-    } else {
-        // Send the 1st of report chain, the rest will be sent by tud_hid_report_complete_cb()
-        send_hid_report(REPORT_ID_KEYBOARD, btn);
     }
 }
 
