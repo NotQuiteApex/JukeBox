@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.13)
 # note: this must happen before project()
 include(pico-sdk/pico_sdk_init.cmake)
 
+enable_language( C CXX ASM )
+
 # Name the project
 project(jukebox_v5)
 
