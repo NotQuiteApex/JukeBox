@@ -4,21 +4,30 @@ cmake_minimum_required(VERSION 3.13)
 # note: this must happen before project()
 include(pico-sdk/pico_sdk_init.cmake)
 
+# Name the project
 project(jukebox_v5)
 
 # initialize the Raspberry Pi Pico SDK
 pico_sdk_init()
 
-# rest of your project
+# Source files
 add_executable(jukebox_firmware
-    src/main.c
+    "src/main.c"
+    "src/usb_descriptors.c"
 )
 
-# Add pico_stdlib library which aggregates commonly used features
-target_link_libraries(jukebox_firmware
+# Header files
+target_include_directories(jukebox_firmware PUBLIC
+    "include/"
+)
+
+# Libraries
+target_link_libraries(jukebox_firmware PUBLIC
     pico_stdlib
+    pico_unique_id
     tinyusb_device
+    tinyusb_board
 )
 
-# create map/bin/hex/uf2 file in addition to ELF.
+# Create map/bin/hex/uf2 file in addition to ELF.
 pico_add_extra_outputs(jukebox_firmware)
