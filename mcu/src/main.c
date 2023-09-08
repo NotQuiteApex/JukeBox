@@ -55,11 +55,13 @@ int main() {
     #endif
 
     // setup keyboard pins
+    // column pins are pulldown inputs. if their current state is high, then the key is down.
     for (uint8_t i=0; i<KB_COL_COUNT; i++) {
         gpio_init(KB_COL + i);
         gpio_set_dir(KB_COL + i, GPIO_IN);
         gpio_pull_down(KB_COL + i);
     }
+    // row pins are outputs. they produce current to check each row of keys.
     for (uint8_t i=0; i<KB_ROW_COUNT; i++) {
         gpio_init(KB_ROW + i);
         gpio_set_dir(KB_ROW + i, GPIO_OUT);
@@ -103,40 +105,6 @@ void tud_resume_cb(void) {}
 // USB HID
 //--------------------------------------------------------------------+
 
-static void send_hid_report(uint8_t report_id, uint32_t btn) {
-  // skip if hid is not ready yet
-    if ( !tud_hid_ready() )
-        return;
-
-    switch(report_id)
-    {
-        case REPORT_ID_KEYBOARD: {
-            // use to avoid send multiple consecutive zero report for keyboard
-            static bool has_keyboard_key = false;
-
-            if ( btn ) {
-                uint8_t keycode[6] = { 0 };
-                keycode[0] = HID_KEY_F13;
-                keycode[1] = HID_KEY_F14;
-                keycode[2] = HID_KEY_F15;
-                keycode[3] = HID_KEY_F16;
-                keycode[4] = HID_KEY_F17;
-                keycode[5] = HID_KEY_F18;
-                tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycode);
-                has_keyboard_key = true;
-            } else {
-                // send empty key report if previously has key pressed
-                if (has_keyboard_key) {
-                    tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, NULL);
-                }
-                has_keyboard_key = false;
-            }
-        }
-        
-        default: break;
-    }
-}
-
 // Every 10ms, we will sent 1 report for each HID profile (keyboard, mouse etc ..)
 // tud_hid_report_complete_cb() is used to send the next report after previous one is complete
 void hid_task(void) {
@@ -149,7 +117,38 @@ void hid_task(void) {
     }
     start_ms += interval_ms;
 
-    uint32_t const btn = !gpio_get(KB_COL); //board_button_read();
+    static uint8_t keys [] = {
+		HID_KEY_F13, HID_KEY_F14, HID_KEY_F15, HID_KEY_F16,
+		HID_KEY_F17, HID_KEY_F18, HID_KEY_F19, HID_KEY_F20,
+		HID_KEY_F21, HID_KEY_F22, HID_KEY_F23, HID_KEY_F24,
+    };
+
+    uint8_t k = 0;
+    uint8_t keycodes[6] = {0};
+    uint8_t usedKeys = 0;
+    for (uint8_t row=0; row<KB_ROW_COUNT; row++) {
+        gpio_put(KB_ROW + row, 1);
+        for (uint8_t col=0; col<KB_COL_COUNT; col++) {
+            if (usedKeys >= 6) {
+                continue;
+            }
+
+            if (gpio_get(KB_COL + col)) {
+                keycodes[usedKeys++] = keys[k];
+            }
+
+            k++;
+        }
+        gpio_put(KB_ROW + row, 0);
+    }
+
+    if (tud_suspended() && usedKeys > 0) {
+        tud_remote_wakeup();
+    } else if (!tud_hid_ready()) {
+        tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycodes);
+    }
+
+    uint32_t const btn = gpio_get(KB_COL); //board_button_read();
 
     // Remote wakeup
     if ( tud_suspended() && btn ) {
@@ -172,12 +171,6 @@ void tud_hid_report_complete_cb(
 ) {
     (void) instance;
     (void) len;
-
-    uint8_t next_report_id = report[0] + 1;
-
-    // if (next_report_id < REPORT_ID_COUNT) {
-    //     send_hid_report(next_report_id, board_button_read());
-    // }
 }
 
 // Invoked when received GET_REPORT control request
@@ -190,7 +183,6 @@ uint16_t tud_hid_get_report_cb(
     uint8_t* buffer,
     uint16_t reqlen
 ) {
-    // TODO not Implemented
     (void) instance;
     (void) report_id;
     (void) report_type;
