@@ -14,6 +14,19 @@
     const uint LED_PIN = PICO_DEFAULT_LED_PIN;
 #endif
 
+const uint KB_COL = 2;
+const uint KB_COL_COUNT = 4;
+const uint KB_ROW = 2;
+const uint KB_ROW_COUNT = 4;
+
+// https://github.com/ArmDeveloperEcosystem/st7789-library-for-pico
+const uint SCR_DIN = 2;
+const uint SCR_CLK = 2;
+const uint SCR_CS  = 2; // Move pin to ground?
+const uint SCR_DC  = 2;
+const uint SCR_RST = 2;
+const uint SCR_BL  = 2; // Control with GPIO
+
 void blinking_task(void) {
     static uint16_t blink_interval_ms = 1000;
     static uint64_t start_ms = 0;
@@ -39,6 +52,18 @@ int main() {
         gpio_set_dir(LED_PIN, GPIO_OUT);
     #endif
 
+    // setup keyboard pins
+    for (uint8_t i=0; i<KB_COL_COUNT; i++) {
+        gpio_init(KB_COL + i);
+        gpio_set_dir(KB_COL + i, GPIO_IN);
+        gpio_pull_down(KB_COL + i);
+    }
+    for (uint8_t i=0; i<KB_ROW_COUNT; i++) {
+        gpio_init(KB_ROW + i);
+        gpio_set_dir(KB_ROW + i, GPIO_OUT);
+        gpio_put(KB_ROW + i, 0);
+    }
+
     tusb_init();
 
     while (true) {
@@ -46,7 +71,7 @@ int main() {
 
         blinking_task();
 
-        // hid_task();
+        hid_task();
     }
 
     return 0;
@@ -89,7 +114,12 @@ static void send_hid_report(uint8_t report_id, uint32_t btn) {
 
             if ( btn ) {
                 uint8_t keycode[6] = { 0 };
-                keycode[0] = HID_KEY_A;
+                keycode[0] = HID_KEY_F13;
+                keycode[1] = HID_KEY_F14;
+                keycode[2] = HID_KEY_F15;
+                keycode[3] = HID_KEY_F16;
+                keycode[4] = HID_KEY_F17;
+                keycode[5] = HID_KEY_F18;
                 tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycode);
                 has_keyboard_key = true;
             } else {
@@ -100,62 +130,7 @@ static void send_hid_report(uint8_t report_id, uint32_t btn) {
                 has_keyboard_key = false;
             }
         }
-        break;
-
-        case REPORT_ID_MOUSE: {
-            int8_t const delta = 5;
-
-            // no button, right + down, no scroll, no pan
-            tud_hid_mouse_report(REPORT_ID_MOUSE, 0x00, delta, delta, 0, 0);
-        }
-        break;
-
-        case REPORT_ID_CONSUMER_CONTROL: {
-            // use to avoid send multiple consecutive zero report
-            static bool has_consumer_key = false;
-
-            if ( btn ) {
-                // volume down
-                uint16_t volume_down = HID_USAGE_CONSUMER_VOLUME_DECREMENT;
-                tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &volume_down, 2);
-                has_consumer_key = true;
-            } else {
-                // send empty key report (release key) if previously has key pressed
-                uint16_t empty_key = 0;
-                if (has_consumer_key) {
-                    tud_hid_report(REPORT_ID_CONSUMER_CONTROL, &empty_key, 2);
-                }
-                has_consumer_key = false;
-            }
-        }
-        break;
-
-        case REPORT_ID_GAMEPAD: {
-            // use to avoid send multiple consecutive zero report for keyboard
-            static bool has_gamepad_key = false;
-
-            hid_gamepad_report_t report =
-            {
-                .x   = 0, .y = 0, .z = 0, .rz = 0, .rx = 0, .ry = 0,
-                .hat = 0, .buttons = 0
-            };
-
-            if ( btn ) {
-                report.hat = GAMEPAD_HAT_UP;
-                report.buttons = GAMEPAD_BUTTON_A;
-                tud_hid_report(REPORT_ID_GAMEPAD, &report, sizeof(report));
-                has_gamepad_key = true;
-            } else {
-                report.hat = GAMEPAD_HAT_CENTERED;
-                report.buttons = 0;
-                if (has_gamepad_key) {
-                    tud_hid_report(REPORT_ID_GAMEPAD, &report, sizeof(report));
-                }
-                has_gamepad_key = false;
-            }
-        }
-        break;
-
+        
         default: break;
     }
 }
@@ -165,13 +140,14 @@ static void send_hid_report(uint8_t report_id, uint32_t btn) {
 void hid_task(void) {
     // Poll every 10ms
     const uint32_t interval_ms = 10;
-    static uint32_t start_ms = 0;
+    static uint64_t start_ms = 0;
 
-    if ( time_us_64() / 1000 - start_ms < interval_ms)
+    if ( time_us_64() / 1000 - start_ms < interval_ms) {
         return; // not enough time
+    }
     start_ms += interval_ms;
 
-    uint32_t const btn = board_button_read();
+    uint32_t const btn = !gpio_get(KB_COL); //board_button_read();
 
     // Remote wakeup
     if ( tud_suspended() && btn ) {
@@ -197,9 +173,9 @@ void tud_hid_report_complete_cb(
 
     uint8_t next_report_id = report[0] + 1;
 
-    if (next_report_id < REPORT_ID_COUNT) {
-        send_hid_report(next_report_id, board_button_read());
-    }
+    // if (next_report_id < REPORT_ID_COUNT) {
+    //     send_hid_report(next_report_id, board_button_read());
+    // }
 }
 
 // Invoked when received GET_REPORT control request

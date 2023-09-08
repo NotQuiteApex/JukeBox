@@ -6,7 +6,7 @@ Dependencies:
 sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
 ```
 
-To build (NOTE: You may need to initialize git submodules):
+To build (NOTE: You may need to `git submodule update --init --recursive`):
 ```
 mkdir build
 cd build
