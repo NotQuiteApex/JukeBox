@@ -8,16 +8,10 @@
 
 #include "usb_descriptors.h"
 
-#ifndef PICO_DEFAULT_LED_PIN
-#warning blink example requires a board with a regular LED
-#else
-    const uint LED_PIN = PICO_DEFAULT_LED_PIN;
-#endif
-
-const uint KB_COL = 2;
-const uint KB_COL_COUNT = 4;
-const uint KB_ROW = 2;
-const uint KB_ROW_COUNT = 4;
+const uint KB_COL = 16;
+const uint KB_COL_COUNT = 1;
+const uint KB_ROW = 10;
+const uint KB_ROW_COUNT = 1;
 
 // https://github.com/ArmDeveloperEcosystem/st7789-library-for-pico
 const uint SCR_DIN = 2;
@@ -27,22 +21,19 @@ const uint SCR_DC  = 2;
 const uint SCR_RST = 2;
 const uint SCR_BL  = 2; // Control with GPIO
 
-void blinking_task(void) {
-    static uint16_t blink_interval_ms = 1000;
-    static uint64_t start_ms = 0;
-    static bool led_state = false;
+/* Blink pattern
+ * - 250 ms  : device not mounted
+ * - 1000 ms : device mounted
+ * - 2500 ms : device is suspended
+ */
+enum  {
+  BLINK_NOT_MOUNTED = 250,
+  BLINK_MOUNTED = 1000,
+  BLINK_SUSPENDED = 2500,
+};
+static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
-    // Blink every interval ms
-    if ( time_us_64() / 1000 - start_ms < blink_interval_ms)
-        return; // not enough time
-    start_ms += blink_interval_ms;
-    
-    led_state = !led_state;
-    #ifdef PICO_DEFAULT_LED_PIN
-        gpio_put(LED_PIN, led_state ? 1 : 0);
-    #endif
-}
-
+void blinking_task(void);
 void hid_task(void);
 
 int main() {
@@ -50,22 +41,22 @@ int main() {
     // printf("Hello, world!\n");
 
     #ifdef PICO_DEFAULT_LED_PIN
-        gpio_init(LED_PIN);
-        gpio_set_dir(LED_PIN, GPIO_OUT);
+        gpio_init(PICO_DEFAULT_LED_PIN);
+        gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     #endif
 
     // setup keyboard pins
     // column pins are pulldown inputs. if their current state is high, then the key is down.
-    for (uint8_t i=0; i<KB_COL_COUNT; i++) {
-        gpio_init(KB_COL + i);
-        gpio_set_dir(KB_COL + i, GPIO_IN);
-        gpio_pull_down(KB_COL + i);
+    for (uint8_t col=0; col<KB_COL_COUNT; col++) {
+        gpio_init(KB_COL + col);
+        gpio_set_dir(KB_COL + col, GPIO_IN);
+        gpio_pull_down(KB_COL + col);
     }
     // row pins are outputs. they produce current to check each row of keys.
-    for (uint8_t i=0; i<KB_ROW_COUNT; i++) {
-        gpio_init(KB_ROW + i);
-        gpio_set_dir(KB_ROW + i, GPIO_OUT);
-        gpio_put(KB_ROW + i, 0);
+    for (uint8_t row=0; row<KB_ROW_COUNT; row++) {
+        gpio_init(KB_ROW + row);
+        gpio_set_dir(KB_ROW + row, GPIO_OUT);
+        gpio_put(KB_ROW + row, 0);
     }
 
     tusb_init();
@@ -87,23 +78,77 @@ int main() {
 //--------------------------------------------------------------------+
 
 // Invoked when device is mounted
-void tud_mount_cb(void) {}
+void tud_mount_cb(void) {
+    blink_interval_ms = BLINK_MOUNTED;
+}
 
 // Invoked when device is unmounted
-void tud_umount_cb(void) {}
+void tud_umount_cb(void) {
+    blink_interval_ms = BLINK_NOT_MOUNTED;
+}
 
 // Invoked when usb bus is suspended
 // remote_wakeup_en : if host allow us  to perform remote wakeup
 // Within 7ms, device must draw an average of current less than 2.5 mA from bus
-void tud_suspend_cb(bool remote_wakeup_en) {}
+void tud_suspend_cb(bool remote_wakeup_en) {
+    (void) remote_wakeup_en;
+    blink_interval_ms = BLINK_SUSPENDED;
+}
 
 // Invoked when usb bus is resumed
-void tud_resume_cb(void) {}
+void tud_resume_cb(void) {
+    blink_interval_ms = BLINK_MOUNTED;
+}
 
 
 //--------------------------------------------------------------------+
 // USB HID
 //--------------------------------------------------------------------+
+
+static void send_hid_report(uint8_t report_id) {
+    // skip if hid is not ready yet
+    if (!tud_hid_ready()) {
+        return;
+    }
+
+    switch (report_id) {
+        case REPORT_ID_KEYBOARD: {
+            static uint8_t keys [] = {
+                HID_KEY_F13, HID_KEY_F14, HID_KEY_F15, HID_KEY_F16,
+                HID_KEY_F17, HID_KEY_F18, HID_KEY_F19, HID_KEY_F20,
+                HID_KEY_F21, HID_KEY_F22, HID_KEY_F23, HID_KEY_F24,
+            };
+
+            uint8_t k = 0;
+            uint8_t keycodes[6] = {0};
+            uint8_t usedKeys = 0;
+            for (uint8_t row=0; row<KB_ROW_COUNT; row++) {
+                gpio_put(KB_ROW + row, 1);
+                for (uint8_t col=0; col<KB_COL_COUNT; col++) {
+                    if (usedKeys >= 6) {
+                        continue;
+                    }
+
+                    if (gpio_get(KB_COL + col)) {
+                        keycodes[usedKeys++] = keys[k];
+                    }
+
+                    k++;
+                }
+                gpio_put(KB_ROW + row, 0);
+            }
+
+            if (tud_suspended() && usedKeys > 0) {
+                tud_remote_wakeup();
+            } else {
+                tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycodes);
+            }
+        }
+    
+    default:
+        break;
+    }
+}
 
 // Every 10ms, we will sent 1 report for each HID profile (keyboard, mouse etc ..)
 // tud_hid_report_complete_cb() is used to send the next report after previous one is complete
@@ -117,36 +162,7 @@ void hid_task(void) {
     }
     start_ms += interval_ms;
 
-    static uint8_t keys [] = {
-		HID_KEY_F13, HID_KEY_F14, HID_KEY_F15, HID_KEY_F16,
-		HID_KEY_F17, HID_KEY_F18, HID_KEY_F19, HID_KEY_F20,
-		HID_KEY_F21, HID_KEY_F22, HID_KEY_F23, HID_KEY_F24,
-    };
-
-    uint8_t k = 0;
-    uint8_t keycodes[6] = {0};
-    uint8_t usedKeys = 0;
-    for (uint8_t row=0; row<KB_ROW_COUNT; row++) {
-        gpio_put(KB_ROW + row, 1);
-        for (uint8_t col=0; col<KB_COL_COUNT; col++) {
-            if (usedKeys >= 6) {
-                continue;
-            }
-
-            if (gpio_get(KB_COL + col)) {
-                keycodes[usedKeys++] = keys[k];
-            }
-
-            k++;
-        }
-        gpio_put(KB_ROW + row, 0);
-    }
-
-    if (tud_suspended() && usedKeys > 0) {
-        tud_remote_wakeup();
-    } else if (!tud_hid_ready()) {
-        tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycodes);
-    }
+    send_hid_report(REPORT_ID_KEYBOARD);
 }
 
 // Invoked when sent REPORT successfully to host
@@ -159,6 +175,12 @@ void tud_hid_report_complete_cb(
 ) {
     (void) instance;
     (void) len;
+    
+    uint8_t next_report_id = report[0] + 1;
+
+    if (next_report_id < REPORT_ID_COUNT) {
+        send_hid_report(next_report_id);
+    }
 }
 
 // Invoked when received GET_REPORT control request
@@ -210,4 +232,20 @@ void tud_hid_set_report_cb(
             // }
         }
     }
+}
+
+void blinking_task(void)
+{
+  static uint32_t start_ms = 0;
+  static bool led_state = false;
+
+  // blink is disabled
+  if (!blink_interval_ms) return;
+
+  // Blink every interval ms
+  if ( board_millis() - start_ms < blink_interval_ms) return; // not enough time
+  start_ms += blink_interval_ms;
+
+  board_led_write(led_state);
+  led_state = 1 - led_state; // toggle
 }
