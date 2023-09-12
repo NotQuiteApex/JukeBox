@@ -38,7 +38,8 @@
 
 // defined by board.mk
 #ifndef CFG_TUSB_MCU
-  #error CFG_TUSB_MCU must be defined
+  // #error CFG_TUSB_MCU must be defined
+  #define OPT_MCU_RP2040
 #endif
 
 // RHPort number used for device can be defined by board.mk, default to port 0

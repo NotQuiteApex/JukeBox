@@ -15,6 +15,11 @@ pico_sdk_init()
 # Source files
 add_executable(jukebox_firmware
     "src/main.c"
+
+    "src/keyboard.c"
+    "src/led.c"
+    "src/lcd.c"
+    
     "src/usb_descriptors.c"
 )
 
