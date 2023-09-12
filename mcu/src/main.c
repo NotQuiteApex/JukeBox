@@ -109,6 +109,15 @@ void tud_resume_cb(void) {
 //--------------------------------------------------------------------+
 
 void cdc_task(void) {
+    // Poll every 10ms
+    const uint32_t interval_ms = 250;
+    static uint64_t start_ms = 0;
+
+    if ( time_us_64() / 1000 - start_ms < interval_ms) {
+        return; // not enough time
+    }
+    start_ms += interval_ms;
+
     if (tud_cdc_available()) {
         // read datas
         char buf[64];
