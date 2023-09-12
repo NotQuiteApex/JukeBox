@@ -6,7 +6,7 @@ enum  {
   BLINK_MOUNTED = 500,
   BLINK_SUSPENDED = 1000,
 };
-static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
+uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
 
 void led_init(void) {

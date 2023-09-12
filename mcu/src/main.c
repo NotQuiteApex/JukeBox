@@ -9,36 +9,6 @@
 #include "keyboard.h"
 #include "usb_descriptors.h"
 
-// https://github.com/ArmDeveloperEcosystem/st7789-library-for-pico
-const uint SCR_DIN = 2;
-const uint SCR_CLK = 2;
-const uint SCR_CS  = 2; // Move pin to ground?
-const uint SCR_DC  = 2;
-const uint SCR_RST = 2;
-const uint SCR_BL  = 2; // Control with GPIO
-
-
-void hid_task(void);
-void cdc_task(void);
-
-int main() {
-    led_init();
-    keyboard_init();
-
-    tusb_init();
-
-    while (true) {
-        tud_task();
-
-        hid_task();
-        cdc_task();
-
-        led_blinking_task();
-    }
-
-    return 0;
-}
-
 
 //--------------------------------------------------------------------+
 // Device callbacks
@@ -69,7 +39,7 @@ void tud_resume_cb(void) {
 
 
 //--------------------------------------------------------------------+
-// USB HID
+// USB CDC
 //--------------------------------------------------------------------+
 
 void cdc_task(void) {
@@ -177,4 +147,27 @@ void tud_hid_set_report_cb(
             // }
         }
     }
+}
+
+
+//--------------------------------------------------------------------+
+// Main
+//--------------------------------------------------------------------+
+
+int main() {
+    led_init();
+    keyboard_init();
+
+    tusb_init();
+
+    while (true) {
+        tud_task();
+
+        hid_task();
+        cdc_task();
+
+        led_blinking_task();
+    }
+
+    return 0;
 }
