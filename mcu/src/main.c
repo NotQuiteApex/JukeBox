@@ -25,20 +25,17 @@ const uint SCR_DC  = 2;
 const uint SCR_RST = 2;
 const uint SCR_BL  = 2; // Control with GPIO
 
-/* Blink pattern
- * - 250 ms  : device not mounted
- * - 1000 ms : device mounted
- * - 2500 ms : device is suspended
- */
+// Blink pattern
 enum  {
-  BLINK_NOT_MOUNTED = 250,
-  BLINK_MOUNTED = 1000,
-  BLINK_SUSPENDED = 2500,
+  BLINK_NOT_MOUNTED = 100,
+  BLINK_MOUNTED = 500,
+  BLINK_SUSPENDED = 1000,
 };
 static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 
 void blinking_task(void);
 void hid_task(void);
+void cdc_task(void);
 
 int main() {
     // setup_default_uart();
@@ -71,6 +68,8 @@ int main() {
         blinking_task();
 
         hid_task();
+
+        cdc_task();
     }
 
     return 0;
@@ -92,7 +91,7 @@ void tud_umount_cb(void) {
 }
 
 // Invoked when usb bus is suspended
-// remote_wakeup_en : if host allow us  to perform remote wakeup
+// remote_wakeup_en : if the host allowed us to perform remote wakeup
 // Within 7ms, device must draw an average of current less than 2.5 mA from bus
 void tud_suspend_cb(bool remote_wakeup_en) {
     (void) remote_wakeup_en;
@@ -102,6 +101,20 @@ void tud_suspend_cb(bool remote_wakeup_en) {
 // Invoked when usb bus is resumed
 void tud_resume_cb(void) {
     blink_interval_ms = BLINK_MOUNTED;
+}
+
+
+//--------------------------------------------------------------------+
+// USB HID
+//--------------------------------------------------------------------+
+
+void cdc_task(void) {
+    if (tud_cdc_available()) {
+        // read datas
+        char buf[64];
+        uint32_t count = tud_cdc_read(buf, sizeof(buf));
+        (void) count;
+    }
 }
 
 
