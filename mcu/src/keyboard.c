@@ -40,8 +40,9 @@ void keyboard_send_hid_report(uint8_t report_id) {
     };
 
     uint8_t k = 0;
-    uint8_t keycodes[6] = {0};
+    uint8_t keycodes[6] = {0, 0, 0, 0, 0, 0};
     uint8_t usedKeys = 0;
+    static uint8_t prevKeys = 0;
     for (uint8_t row=0; row<KB_ROW_COUNT; row++) {
         gpio_put(KB_ROW + row, 1);
         _NOPS(KB_NOP_COUNT);
@@ -62,7 +63,8 @@ void keyboard_send_hid_report(uint8_t report_id) {
 
     if (tud_suspended() && usedKeys > 0) {
         tud_remote_wakeup();
-    } else {
+    } else /*if (usedKeys > 0)*/ {
         tud_hid_keyboard_report(REPORT_ID_KEYBOARD, 0, keycodes);
+        // FIXME: For some reason, the above function is causing issues when no key is being pressed. I have absolutely no clue why this is happening, because this was not an issue when this function was in the main file.
     }
 }
