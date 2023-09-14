@@ -19,8 +19,15 @@ add_executable(jukebox_firmware
     "src/keyboard.c"
     "src/led.c"
     "src/lcd.c"
+
+    "src/st7789_lcd.c"
     
     "src/usb_descriptors.c"
+)
+
+# PIO files
+pico_generate_pio_header(jukebox_firmware
+    ${CMAKE_CURRENT_LIST_DIR}/src/st7789_lcd.pio
 )
 
 # Header files
@@ -32,6 +39,7 @@ target_include_directories(jukebox_firmware PUBLIC
 target_link_libraries(jukebox_firmware PUBLIC
     pico_stdlib
     pico_unique_id
+    hardware_pio
     tinyusb_device
     tinyusb_board
 )

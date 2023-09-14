@@ -7,6 +7,8 @@
 
 #include "led.h"
 #include "keyboard.h"
+#include "st7789_lcd.h"
+
 #include "usb_descriptors.h"
 
 
@@ -158,6 +160,8 @@ int main() {
     led_init();
     keyboard_init();
 
+    st7789_lcd_init();
+
     tusb_init();
 
     while (true) {
@@ -165,6 +169,15 @@ int main() {
 
         hid_task();
         cdc_task();
+
+        st7789_fb_clear();
+        for (uint16_t i=0; i<230; i++) {
+            st7789_fb_put(0xFFFF, i, i);
+        }
+        for (uint16_t i=0; i<100; i++) {
+            st7789_fb_put(0xFFFF, i, st7789_get_height()-i);
+        }
+        st7789_lcd_push_fb();
 
         led_blinking_task();
     }
