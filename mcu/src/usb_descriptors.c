@@ -126,9 +126,9 @@ char serial[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
 char const* string_desc_arr [] = {
     (const char[]) { 0x09, 0x04 }, // 0: is supported language is English (0x0409)
     "FriendTeamInc",               // 1: Manufacturer
-    "JukeBoxV5",                   // 2: Product
+    "JukeBox V5",                  // 2: Product
     serial,                        // 3: Serials, uses the flash ID
-    "JukeBoxV5serial",             // 4: CDC Interface
+    "JukeBox V5 Serial",           // 4: CDC Interface
 };
 
 static uint16_t _desc_str[32];

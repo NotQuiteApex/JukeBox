@@ -38,6 +38,7 @@ target_include_directories(jukebox_firmware PUBLIC
 # Libraries
 target_link_libraries(jukebox_firmware PUBLIC
     pico_stdlib
+    pico_rand
     pico_unique_id
     hardware_pio
     tinyusb_device

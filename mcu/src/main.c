@@ -1,6 +1,7 @@
 // JukeBox V5 Firmware
 
 #include <pico/stdlib.h>
+#include <pico/rand.h>
 
 #include <bsp/board.h>
 #include <tusb.h>
@@ -45,12 +46,10 @@ void tud_resume_cb(void) {
 //--------------------------------------------------------------------+
 
 void cdc_task(void) {
-    // Poll every 10ms
     const uint32_t interval_ms = 250;
     static uint64_t start_ms = 0;
-
     if ( time_us_64() / 1000 - start_ms < interval_ms) {
-        return; // not enough time
+        return;
     }
     start_ms += interval_ms;
 
@@ -70,12 +69,10 @@ void cdc_task(void) {
 // Every 10ms, we will sent 1 report for each HID profile (keyboard, mouse etc ..)
 // tud_hid_report_complete_cb() is used to send the next report after previous one is complete
 void hid_task(void) {
-    // Poll every 10ms
     const uint32_t interval_ms = 10;
     static uint64_t start_ms = 0;
-
     if ( time_us_64() / 1000 - start_ms < interval_ms) {
-        return; // not enough time
+        return;
     }
     start_ms += interval_ms;
 
@@ -153,6 +150,46 @@ void tud_hid_set_report_cb(
 
 
 //--------------------------------------------------------------------+
+// Screen
+//--------------------------------------------------------------------+
+
+void lcd_task(void) {
+    const uint32_t interval_ms = 250;
+    static uint64_t start_ms = 0;
+    if ( time_us_64() / 1000 - start_ms < interval_ms) {
+        return;
+    }
+    start_ms += interval_ms;
+
+    // st7789_fb_clear();
+
+    // for (uint16_t i=0; i<230; i++) {
+    //     st7789_fb_put(0xFFFF, i, i);
+    // }
+    // for (uint16_t i=0; i<100; i++) {
+    //     st7789_fb_put(0xFFFF, i, st7789_get_height()-i);
+    // }
+
+    // for (uint8_t i=0; i<20; i++) {
+    //     st7789_fb_put(rgb565(i*10, i*10, i*10), 1, 1+i*2);
+    // }
+
+    // st7789_fb_put(rgb565(255, 0, 0), 3, 1);
+    // st7789_fb_put(rgb565(255, 255, 0), 5, 1);
+    // st7789_fb_put(rgb565(255, 0, 255), 7, 1);
+    // st7789_fb_put(rgb565(255, 255, 255), 9, 1);
+
+    for (uint8_t i=0; i<16; i++) {
+        uint32_t x = get_rand_32() % st7789_get_width();
+        uint32_t y = get_rand_32() % st7789_get_height();
+        st7789_fb_put(get_rand_32() & 0xFFFF, x, y);
+    }
+
+    st7789_lcd_push_fb();
+}
+
+
+//--------------------------------------------------------------------+
 // Main
 //--------------------------------------------------------------------+
 
@@ -170,14 +207,7 @@ int main() {
         hid_task();
         cdc_task();
 
-        st7789_fb_clear();
-        for (uint16_t i=0; i<230; i++) {
-            st7789_fb_put(0xFFFF, i, i);
-        }
-        for (uint16_t i=0; i<100; i++) {
-            st7789_fb_put(0xFFFF, i, st7789_get_height()-i);
-        }
-        st7789_lcd_push_fb();
+        lcd_task();
 
         led_blinking_task();
     }

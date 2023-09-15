@@ -116,6 +116,10 @@ void st7789_fb_put(uint16_t color, uint16_t x, uint16_t y) {
         return;
     }
 
+    // invert coords
+    x = SCREEN_WIDTH - x;
+    y = SCREEN_HEIGHT - y;
+
     framebuffer[y][x] = color;
 }
 
@@ -137,4 +141,9 @@ inline uint16_t st7789_get_width(void) {
 
 inline uint16_t st7789_get_height(void) {
     return SCREEN_HEIGHT;
+}
+
+inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
+    // https://stackoverflow.com/a/76442697/13977827
+    return ((r>>3) << 11) | ((g>>2) << 5) | b >> 3;
 }
