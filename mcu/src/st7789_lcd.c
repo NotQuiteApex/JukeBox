@@ -4,6 +4,8 @@
 
 #include "st7789_lcd.pio.h"
 
+#include "font.h"
+
 
 // Tested with the parts that have the height of 240 and 320
 #define SCREEN_WIDTH 240
@@ -93,6 +95,7 @@ void st7789_lcd_init(void) {
     gpio_put(PIN_BL, 1);
 
     st7789_fb_clear();
+    st7789_lcd_push_fb();
 }
 
 
@@ -117,8 +120,8 @@ void st7789_fb_put(uint16_t color, uint16_t x, uint16_t y) {
     }
 
     // invert coords
-    x = SCREEN_WIDTH - x;
-    y = SCREEN_HEIGHT - y;
+    x = st7789_get_width() - x - 1;
+    y = st7789_get_height() - y - 1;
 
     framebuffer[y][x] = color;
 }
@@ -146,4 +149,25 @@ inline uint16_t st7789_get_height(void) {
 inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
     // https://stackoverflow.com/a/76442697/13977827
     return ((r>>3) << 11) | ((g>>2) << 5) | b >> 3;
+}
+
+#define BIT(n) (1<<n)
+
+void font_test(void) {
+    for (uint8_t ax=0; ax<font_atlas_width; ax++) {
+        for (uint8_t ay=0; ay<font_atlas_height; ay++) {
+            for (uint8_t fy=0; fy<font_height; fy++) {
+                uint16_t row = font[ax + ay * font_height * font_atlas_width + fy * font_atlas_width];
+                if (row == 0) {
+                    continue;
+                }
+                for (uint8_t fx=0; fx<12; fx++) {
+                    // check each bit here
+                    if (row & BIT(fx)) {
+                        st7789_fb_put(0xFFFF, (12-fx) + ax * font_width, fy + ay * font_height);
+                    }
+                }
+            }
+        }
+    }
 }

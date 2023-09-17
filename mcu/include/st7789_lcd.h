@@ -17,4 +17,6 @@ uint16_t st7789_get_height(void);
 
 uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b);
 
+void font_test(void);
+
 #endif // JUKEBOX_ST7789_LCD_H

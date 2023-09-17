@@ -179,13 +179,27 @@ void lcd_task(void) {
     // st7789_fb_put(rgb565(255, 0, 255), 7, 1);
     // st7789_fb_put(rgb565(255, 255, 255), 9, 1);
 
-    for (uint8_t i=0; i<16; i++) {
-        uint32_t x = get_rand_32() % st7789_get_width();
-        uint32_t y = get_rand_32() % st7789_get_height();
-        st7789_fb_put(get_rand_32() & 0xFFFF, x, y);
-    }
+    // for (uint8_t i=0; i<100; i++) {
+    //     uint32_t x = get_rand_32() % st7789_get_width();
+    //     uint32_t y = get_rand_32() % st7789_get_height();
+    //     st7789_fb_put(get_rand_32() & 0xFFFF, x, y);
+    // }
 
+    // st7789_lcd_push_fb();
+
+    font_test();
+}
+
+void lcd_draw_task(void) {
+    const uint32_t interval_ms = 1000;
+    static uint64_t start_ms = 0;
+    if ( time_us_64() / 1000 - start_ms - 125 < interval_ms) {
+        return;
+    }
+    start_ms += interval_ms;
+    
     st7789_lcd_push_fb();
+    st7789_fb_clear();
 }
 
 
@@ -208,6 +222,7 @@ int main() {
         cdc_task();
 
         lcd_task();
+        lcd_draw_task();
 
         led_blinking_task();
     }
