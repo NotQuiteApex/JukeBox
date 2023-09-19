@@ -14,6 +14,9 @@ cmake ..
 make
 ```
 
+# Font
+The default font is included as `JukeBoxFont.png`. It is a monospace, 12x12 pixel font, with the sheet matching IBM Code Page 437. It's ASCII compatible, but with plenty of extra symbols. To export it, !!TODO!!
+
 # License
 Copyright (c) 2020-2023 Logan Hickok-Dickson
 
