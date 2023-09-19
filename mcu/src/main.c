@@ -6,9 +6,9 @@
 #include <bsp/board.h>
 #include <tusb.h>
 
+#include "lcd.h"
 #include "led.h"
 #include "keyboard.h"
-#include "st7789_lcd.h"
 
 #include "usb_descriptors.h"
 
@@ -161,33 +161,15 @@ void lcd_task(void) {
     }
     start_ms += interval_ms;
 
-    // st7789_fb_clear();
+    lcd_set_color(255, 0, 0);
+    lcd_print_raw("Testing 0123 !", 5, 5, 1);
+    lcd_set_color(0, 255, 255);
+    lcd_print_raw("\xd\xe \x2 \x3 \x1 \xd\xe", 5, 30, 1);
 
-    // for (uint16_t i=0; i<230; i++) {
-    //     st7789_fb_put(0xFFFF, i, i);
-    // }
-    // for (uint16_t i=0; i<100; i++) {
-    //     st7789_fb_put(0xFFFF, i, st7789_get_height()-i);
-    // }
-
-    // for (uint8_t i=0; i<20; i++) {
-    //     st7789_fb_put(rgb565(i*10, i*10, i*10), 1, 1+i*2);
-    // }
-
-    // st7789_fb_put(rgb565(255, 0, 0), 3, 1);
-    // st7789_fb_put(rgb565(255, 255, 0), 5, 1);
-    // st7789_fb_put(rgb565(255, 0, 255), 7, 1);
-    // st7789_fb_put(rgb565(255, 255, 255), 9, 1);
-
-    // for (uint8_t i=0; i<100; i++) {
-    //     uint32_t x = get_rand_32() % st7789_get_width();
-    //     uint32_t y = get_rand_32() % st7789_get_height();
-    //     st7789_fb_put(get_rand_32() & 0xFFFF, x, y);
-    // }
-
-    // st7789_lcd_push_fb();
-
-    font_test();
+    lcd_set_color(255, 255, 255);
+    lcd_print_raw("Say hello to the new", 25, 80, 1);
+    lcd_set_color(255, 170, 70);
+    lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
 }
 
 void lcd_draw_task(void) {
@@ -198,8 +180,8 @@ void lcd_draw_task(void) {
     }
     start_ms += interval_ms;
     
-    st7789_lcd_push_fb();
-    st7789_fb_clear();
+    lcd_present();
+    lcd_clear();
 }
 
 
@@ -211,7 +193,7 @@ int main() {
     led_init();
     keyboard_init();
 
-    st7789_lcd_init();
+    lcd_init();
 
     tusb_init();
 

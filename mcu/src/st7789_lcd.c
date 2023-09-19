@@ -1,10 +1,9 @@
 #include "st7789_lcd.h"
 
 #include <hardware/gpio.h>
+#include <string.h>
 
 #include "st7789_lcd.pio.h"
-
-#include "font.h"
 
 
 // Tested with the parts that have the height of 240 and 320
@@ -47,14 +46,14 @@ static const uint8_t st7789_init_seq[] = {
 static uint16_t framebuffer[SCREEN_HEIGHT][SCREEN_WIDTH];
 
 
-void lcd_set_dc_cs(bool dc, bool cs) {
+inline void lcd_set_dc_cs(bool dc, bool cs) {
     sleep_us(1);
     gpio_put_masked((1u << PIN_DC) | (1u << PIN_CS), !!dc << PIN_DC | !!cs << PIN_CS);
     sleep_us(1);
 }
 
 
-void lcd_write_cmd(PIO pio, uint sm, const uint8_t *cmd, size_t count) {
+inline void lcd_write_cmd(PIO pio, uint sm, const uint8_t *cmd, size_t count) {
     st7789_lcd_wait_idle(pio, sm);
     lcd_set_dc_cs(0, 0);
     st7789_lcd_put(pio, sm, *cmd++);
@@ -69,7 +68,7 @@ void lcd_write_cmd(PIO pio, uint sm, const uint8_t *cmd, size_t count) {
 }
 
 
-void st7789_lcd_init(void) {
+inline void st7789_lcd_init(void) {
     offset = pio_add_program(pio, &st7789_lcd_program);
     st7789_lcd_program_init(pio, sm, offset, PIN_DIN, PIN_CLK, SERIAL_CLK_DIV);
 
@@ -99,13 +98,13 @@ void st7789_lcd_init(void) {
 }
 
 
-void st7789_start_pixels(PIO pio, uint sm) {
+inline void st7789_start_pixels(PIO pio, uint sm) {
     uint8_t cmd = 0x2c; // RAMWR
     lcd_write_cmd(pio, sm, &cmd, 1);
     lcd_set_dc_cs(1, 0);
 }
 
-void st7789_fb_clear(void) {
+inline void st7789_fb_clear(void) {
     for (uint16_t y=0; y<SCREEN_HEIGHT; y++) {
         for (uint16_t x=0; x<SCREEN_WIDTH; x++) {
             framebuffer[y][x] = 0;
@@ -113,7 +112,7 @@ void st7789_fb_clear(void) {
     }
 }
 
-void st7789_fb_put(uint16_t color, uint16_t x, uint16_t y) {
+inline void st7789_fb_put(uint16_t color, uint16_t x, uint16_t y) {
     if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
         // if its off screen, whatever
         return;
@@ -149,25 +148,4 @@ inline uint16_t st7789_get_height(void) {
 inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
     // https://stackoverflow.com/a/76442697/13977827
     return ((r>>3) << 11) | ((g>>2) << 5) | b >> 3;
-}
-
-#define BIT(n) (1<<n)
-
-void font_test(void) {
-    for (uint8_t ax=0; ax<font_atlas_width; ax++) {
-        for (uint8_t ay=0; ay<font_atlas_height; ay++) {
-            for (uint8_t fy=0; fy<font_height; fy++) {
-                uint16_t row = font[ax + ay * font_height * font_atlas_width + fy * font_atlas_width];
-                if (row == 0) {
-                    continue;
-                }
-                for (uint8_t fx=0; fx<12; fx++) {
-                    // check each bit here
-                    if (row & BIT(fx)) {
-                        st7789_fb_put(0xFFFF, (12-fx) + ax * font_width, fy + ay * font_height);
-                    }
-                }
-            }
-        }
-    }
 }

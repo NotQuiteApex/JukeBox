@@ -10,5 +10,4 @@ void led_set_mounted(void);
 void led_set_unmounted(void);
 void led_set_suspended(void);
 
-
 #endif // JUKEBOX_LED_H
