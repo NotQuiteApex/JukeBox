@@ -10,6 +10,8 @@
 #include "led.h"
 #include "keyboard.h"
 
+#include "ws2812_rgb.h"
+
 #include "usb_descriptors.h"
 
 
@@ -170,6 +172,26 @@ void lcd_task(void) {
     lcd_print_raw("Say hello to the new", 25, 80, 1);
     lcd_set_color(255, 170, 70);
     lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x040000);
+    rgb_put_pixel(0x000400);
+    rgb_put_pixel(0x000004);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x040400);
+    rgb_put_pixel(0x000404);
+    rgb_put_pixel(0x040004);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x040000);
+    rgb_put_pixel(0x000400);
+    rgb_put_pixel(0x000004);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x000000);
 }
 
 void lcd_draw_task(void) {
@@ -194,6 +216,7 @@ int main() {
     keyboard_init();
 
     lcd_init();
+    rgb_init();
 
     tusb_init();
 

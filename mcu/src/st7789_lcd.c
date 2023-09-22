@@ -144,8 +144,3 @@ inline uint16_t st7789_get_width(void) {
 inline uint16_t st7789_get_height(void) {
     return SCREEN_HEIGHT;
 }
-
-inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
-    // https://stackoverflow.com/a/76442697/13977827
-    return ((r>>3) << 11) | ((g>>2) << 5) | b >> 3;
-}

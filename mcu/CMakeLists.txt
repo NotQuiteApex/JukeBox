@@ -21,14 +21,14 @@ add_executable(jukebox_firmware
     "src/lcd.c"
 
     "src/st7789_lcd.c"
+    "src/ws2812_rgb.c"
     
     "src/usb_descriptors.c"
 )
 
 # PIO files
-pico_generate_pio_header(jukebox_firmware
-    ${CMAKE_CURRENT_LIST_DIR}/src/st7789_lcd.pio
-)
+pico_generate_pio_header(jukebox_firmware ${CMAKE_CURRENT_LIST_DIR}/src/st7789_lcd.pio)
+pico_generate_pio_header(jukebox_firmware ${CMAKE_CURRENT_LIST_DIR}/src/ws2812_rgb.pio)
 
 # Header files
 target_include_directories(jukebox_firmware PUBLIC

@@ -5,6 +5,12 @@
 #include "font.h"
 #include "st7789_lcd.h"
 
+
+inline uint16_t lcd_rgb565(uint8_t r, uint8_t g, uint8_t b) {
+    // https://stackoverflow.com/a/76442697/13977827
+    return ((r>>3) << 11) | ((g>>2) << 5) | b >> 3;
+}
+
 inline void lcd_init(void) {
     st7789_lcd_init();
 }
@@ -28,7 +34,7 @@ inline void lcd_present(void) {
 }
 
 inline void lcd_put(uint16_t x, uint16_t y) {
-    st7789_fb_put(rgb565(lcd_color_r, lcd_color_g, lcd_color_b), x, y);
+    st7789_fb_put(lcd_rgb565(lcd_color_r, lcd_color_g, lcd_color_b), x, y);
 }
 
 inline void lcd_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
