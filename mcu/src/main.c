@@ -6,6 +6,8 @@
 #include <bsp/board.h>
 #include <tusb.h>
 
+#include "config.h"
+
 #include "lcd.h"
 #include "led.h"
 #include "keyboard.h"
@@ -215,7 +217,9 @@ int main() {
     led_init();
     keyboard_init();
 
-    lcd_init();
+    #ifdef JUKEBOX_MOD_SCREEN
+        lcd_init();
+    #endif
     rgb_init();
 
     tusb_init();
@@ -226,8 +230,10 @@ int main() {
         hid_task();
         cdc_task();
 
-        lcd_task();
-        lcd_draw_task();
+        #ifdef JUKEBOX_MOD_SCREEN
+            lcd_task();
+            lcd_draw_task();
+        #endif
 
         led_blinking_task();
     }

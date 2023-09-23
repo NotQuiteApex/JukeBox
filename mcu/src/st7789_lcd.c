@@ -19,10 +19,6 @@
 
 #define SERIAL_CLK_DIV 1.f
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 
 PIO pio = pio0;
 uint sm = 0;
