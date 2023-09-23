@@ -174,6 +174,32 @@ void lcd_task(void) {
     lcd_print_raw("Say hello to the new", 25, 80, 1);
     lcd_set_color(255, 170, 70);
     lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
+}
+
+void lcd_draw_task(void) {
+    const uint32_t interval_ms = 1000;
+    static uint64_t start_ms = 0;
+    if ( time_us_64() / 1000 - start_ms - 125 < interval_ms) {
+        return;
+    }
+    start_ms += interval_ms;
+    
+    lcd_present();
+    lcd_clear();
+}
+
+
+//--------------------------------------------------------------------+
+// Screen
+//--------------------------------------------------------------------+
+
+void rgb_task(void) {
+    const uint32_t interval_ms = 250;
+    static uint64_t start_ms = 0;
+    if ( time_us_64() / 1000 - start_ms < interval_ms) {
+        return;
+    }
+    start_ms += interval_ms;
 
     rgb_put_pixel(0x000000);
     rgb_put_pixel(0x040000);
@@ -196,18 +222,6 @@ void lcd_task(void) {
     rgb_put_pixel(0x000000);
 }
 
-void lcd_draw_task(void) {
-    const uint32_t interval_ms = 1000;
-    static uint64_t start_ms = 0;
-    if ( time_us_64() / 1000 - start_ms - 125 < interval_ms) {
-        return;
-    }
-    start_ms += interval_ms;
-    
-    lcd_present();
-    lcd_clear();
-}
-
 
 //--------------------------------------------------------------------+
 // Main
@@ -220,7 +234,9 @@ int main() {
     #ifdef JUKEBOX_MOD_SCREEN
         lcd_init();
     #endif
-    rgb_init();
+    #ifdef JUKEBOX_MOD_RGBLEDS
+        rgb_init();
+    #endif
 
     tusb_init();
 
@@ -233,6 +249,10 @@ int main() {
         #ifdef JUKEBOX_MOD_SCREEN
             lcd_task();
             lcd_draw_task();
+        #endif
+
+        #ifdef JUKEBOX_MOD_RGBLEDS
+            rgb_task();
         #endif
 
         led_blinking_task();
