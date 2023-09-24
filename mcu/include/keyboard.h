@@ -1,4 +1,5 @@
-#include <pico/stdlib.h>
+#include "common.h"
+
 #include <tusb.h>
 
 #include "usb_descriptors.h"
@@ -8,5 +9,6 @@
 
 void keyboard_init(void);
 void keyboard_send_hid_report(uint8_t);
+void keyboard_task(void);
 
 #endif // JUKEBOX_KEYBOARD_H

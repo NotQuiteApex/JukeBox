@@ -20,6 +20,8 @@ add_executable(jukebox_firmware
     "src/led.c"
     "src/lcd.c"
 
+    "src/callbacks.c"
+
     "src/st7789_lcd.c"
     "src/ws2812_rgb.c"
     

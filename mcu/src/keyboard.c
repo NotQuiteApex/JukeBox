@@ -74,3 +74,9 @@ void keyboard_send_hid_report(uint8_t report_id) {
         pressedKey = false;
     }
 }
+
+void keyboard_task(void) {
+    REFRESH_CHECK(JB_HID_REFRESH_INTERVAL, JB_HID_REFRESH_OFFSET);
+
+    keyboard_send_hid_report(REPORT_ID_KEYBOARD);
+}

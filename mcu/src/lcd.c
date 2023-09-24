@@ -38,14 +38,12 @@ inline void lcd_put(uint16_t x, uint16_t y) {
 }
 
 inline void lcd_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-    for (uint16_t rh; rh<h; rh++) {
-        for (uint16_t rw; rw<w; rw++) {
+    for (uint16_t rh=0; rh<h; rh++) {
+        for (uint16_t rw=0; rw<w; rw++) {
             lcd_put(x + rw, y + rh);
         }
     }
 }
-
-#define BIT(n) (1<<n)
 
 void lcd_print(char * text, uint16_t x, uint16_t y, uint8_t s) {
     
@@ -69,4 +67,25 @@ void lcd_print_raw(char * text, uint16_t x, uint16_t y, uint8_t s) {
             }
         }
     }
+}
+
+void lcd_task(void) {
+    REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
+
+    lcd_set_color(255, 0, 0);
+    lcd_print_raw("Testing 0123 !", 5, 5, 1);
+    lcd_set_color(0, 255, 255);
+    lcd_print_raw("\xd\xe \x2 \x3 \x1 \xd\xe", 5, 30, 1);
+
+    lcd_set_color(255, 255, 255);
+    lcd_print_raw("Say hello to the new", 25, 80, 1);
+    lcd_set_color(255, 170, 70);
+    lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
+}
+
+void lcd_draw_task(void) {
+    REFRESH_CHECK(JB_SCREEN_DRAW_INTERVAL, JB_SCREEN_DRAW_OFFSET);
+    
+    lcd_present();
+    lcd_clear();
 }

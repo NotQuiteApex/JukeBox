@@ -9,9 +9,9 @@
 // -----------------------------------------------------------------------------
 
 // Screen, for displaying things like PC stats.
-#define JUKEBOX_MOD_SCREEN
+#define JB_MOD_SCREEN
 // RGB LEDs, for bright fun colors to entertain the children.
-#define JUKEBOX_MOD_RGBLEDS
+#define JB_MOD_RGBLEDS
 
 
 // -----------------------------------------------------------------------------
@@ -19,41 +19,45 @@
 // -----------------------------------------------------------------------------
 
 // Human Input Device
-#define JUKEBOX_HID_REFRESH_INTERVAL 50
-#define JUKEBOX_HID_REFRESH_OFFSET 0
+#define JB_HID_REFRESH_INTERVAL 10
+#define JB_HID_REFRESH_OFFSET 0
 
 // Serial (for screen)
-#define JUKEBOX_SERIAL_REFRESH_INTERVAL 250
-#define JUKEBOX_SERIAL_REFRESH_OFFSET 0
+#define JB_SERIAL_REFRESH_INTERVAL 250
+#define JB_SERIAL_REFRESH_OFFSET 0
 
 // Screen
-#ifdef JUKEBOX_MOD_SCREEN
-    #define JUKEBOX_SCREEN_REFRESH_INTERVAL 250
-    #define JUKEBOX_SCREEN_REFRESH_OFFSET 125
+#ifdef JB_MOD_SCREEN
+    #define JB_SCREEN_REFRESH_INTERVAL 250
+    #define JB_SCREEN_REFRESH_OFFSET 100
 
-    #define JUKEBOX_SCREEN_PIN_DIN 0
-    #define JUKEBOX_SCREEN_PIN_CLK 1
-    #define JUKEBOX_SCREEN_PIN_CS  2
-    #define JUKEBOX_SCREEN_PIN_DC  3
-    #define JUKEBOX_SCREEN_PIN_RST 4
-    #define JUKEBOX_SCREEN_PIN_BL  5
+    #define JB_SCREEN_DRAW_INTERVAL 250
+    #define JB_SCREEN_DRAW_OFFSET 200
 
-    #define JUKEBOX_SCREEN_SERIAL_CLK_DIV 1.f
+    #define JB_SCREEN_PIN_DIN 0
+    #define JB_SCREEN_PIN_CLK 1
+    #define JB_SCREEN_PIN_CS  2
+    #define JB_SCREEN_PIN_DC  3
+    #define JB_SCREEN_PIN_RST 4
+    #define JB_SCREEN_PIN_BL  5
 
-    #define JUKEBOX_SCREEN_RESOLUTION_WIDTH 240
-    #define JUKEBOX_SCREEN_RESOLUTION_HEIGHT 320
+    #define JB_SCREEN_SERIAL_CLK_DIV 1.f
 
-    #define JUKEBOX_SCREEN_ORIENTATION PORTRAIT
-    // #define JUKEBOX_SCREEN_MIRROR_FLIP
+    #define JB_SCREEN_RESOLUTION_WIDTH 240
+    #define JB_SCREEN_RESOLUTION_HEIGHT 320
+
+    #define JB_SCREEN_ORIENTATION PORTRAIT
+    // #define JB_SCREEN_MIRROR_FLIP
 #endif
 
 // RGB LEDs
-#ifdef JUKEBOX_MOD_RGBLEDS
+#ifdef JB_MOD_RGBLEDS
+    #define JB_RGBLEDS_REFRESH_INTERVAL 250
+    #define JB_RGBLEDS_REFRESH_OFFSET 100
 
-
-    #define JUKEBOX_RGBLEDS_PIN 6
-    #define JUKEBOX_RGBLEDS_FREQ 800000.f
-    // #define JUKEBOX_RGBLEDS_RGBW
+    #define JB_RGBLEDS_PIN 6
+    #define JB_RGBLEDS_FREQ 800000.f
+    // #define JB_RGBLEDS_RGBW
 #endif
 
 #endif // JUKEBOX_CONFIG_H

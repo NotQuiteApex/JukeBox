@@ -20,3 +20,27 @@ void rgb_init(void) {
 void rgb_put_pixel(uint32_t pixel_grb) {
     pio_sm_put_blocking(rgb_pio, rgb_sm, pixel_grb << 8u);
 }
+
+void rgb_task(void) {
+    REFRESH_CHECK(JB_RGBLEDS_REFRESH_INTERVAL, JB_RGBLEDS_REFRESH_OFFSET);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x040000);
+    rgb_put_pixel(0x000400);
+    rgb_put_pixel(0x000004);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x040400);
+    rgb_put_pixel(0x000404);
+    rgb_put_pixel(0x040004);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x040000);
+    rgb_put_pixel(0x000400);
+    rgb_put_pixel(0x000004);
+
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x000000);
+    rgb_put_pixel(0x000000);
+}
