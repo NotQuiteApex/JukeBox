@@ -1,4 +1,4 @@
-#include <pico/stdlib.h>
+#include "common.h"
 #include <hardware/pio.h>
 
 #ifndef JUKEBOX_ST7789_LCD_H
@@ -14,7 +14,5 @@ void st7789_lcd_push_fb(void);
 
 uint16_t st7789_get_width(void);
 uint16_t st7789_get_height(void);
-
-uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b);
 
 #endif // JUKEBOX_ST7789_LCD_H

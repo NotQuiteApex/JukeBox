@@ -41,13 +41,13 @@
     #define JB_SCREEN_PIN_RST 4
     #define JB_SCREEN_PIN_BL  5
 
-    #define JB_SCREEN_SERIAL_CLK_DIV 1.f
+    #define JB_SCREEN_CLK_DIV 1.f
 
     #define JB_SCREEN_RESOLUTION_WIDTH 240
     #define JB_SCREEN_RESOLUTION_HEIGHT 320
 
-    #define JB_SCREEN_ORIENTATION PORTRAIT
-    // #define JB_SCREEN_MIRROR_FLIP
+    #define JB_SCREEN_ORIENTATION JB_PORTRAIT
+    #define JB_SCREEN_MIRROR_FLIP
 #endif
 
 // RGB LEDs
@@ -57,7 +57,7 @@
 
     #define JB_RGBLEDS_PIN 6
     #define JB_RGBLEDS_FREQ 800000.f
-    // #define JB_RGBLEDS_RGBW
+    // #define JB_RGBLEDS_IS_RGBW
 #endif
 
 #endif // JUKEBOX_CONFIG_H

@@ -7,17 +7,17 @@
 
 
 // Tested with the parts that have the height of 240 and 320
-#define SCREEN_WIDTH 240
-#define SCREEN_HEIGHT 320
+#define SCREEN_WIDTH JB_SCREEN_RESOLUTION_WIDTH
+#define SCREEN_HEIGHT JB_SCREEN_RESOLUTION_HEIGHT
 
-#define PIN_DIN 0
-#define PIN_CLK 1
-#define PIN_CS 2
-#define PIN_DC 3
-#define PIN_RESET 4
-#define PIN_BL 5
+#define PIN_DIN JB_SCREEN_PIN_DIN
+#define PIN_CLK JB_SCREEN_PIN_CLK
+#define PIN_CS  JB_SCREEN_PIN_CS
+#define PIN_DC  JB_SCREEN_PIN_DC
+#define PIN_RST JB_SCREEN_PIN_RST
+#define PIN_BL  JB_SCREEN_PIN_BL
 
-#define SERIAL_CLK_DIV 1.f
+#define SERIAL_CLK_DIV JB_SCREEN_CLK_DIV
 
 
 PIO pio = pio0;
@@ -70,15 +70,15 @@ inline void st7789_lcd_init(void) {
 
     gpio_init(PIN_CS);
     gpio_init(PIN_DC);
-    gpio_init(PIN_RESET);
+    gpio_init(PIN_RST);
     gpio_init(PIN_BL);
     gpio_set_dir(PIN_CS, GPIO_OUT);
     gpio_set_dir(PIN_DC, GPIO_OUT);
-    gpio_set_dir(PIN_RESET, GPIO_OUT);
+    gpio_set_dir(PIN_RST, GPIO_OUT);
     gpio_set_dir(PIN_BL, GPIO_OUT);
 
     gpio_put(PIN_CS, 1);
-    gpio_put(PIN_RESET, 1);
+    gpio_put(PIN_RST, 1);
 
     const uint8_t *cmd = st7789_init_seq;
     while (*cmd) {
@@ -109,16 +109,32 @@ inline void st7789_fb_clear(void) {
 }
 
 inline void st7789_fb_put(uint16_t color, uint16_t x, uint16_t y) {
-    if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
-        // if its off screen, whatever
-        return;
-    }
+    #if JB_SCREEN_ORIENTATION == JB_PORTRAIT
+        if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) {
+            // if its off screen, whatever
+            return;
+        }
 
-    // invert coords
-    x = st7789_get_width() - x - 1;
-    y = st7789_get_height() - y - 1;
+        // invert coords
+        #ifdef JB_SCREEN_MIRROR_FLIP
+            x = st7789_get_width() - x - 1;
+            y = st7789_get_height() - y - 1;
+        #endif
 
-    framebuffer[y][x] = color;
+        framebuffer[y][x] = color;
+    #elif JB_SCREEN_ORIENTATION == JB_LANDSCAPE
+        if (x >= SCREEN_HEIGHT || y >= SCREEN_WIDTH) {
+            return;
+        }
+
+        #ifdef JB_SCREEN_MIRROR_FLIP
+            y = st7789_get_width() - y - 1;
+        #else
+            x = st7789_get_height() - x - 1;
+        #endif
+
+        framebuffer[x][y] = color;
+    #endif
 }
 
 void st7789_lcd_push_fb(void) {

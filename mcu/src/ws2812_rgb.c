@@ -4,9 +4,11 @@
 
 #include "ws2812_rgb.pio.h"
 
-#define WS2812_PIN 6
-#define WS2812_FREQ 800000.f
-#define WS2812_IS_RGBW false
+#ifdef JB_RGBLEDS_IS_RGBW
+    const bool is_rgbw = true;
+#else
+    const bool is_rgbw = false;
+#endif
 
 PIO rgb_pio = pio1;
 int rgb_sm = 1;
@@ -14,7 +16,7 @@ uint rgb_offset = 0;
 
 void rgb_init(void) {
     rgb_offset = pio_add_program(rgb_pio, &ws2812_program);
-    ws2812_program_init(rgb_pio, rgb_sm, rgb_offset, WS2812_PIN, WS2812_FREQ, WS2812_IS_RGBW);
+    ws2812_program_init(rgb_pio, rgb_sm, rgb_offset, JB_RGBLEDS_PIN, JB_RGBLEDS_FREQ, is_rgbw);
 }
 
 void rgb_put_pixel(uint32_t pixel_grb) {

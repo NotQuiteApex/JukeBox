@@ -23,4 +23,50 @@
 // Config checking
 // TODO
 
+#if JB_HID_REFRESH_INTERVAL > 250
+    #error "HID refresh interval must be greater than 250 ms."
+#endif
+#if JB_SERIAL_REFRESH_INTERVAL > 250
+    #error "Serial refresh interval must be greater than 250 ms."
+#endif
+
+#ifdef JB_MOD_SCREEN
+    #if JB_SCREEN_REFRESH_INTERVAL > 250
+        #error "Screen framebuffer refresh interval must be greater than 250 ms."
+    #endif
+    #if JB_SCREEN_DRAW_INTERVAL > 250
+        #error "Screen draw interval must be greater than 250 ms."
+    #endif
+
+    #if JB_SCREEN_PIN_DIN > 22
+        #error "Screen pin DIN must be 22 or less."
+    #elif JB_SCREEN_PIN_CLK > 22
+        #error "Screen pin CLK must be 22 or less."
+    #elif JB_SCREEN_PIN_CS > 22
+        #error "Screen pin CS must be 22 or less."
+    #elif JB_SCREEN_PIN_DC > 22
+        #error "Screen pin DC must be 22 or less."
+    #elif JB_SCREEN_PIN_RST > 22
+        #error "Screen pin RST must be 22 or less."
+    #elif JB_SCREEN_PIN_BL > 22
+        #error "Screen pin BL must be 22 or less."
+    #endif
+
+    #define JB_PORTRAIT 1
+    #define JB_LANDSCAPE 2
+    #if JB_SCREEN_ORIENTATION != JB_PORTRAIT && JB_SCREEN_ORIENTATION != JB_LANDSCAPE
+        #error "Screen orientation must be either JB_PORTRAIT or JB_LANDSCAPE"
+    #endif
+#endif
+
+#ifdef JB_MOD_RGBLEDS
+    #if JB_RGBLEDS_REFRESH_INTERVAL > 1000
+        #error "Screen framebuffer refresh interval must be greater than 1000 ms."
+    #endif
+    
+    #if JB_RGBLEDS_PIN > 22
+        #error "RGB LED pin must be 22 or less."
+    #endif
+#endif
+
 #endif // JUKEBOX_COMMON_H
