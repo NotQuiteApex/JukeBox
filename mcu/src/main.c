@@ -8,11 +8,10 @@
 #include <bsp/board.h>
 #include <tusb.h>
 
+#include "keyboard.h"
 #include "lcd.h"
 #include "led.h"
-#include "keyboard.h"
-
-#include "ws2812_rgb.h"
+#include "rgb.h"
 
 #include "usb_descriptors.h"
 

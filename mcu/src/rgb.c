@@ -1,4 +1,4 @@
-#include "ws2812_rgb.h"
+#include "rgb.h"
 
 #include <hardware/gpio.h>
 

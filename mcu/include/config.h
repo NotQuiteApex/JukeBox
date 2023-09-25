@@ -22,6 +22,11 @@
 #define JB_HID_REFRESH_INTERVAL 10
 #define JB_HID_REFRESH_OFFSET 0
 
+#define JB_HID_KB_COL     19
+#define JB_HID_KB_COL_NUM 4
+#define JB_HID_KB_ROW     16
+#define JB_HID_KB_ROW_NUM 3
+
 // Serial (for screen)
 #define JB_SERIAL_REFRESH_INTERVAL 250
 #define JB_SERIAL_REFRESH_OFFSET 0

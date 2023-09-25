@@ -17,13 +17,13 @@ add_executable(jukebox_firmware
     "src/main.c"
 
     "src/keyboard.c"
-    "src/led.c"
     "src/lcd.c"
+    "src/led.c"
+    "src/rgb.c"
 
     "src/callbacks.c"
 
     "src/st7789_lcd.c"
-    "src/ws2812_rgb.c"
     
     "src/usb_descriptors.c"
 )
