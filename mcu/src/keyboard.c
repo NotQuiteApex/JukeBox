@@ -7,7 +7,7 @@
 const uint COL     = JB_HID_KB_COL;
 const uint COL_NUM = JB_HID_KB_COL_NUM;
 const uint ROW     = JB_HID_KB_ROW;
-const uint ROW_NU-M = JB_HID_KB_ROW_NUM;
+const uint ROW_NUM = JB_HID_KB_ROW_NUM;
 
 
 void keyboard_init(void) {

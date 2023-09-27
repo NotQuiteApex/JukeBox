@@ -1,9 +1,12 @@
 #include "lcd.h"
 
+#include <stdarg.h>
 #include <string.h>
 
 #include "font.h"
 #include "st7789_lcd.h"
+
+#include <tusb.h>
 
 
 inline uint16_t lcd_rgb565(uint8_t r, uint8_t g, uint8_t b) {
@@ -46,7 +49,7 @@ inline void lcd_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 }
 
 void lcd_print(char * text, uint16_t x, uint16_t y, uint8_t s) {
-    
+
 }
 
 void lcd_print_raw(char * text, uint16_t x, uint16_t y, uint8_t s) {
@@ -69,18 +72,50 @@ void lcd_print_raw(char * text, uint16_t x, uint16_t y, uint8_t s) {
     }
 }
 
+// TODO: make an sprintf like function.
+void sfmt(char * buf, char * fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    while (*fmt != '\0') {
+
+    }
+
+    va_end(args);
+}
+
+char recv[64] = {0};
+
+void cdc_task(void) {
+    REFRESH_CHECK(JB_SERIAL_REFRESH_INTERVAL, JB_SERIAL_REFRESH_OFFSET);
+
+    if (tud_cdc_available()) {
+        // read datas
+        char buf[64];
+        uint32_t count = tud_cdc_read(buf, sizeof(buf)-1);
+        strncpy(recv, buf, count);
+        recv[count] = '\0';
+    }
+}
+
 void lcd_task(void) {
     REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
+    
+    lcd_print_raw("test", 20, 20, 1);
+    lcd_print_raw(recv, 1, 1, 1);
+    
+    char c[2] = {(char) strnlen(recv, 64), 0};
+    lcd_print_raw(c, 1, 44, 1);
 
-    lcd_set_color(255, 0, 0);
-    lcd_print_raw("Testing 0123 !", 5, 5, 1);
-    lcd_set_color(0, 255, 255);
-    lcd_print_raw("\xd\xe \x2 \x3 \x1 \xd\xe", 5, 30, 1);
+    // lcd_set_color(255, 0, 0);
+    // lcd_print_raw("Testing 0123 !", 5, 5, 1);
+    // lcd_set_color(0, 255, 255);
+    // lcd_print_raw("\xd\xe \x2 \x3 \x1 \xd\xe", 5, 30, 1);
 
-    lcd_set_color(255, 255, 255);
-    lcd_print_raw("Say hello to the new", 25, 80, 1);
-    lcd_set_color(255, 170, 70);
-    lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
+    // lcd_set_color(255, 255, 255);
+    // lcd_print_raw("Say hello to the new", 25, 80, 1);
+    // lcd_set_color(255, 170, 70);
+    // lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
 }
 
 void lcd_draw_task(void) {

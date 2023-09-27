@@ -16,26 +16,6 @@
 #include "usb_descriptors.h"
 
 
-//--------------------------------------------------------------------+
-// USB CDC
-//--------------------------------------------------------------------+
-
-void cdc_task(void) {
-    REFRESH_CHECK(JB_SERIAL_REFRESH_INTERVAL, JB_SERIAL_REFRESH_OFFSET);
-
-    if (tud_cdc_available()) {
-        // read datas
-        char buf[64];
-        uint32_t count = tud_cdc_read(buf, sizeof(buf));
-        (void) count;
-    }
-}
-
-
-//--------------------------------------------------------------------+
-// Main
-//--------------------------------------------------------------------+
-
 int main() {
     led_init();
     keyboard_init();
