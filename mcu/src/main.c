@@ -2,18 +2,10 @@
 
 #include "common.h"
 
-#include <pico/stdlib.h>
-#include <pico/rand.h>
-
-#include <bsp/board.h>
-#include <tusb.h>
-
 #include "keyboard.h"
 #include "lcd.h"
 #include "led.h"
 #include "rgb.h"
-
-#include "usb_descriptors.h"
 
 
 int main() {

@@ -25,9 +25,8 @@
  *
  */
 
-#include "pico/unique_id.h"
-#include "tusb.h"
-#include "usb_descriptors.h"
+#include <pico/unique_id.h>
+#include <tusb.h>
 
 #define USB_PID 0xF20A
 #define USB_VID 0x1209
@@ -67,7 +66,7 @@ uint8_t const * tud_descriptor_device_cb(void) {
 //--------------------------------------------------------------------+
 
 uint8_t const desc_hid_report[] = {
-    TUD_HID_REPORT_DESC_KEYBOARD( HID_REPORT_ID( REPORT_ID_KEYBOARD ) )
+    TUD_HID_REPORT_DESC_KEYBOARD( HID_REPORT_ID( 1 ) )
 };
 
 // Invoked when received GET HID REPORT DESCRIPTOR

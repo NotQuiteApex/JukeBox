@@ -106,16 +106,6 @@ void lcd_task(void) {
     
     char c[2] = {(char) strnlen(recv, 64), 0};
     lcd_print_raw(c, 1, 44, 1);
-
-    // lcd_set_color(255, 0, 0);
-    // lcd_print_raw("Testing 0123 !", 5, 5, 1);
-    // lcd_set_color(0, 255, 255);
-    // lcd_print_raw("\xd\xe \x2 \x3 \x1 \xd\xe", 5, 30, 1);
-
-    // lcd_set_color(255, 255, 255);
-    // lcd_print_raw("Say hello to the new", 25, 80, 1);
-    // lcd_set_color(255, 170, 70);
-    // lcd_print_raw("JukeBox V5 by F.T.I.!", 25, 100, 1);
 }
 
 void lcd_draw_task(void) {

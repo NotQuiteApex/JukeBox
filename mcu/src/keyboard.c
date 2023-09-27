@@ -1,5 +1,11 @@
 #include "keyboard.h"
 
+enum
+{
+  REPORT_ID_KEYBOARD = 1,
+  REPORT_ID_COUNT
+};
+
 #define _NOP() do { __asm__ __volatile__ ("nop"); } while (0)
 #define _NOPS(n) do { for(uint8_t _NOP_LOOP_I=0; _NOP_LOOP_I<n; _NOP_LOOP_I++) { _NOP(); } } while (0)
 #define KB_NOP_COUNT 24

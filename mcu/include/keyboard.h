@@ -2,8 +2,6 @@
 
 #include <tusb.h>
 
-#include "usb_descriptors.h"
-
 #ifndef JUKEBOX_KEYBOARD_H
 #define JUKEBOX_KEYBOARD_H
 
