@@ -1,0 +1,2 @@
+# MaxStats Desktop Serial App
+The app runs on [.NET Framework v4.8.1](https://dotnet.microsoft.com/en-us/download/dotnet-framework) (and [.NET SDK 6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)). You will need to bring your own `LibreHardwareMonitorLib.dll` and `HidSharp.dll` files from [here](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor), and place them in this directory to compile.
