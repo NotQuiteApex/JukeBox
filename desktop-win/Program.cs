@@ -1,5 +1,3 @@
-
-
 namespace JukeBoxDesktop;
 
 static class Program
@@ -12,7 +10,9 @@ static class Program
     {
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
-        var mainForm = new Form1();
-        Application.Run(mainForm);
-    }    
+        Console.WriteLine("Test");
+        // var mainForm = new MainForm();
+        Console.WriteLine("Test2");
+        Application.Run();
+    }
 }
