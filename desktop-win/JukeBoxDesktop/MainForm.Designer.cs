@@ -1,5 +1,6 @@
-
+using System.ComponentModel;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace JukeBoxDesktop {
     partial class MainForm
@@ -7,7 +8,7 @@ namespace JukeBoxDesktop {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -22,41 +23,39 @@ namespace JukeBoxDesktop {
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
-
         /// <summary>
         /// Required method for Designer support - do not modify
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.updatetick = new System.Windows.Forms.Timer(this.components);
-            this.titleText = new System.Windows.Forms.Label();
-            this.cpuGroup = new System.Windows.Forms.GroupBox();
-            this.labelCpuLoad = new System.Windows.Forms.Label();
-            this.labelCpuTemp = new System.Windows.Forms.Label();
-            this.labelCpuFreq = new System.Windows.Forms.Label();
-            this.labelCpuName = new System.Windows.Forms.Label();
-            this.gpuGroup = new System.Windows.Forms.GroupBox();
-            this.labelGpuVramLoad = new System.Windows.Forms.Label();
-            this.labelGpuVramClock = new System.Windows.Forms.Label();
-            this.labelGpuCoreLoad = new System.Windows.Forms.Label();
-            this.labelGpuTemp = new System.Windows.Forms.Label();
-            this.labelGpuCoreClock = new System.Windows.Forms.Label();
-            this.labelGpuName = new System.Windows.Forms.Label();
-            this.ramGroup = new System.Windows.Forms.GroupBox();
-            this.labelRamTotal = new System.Windows.Forms.Label();
-            this.labelRamUsed = new System.Windows.Forms.Label();
-            this.trayIcon = new System.Windows.Forms.NotifyIcon(this.components);
-            this.trayMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.maxStatsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
-            this.showToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
-            this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.components = new Container();
+            ComponentResourceManager resources = new ComponentResourceManager(typeof(MainForm));
+            this.updatetick = new Timer(this.components);
+            this.titleText = new Label();
+            this.cpuGroup = new GroupBox();
+            this.labelCpuLoad = new Label();
+            this.labelCpuTemp = new Label();
+            this.labelCpuFreq = new Label();
+            this.labelCpuName = new Label();
+            this.gpuGroup = new GroupBox();
+            this.labelGpuVramLoad = new Label();
+            this.labelGpuVramClock = new Label();
+            this.labelGpuCoreLoad = new Label();
+            this.labelGpuTemp = new Label();
+            this.labelGpuCoreClock = new Label();
+            this.labelGpuName = new Label();
+            this.ramGroup = new GroupBox();
+            this.labelRamTotal = new Label();
+            this.labelRamUsed = new Label();
+            this.trayIcon = new NotifyIcon(this.components);
+            this.trayMenu = new ContextMenuStrip(this.components);
+            this.maxStatsToolStripMenuItem = new ToolStripMenuItem();
+            this.toolStripSeparator1 = new ToolStripSeparator();
+            this.toolStripMenuItem2 = new ToolStripSeparator();
+            this.showToolStripMenuItem = new ToolStripMenuItem();
+            this.toolStripMenuItem1 = new ToolStripSeparator();
+            this.exitToolStripMenuItem = new ToolStripMenuItem();
             this.cpuGroup.SuspendLayout();
             this.gpuGroup.SuspendLayout();
             this.ramGroup.SuspendLayout();
@@ -234,7 +233,7 @@ namespace JukeBoxDesktop {
             // 
             // trayMenu
             // 
-            this.trayMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.trayMenu.Items.AddRange(new ToolStripItem[] {
             this.maxStatsToolStripMenuItem,
             this.toolStripSeparator1,
             this.toolStripMenuItem2,
@@ -243,8 +242,8 @@ namespace JukeBoxDesktop {
             this.exitToolStripMenuItem});
             this.trayMenu.Name = "trayMenu";
             this.trayMenu.Size = new System.Drawing.Size(131, 88);
-            this.trayMenu.Opening += new System.ComponentModel.CancelEventHandler(this.trayMenu_Opening);
-            this.trayMenu.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.trayMenu_ItemClicked);
+            this.trayMenu.Opening += new CancelEventHandler(this.trayMenu_Opening);
+            this.trayMenu.ItemClicked += new ToolStripItemClickedEventHandler(this.trayMenu_ItemClicked);
             // 
             // maxStatsToolStripMenuItem
             // 
@@ -288,19 +287,19 @@ namespace JukeBoxDesktop {
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleMode = AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(245, 271);
             this.Controls.Add(this.ramGroup);
             this.Controls.Add(this.gpuGroup);
             this.Controls.Add(this.cpuGroup);
             this.Controls.Add(this.titleText);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
             this.MaximizeBox = false;
             this.Name = "MainForm";
-            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
+            this.SizeGripStyle = SizeGripStyle.Show;
             this.Text = "MaxStats";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
+            this.FormClosing += new FormClosingEventHandler(this.MainForm_FormClosing);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             this.cpuGroup.ResumeLayout(false);
             this.cpuGroup.PerformLayout();
@@ -314,32 +313,30 @@ namespace JukeBoxDesktop {
 
         }
 
-        #endregion
-
-        private System.Windows.Forms.Timer updatetick;
-        private System.Windows.Forms.Label titleText;
-        private System.Windows.Forms.GroupBox cpuGroup;
-        private System.Windows.Forms.Label labelCpuFreq;
-        private System.Windows.Forms.Label labelCpuName;
-        private System.Windows.Forms.Label labelCpuTemp;
-        private System.Windows.Forms.Label labelCpuLoad;
-        private System.Windows.Forms.GroupBox gpuGroup;
-        private System.Windows.Forms.Label labelGpuVramClock;
-        private System.Windows.Forms.Label labelGpuCoreLoad;
-        private System.Windows.Forms.Label labelGpuTemp;
-        private System.Windows.Forms.Label labelGpuCoreClock;
-        private System.Windows.Forms.Label labelGpuName;
-        private System.Windows.Forms.GroupBox ramGroup;
-        private System.Windows.Forms.Label labelRamTotal;
-        private System.Windows.Forms.Label labelRamUsed;
-        private System.Windows.Forms.Label labelGpuVramLoad;
-        private System.Windows.Forms.NotifyIcon trayIcon;
-        private System.Windows.Forms.ContextMenuStrip trayMenu;
-        private System.Windows.Forms.ToolStripMenuItem showToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
-        private System.Windows.Forms.ToolStripMenuItem maxStatsToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
+        private Timer updatetick;
+        private Label titleText;
+        private GroupBox cpuGroup;
+        private Label labelCpuFreq;
+        private Label labelCpuName;
+        private Label labelCpuTemp;
+        private Label labelCpuLoad;
+        private GroupBox gpuGroup;
+        private Label labelGpuVramClock;
+        private Label labelGpuCoreLoad;
+        private Label labelGpuTemp;
+        private Label labelGpuCoreClock;
+        private Label labelGpuName;
+        private GroupBox ramGroup;
+        private Label labelRamTotal;
+        private Label labelRamUsed;
+        private Label labelGpuVramLoad;
+        private NotifyIcon trayIcon;
+        private ContextMenuStrip trayMenu;
+        private ToolStripMenuItem showToolStripMenuItem;
+        private ToolStripMenuItem exitToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripSeparator toolStripMenuItem1;
+        private ToolStripMenuItem maxStatsToolStripMenuItem;
+        private ToolStripSeparator toolStripMenuItem2;
     }
 }
