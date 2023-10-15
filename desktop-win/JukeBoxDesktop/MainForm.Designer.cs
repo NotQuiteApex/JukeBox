@@ -1,4 +1,6 @@
 
+using System.Reflection;
+
 namespace JukeBoxDesktop {
     partial class MainForm
     {
@@ -226,7 +228,7 @@ namespace JukeBoxDesktop {
             // trayIcon
             // 
             this.trayIcon.ContextMenuStrip = this.trayMenu;
-            // this.trayIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("trayIcon.Icon")));
+            this.trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
             this.trayIcon.Text = "MaxStats";
             this.trayIcon.Visible = true;
             // 
@@ -293,7 +295,7 @@ namespace JukeBoxDesktop {
             this.Controls.Add(this.cpuGroup);
             this.Controls.Add(this.titleText);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            // this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;

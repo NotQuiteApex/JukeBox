@@ -118,7 +118,7 @@ namespace JukeBoxDesktop
 
                         foreach (var sensor in hardware.Sensors)
                         {
-                            Console.WriteLine(sensor.Name);
+                            // Console.WriteLine(sensor.Name);
                             if (sensor.SensorType == SensorType.Clock && sensor.Name != "Bus Speed")
                             {
                                 _coreCount++;
@@ -134,7 +134,7 @@ namespace JukeBoxDesktop
                                 _cpuLoad = (decimal)sensor.Value;
                             }
                         }
-                        Console.WriteLine();
+                        // Console.WriteLine();
 
                         cpuName = hardware.Name;
                         cpuFreq = (_freqSum / _coreCount / 1000).ToString("n2");
