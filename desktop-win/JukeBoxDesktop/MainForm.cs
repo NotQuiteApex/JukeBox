@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.IO.Ports;
 using System.Management;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 using LibreHardwareMonitor.Hardware;
 
@@ -24,14 +24,18 @@ namespace JukeBoxDesktop
         private readonly UpdateVisitor _visitor = new UpdateVisitor();
         
         // For the pop up windows
-        private const string PopupFailedToOpen = "MaxStats Error: Failed to open serial device.";
-        private const string PopupNotActualSerial = "The serial device selected could not be opened. It" +
-                                                    " may not have been an actual serial device.\n\nSorry!";
-        private const string PopupSerialInUse = "The serial device selected could not be opened. It" +
-                                                " may already be in use by another program.\n\nSorry!";
-        private const string PopupSerialFailed = "The serial device selected is not responding to MaxStats. This" +
-                                                    " could be due to the device not recognizing serial or the chip" +
-                                                    " on the board may have gone bad and no longer functions.\n\nSorry!";
+        private const string PopupFailedToOpen =
+            "JukeBox Desktop Error: Failed to open serial device.";
+        private const string PopupNotActualSerial =
+            "The serial device selected could not be opened. It" +
+            " may not have been an actual serial device.\n\nSorry!";
+        private const string PopupSerialInUse =
+            "The serial device selected could not be opened. It" +
+            " may already be in use by another program.\n\nSorry!";
+        private const string PopupSerialFailed =
+            "The serial device selected is not responding to JukeBox Desktop. This" +
+            " could be due to the device not recognizing serial or the chip" +
+            " on the board may have gone bad and no longer functions.\n\nSorry!";
 
         // For closing via systray
         private bool _closing = false;
@@ -114,7 +118,6 @@ namespace JukeBoxDesktop
 
                         foreach (var sensor in hardware.Sensors)
                         {
-                            // Console.WriteLine(sensor.Name);
                             if (sensor.SensorType == SensorType.Clock && sensor.Name != "Bus Speed")
                             {
                                 _coreCount++;
@@ -130,7 +133,6 @@ namespace JukeBoxDesktop
                                 _cpuLoad = (decimal)sensor.Value;
                             }
                         }
-                        // Console.WriteLine();
 
                         cpuName = hardware.Name;
                         cpuFreq = (_freqSum / _coreCount / 1000).ToString("n2");
@@ -139,7 +141,7 @@ namespace JukeBoxDesktop
                     }
                     else if (hardware.HardwareType == HardwareType.GpuNvidia || hardware.HardwareType == HardwareType.GpuAmd)
                     {
-                        // Now for gpu. We grab the clock speed of the core and ram, as well as their load
+                        // Now for gpu. We grab the clock speed of the core and ram, as well as their load.
 
                         decimal _gpuTemp = 0;
 
@@ -209,7 +211,7 @@ namespace JukeBoxDesktop
                 }
 
                 // Check if we need to update all the values for the GUI
-                if (this.Visible)
+                if (Visible)
                 {
                     labelCpuName.Text = $"Name: {cpuName}";
                     labelCpuFreq.Text = $"Freq: {cpuFreq} GHz";
@@ -371,9 +373,9 @@ namespace JukeBoxDesktop
         private void MainForm_Resize(object sender, EventArgs e)
         {
             // Don't close the whole app, but just hide the window, and go back to the systray.
-            if (this.WindowState == FormWindowState.Minimized)
+            if (WindowState == FormWindowState.Minimized)
             {
-                this.Hide();
+                Hide();
                 trayIcon.Visible = true;
             }
         }
@@ -387,14 +389,14 @@ namespace JukeBoxDesktop
 
             // Close the program
             _closing = true;
-            this.Close();
+            Close();
             Environment.Exit(0);
         }
 
         private void showToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // Show the GUI window! We don't need to stick around in the systray now.
-            this.Show();
+            Show();
             trayIcon.Visible = false;
         }
 
@@ -403,7 +405,7 @@ namespace JukeBoxDesktop
             // Program won't close unless closed from the systray
             if (e.CloseReason == CloseReason.UserClosing && !_closing)
             {
-                this.Hide();
+                Hide();
                 trayIcon.Visible = true;
                 e.Cancel = true;
             }
@@ -415,8 +417,12 @@ namespace JukeBoxDesktop
             var coms = new List<string>();
 
             // Window's BS way of getting the friendly name of all the serial devices.
-            var searcher = new ManagementObjectSearcher("root\\CIMV2",
-                "SELECT * FROM Win32_PnPEntity WHERE ClassGuid='{4d36e978-e325-11ce-bfc1-08002be10318}'");
+            var searcher = new ManagementObjectSearcher(
+                "ROOT\\CIMV2",
+                "SELECT * FROM Win32_PnPEntity WHERE" +
+                " ClassGuid='{4d36e978-e325-11ce-bfc1-08002be10318}'" +
+                " AND DeviceID LIKE '%VID_1209&PID_F20A%'"
+            );
             foreach (var o in searcher.Get())
             {
                 var m = (ManagementObject) o;
@@ -449,14 +455,14 @@ namespace JukeBoxDesktop
 
         private void trayMenu_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
+            // If the user clicks on a static element, leave it alone.
+            if ((string)e.ClickedItem.Tag == "important") {
+                return;
+            }
+
             // Grab the COM name from the list via regex
             var comchosen = e.ClickedItem.Text;
             var match = Regex.Match(comchosen, @"[a-zA-Z\ ]+\((COM[0-9]+)\)", RegexOptions.IgnoreCase);
-
-            if (comchosen == "Show stats" || comchosen == "Exit")
-            {
-                return;
-            }
 
             // Uh oh!
             if (!match.Success)
@@ -504,7 +510,6 @@ namespace JukeBoxDesktop
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
-                return;
             }
             catch (System.IO.IOException)
             {
@@ -514,7 +519,6 @@ namespace JukeBoxDesktop
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
                 );
-                return;
             }
         }
     }

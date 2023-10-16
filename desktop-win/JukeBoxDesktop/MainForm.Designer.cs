@@ -75,7 +75,7 @@ namespace JukeBoxDesktop {
             this.titleText.Name = "titleText";
             this.titleText.Size = new System.Drawing.Size(95, 13);
             this.titleText.TabIndex = 0;
-            this.titleText.Text = "MaxStats - Testing";
+            this.titleText.Text = "JukeBox Desktop - Testing";
             // 
             // cpuGroup
             // 
@@ -228,8 +228,8 @@ namespace JukeBoxDesktop {
             // 
             this.trayIcon.ContextMenuStrip = this.trayMenu;
             this.trayIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);
-            this.trayIcon.Text = "MaxStats";
-            this.trayIcon.Visible = true;
+            this.trayIcon.Text = "JukeBox Desktop";
+            this.trayIcon.Visible = false;
             // 
             // trayMenu
             // 
@@ -251,7 +251,7 @@ namespace JukeBoxDesktop {
             this.maxStatsToolStripMenuItem.Name = "maxStatsToolStripMenuItem";
             this.maxStatsToolStripMenuItem.Size = new System.Drawing.Size(130, 22);
             this.maxStatsToolStripMenuItem.Tag = "important";
-            this.maxStatsToolStripMenuItem.Text = "MaxStats";
+            this.maxStatsToolStripMenuItem.Text = "JukeBox Desktop";
             // 
             // toolStripSeparator1
             // 
@@ -298,7 +298,7 @@ namespace JukeBoxDesktop {
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.SizeGripStyle = SizeGripStyle.Show;
-            this.Text = "MaxStats";
+            this.Text = "JukeBox Desktop";
             this.FormClosing += new FormClosingEventHandler(this.MainForm_FormClosing);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             this.cpuGroup.ResumeLayout(false);
