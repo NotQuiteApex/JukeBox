@@ -3,6 +3,16 @@
 #ifndef JUKEBOX_LCD_H
 #define JUKEBOX_LCD_H
 
+// Screen states, for what to display, when to display it, and how!
+typedef enum
+{
+  Unknown,
+  WaitingConnection,
+  ShowStats,
+} ScreenState;
+
+ScreenState screenstate, previousstate;
+
 void lcd_init(void);
 
 void lcd_set_color(uint8_t r, uint8_t g, uint8_t b);
