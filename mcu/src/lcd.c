@@ -103,6 +103,8 @@ inline void lcd_init(void) {
 
 void lcd_task(void) {
     REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
+
+    const int scr_scale = 1; // temp
     
     // lcd_print_raw("test", 20, 20, 1);
     // lcd_print_raw(recv, 1, 1, 1);
@@ -113,78 +115,71 @@ void lcd_task(void) {
     // Drawing on screen!
     if (screenstate != previousstate) {
         previousstate = screenstate;
-        tft.fillScreen(ST77XX_BLACK);
-        tft.setTextSize(1);
+        // tft.fillScreen(ST77XX_BLACK);
+        // tft.setTextSize(1);
 
         // Initialize the new screen
-        if (screenstate == ScreenState::WaitingConnection) {
-            tft.setTextSize(scr_scale);
-            
-            tft.setCursor(55 * scr_scale, 50 * scr_scale);
-            tft.print("MaxStats");
-            tft.setCursor(5 * scr_scale, 60 * scr_scale);
-            tft.print("Waiting for connection...");
+        if (screenstate == WaitingConnection) {
+            lcd_print_raw("MaxStats", 55 * scr_scale, 50 * scr_scale, scr_scale);
+            lcd_print_raw("Waiting for connection...", 5 * scr_scale, 60 * scr_scale, scr_scale);
         } else {
-            tft.setTextSize(1 * scr_scale);
+            if (cpuName.substring(0, 3).equals("AMD")) {
+                lcd_set_color(255, 0, 0);
+            } else {
+                lcd_set_color(0, 63, 255);
+            }
+            lcd_print_raw(cpuName, 4 * scr_scale, 3 * scr_scale, scr_scale);
+            lcd_set_color(255, 255, 255);
 
-            tft.setCursor(4 * scr_scale, 3 * scr_scale);
-            if (cpuName.substring(0, 3).equals("AMD"))
-                tft.setTextColor(ST77XX_RED, ST77XX_BLACK);
-            else
-                tft.setTextColor(ST77XX_BLUE, ST77XX_BLACK);
-            tft.print(cpuName);
-
-            tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-            tft.setCursor(0 * scr_scale, 28 * scr_scale); tft.print("Freq GHz");
-            tft.setCursor(68 * scr_scale, 28 * scr_scale); tft.print("Load %");
-            tft.setCursor(112 * scr_scale, 28 * scr_scale); tft.print("Temp \xF7 C");
+            lcd_print_raw("Freq GHz",      0 * scr_scale, 28 * scr_scale, scr_scale);
+            lcd_print_raw("Load %",       68 * scr_scale, 28 * scr_scale, scr_scale);
+            lcd_print_raw("Temp \xF7 C", 112 * scr_scale, 28 * scr_scale, scr_scale);
 
             // dividers
-            tft.drawLine(51 * scr_scale, 12 * scr_scale, 51 * scr_scale, 34 * scr_scale, ST77XX_WHITE);
-            tft.drawLine(106 * scr_scale, 12 * scr_scale, 106 * scr_scale, 34 * scr_scale, ST77XX_WHITE);
+            // TODO: replace with lcd_rect calls
+            // tft.drawLine(51 * scr_scale, 12 * scr_scale, 51 * scr_scale, 34 * scr_scale, ST77XX_WHITE);
+            // tft.drawLine(106 * scr_scale, 12 * scr_scale, 106 * scr_scale, 34 * scr_scale, ST77XX_WHITE);
 
-            if (gpuName.substring(0, 3).equals("AMD"))
-                tft.setTextColor(ST77XX_RED, ST77XX_BLACK);
-            else
-                tft.setTextColor(ST77XX_GREEN, ST77XX_BLACK);
-            tft.setCursor(4 * scr_scale, 47 * scr_scale); tft.print(gpuName);
+            if (gpuName.substring(0, 3).equals("AMD")) {
+                lcd_set_color(255, 0, 0);
+            } else {
+                lcd_set_color(63, 255, 63);
+            }
+            lcd_print_raw(gpuName, 4 * scr_scale, 47 * scr_scale, scr_scale);
+            lcd_set_color(255, 255, 255);
 
-            tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-            tft.setCursor(12 * scr_scale, 72 * scr_scale); tft.print("Load %");
-            tft.setCursor(68 * scr_scale, 72 * scr_scale); tft.print("VRAM %");
+            lcd_print_raw("Load %", 12 * scr_scale, 72 * scr_scale, scr_scale);
+            lcd_print_raw("VRAM %", 68 * scr_scale, 72 * scr_scale, scr_scale);
 
-            tft.setCursor(0 * scr_scale, 96 * scr_scale); tft.print("Core MHz");
-            tft.setCursor(56 * scr_scale, 96 * scr_scale); tft.print("VRAM MHz");
-            tft.setCursor(112 * scr_scale, 72 * scr_scale); tft.print("Temp \xF7 C");
+            lcd_print_raw("Core MHz",  0 * scr_scale, 96 * scr_scale, scr_scale);
+            lcd_print_raw("VRAM MHz", 56 * scr_scale, 96 * scr_scale, scr_scale);
+            lcd_print_raw("Temp \xF7 C",112 * scr_scale, 72 * scr_scale, scr_scale);
             
             // dividers
-            tft.drawLine(51 * scr_scale, 56 * scr_scale, 51 * scr_scale, 104 * scr_scale, ST77XX_WHITE);
-            tft.drawLine(106 * scr_scale, 56 * scr_scale, 106 * scr_scale, 104 * scr_scale, ST77XX_WHITE);
+            // TODO: replace with lcd_rect calls
+            // tft.drawLine(51 * scr_scale, 56 * scr_scale, 51 * scr_scale, 104 * scr_scale, ST77XX_WHITE);
+            // tft.drawLine(106 * scr_scale, 56 * scr_scale, 106 * scr_scale, 104 * scr_scale, ST77XX_WHITE);
 
-            tft.setCursor(scr_width - 6 * 10 * scr_scale, scr_height - 8 * scr_scale); tft.print("RAM: " + ramCount);
+            // lcd_print_raw("RAM: " + ramCount, scr_width - 6 * 10 * scr_scale, scr_height - 8 * scr_scale, scr_scale);
         }
     }
 
     // Repeat draws!
-    if (screenstate == ScreenState::ShowStats) {
-      tft.setTextSize(2 * scr_scale);
+    if (screenstate == ShowStats) {
+        lcd_print_raw(cpuFreq,   0 * scr_scale, 12 * scr_scale, 2 * scr_scale);
+        lcd_print_raw(cpuLoad,  56 * scr_scale, 12 * scr_scale, 2 * scr_scale);
+        lcd_print_raw(cpuTemp, 112 * scr_scale, 12 * scr_scale, 2 * scr_scale);
 
-      tft.setCursor(0 * scr_scale, 12 * scr_scale); tft.print(cpuFreq);
-      tft.setCursor(56 * scr_scale, 12 * scr_scale); tft.print(cpuLoad);
-      tft.setCursor(112 * scr_scale, 12 * scr_scale); tft.print(cpuTemp);
+        lcd_print_raw(gpuCoreLoad,   0 * scr_scale, 56 * scr_scale, 2 * scr_scale);
+        lcd_print_raw(gpuVramLoad,  56 * scr_scale, 56 * scr_scale, 2 * scr_scale);
+        lcd_print_raw(gpuTemp,     112 * scr_scale, 56 * scr_scale, 2 * scr_scale);
 
-      tft.setCursor(0 * scr_scale, 56 * scr_scale); tft.print(gpuCoreLoad);
-      tft.setCursor(56 * scr_scale, 56 * scr_scale); tft.print(gpuVramLoad);
-      tft.setCursor(112 * scr_scale, 56 * scr_scale); tft.print(gpuTemp);
+        lcd_print_raw(gpuCoreClock, 12 * scr_scale, 88 * scr_scale, scr_scale);
+        lcd_print_raw(gpuVramClock, 68 * scr_scale, 88 * scr_scale, scr_scale);
 
-      tft.setTextSize(1 * scr_scale);
-      tft.setCursor(12 * scr_scale, 88 * scr_scale); tft.print(gpuCoreClock);
-      tft.setCursor(68 * scr_scale, 88 * scr_scale); tft.print(gpuVramClock);
+        // lcd_print_raw(ramUsed, scr_width - 5 * 10 * scr_scale, scr_height - 24 * scr_scale, 2 * scr_scale);
 
-      tft.setTextSize(2 * scr_scale);
-      tft.setCursor(scr_width - 5 * 10 * scr_scale, scr_height - 24 * scr_scale); tft.print(ramUsed);
-
-      countermax = 1000;
+        countermax = 1000;
     }
 }
 
