@@ -6,6 +6,7 @@
 #include "lcd.h"
 #include "led.h"
 #include "rgb.h"
+#include "serial.h"
 
 
 int main() {
@@ -13,6 +14,7 @@ int main() {
     keyboard_init();
 
     #ifdef JB_MOD_SCREEN
+        serial_init();
         lcd_init();
     #endif
     #ifdef JB_MOD_RGBLEDS
@@ -25,9 +27,9 @@ int main() {
         tud_task();
 
         keyboard_task();
-        cdc_task();
 
         #ifdef JB_MOD_SCREEN
+            serial_task();
             lcd_task();
             lcd_draw_task();
         #endif

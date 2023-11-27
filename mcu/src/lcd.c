@@ -5,9 +5,10 @@
 
 #include "font.h"
 #include "st7789_lcd.h"
+#include "serial.h"
 
-#include <tusb.h>
 
+ScreenState screenstate, previousstate;
 
 inline uint16_t lcd_rgb565(uint8_t r, uint8_t g, uint8_t b) {
     // https://stackoverflow.com/a/76442697/13977827
@@ -80,20 +81,6 @@ void sfmt(char * buf, char * fmt, ...) {
     va_end(args);
 }
 
-char recv[64] = {0};
-
-void cdc_task(void) {
-    REFRESH_CHECK(JB_SERIAL_REFRESH_INTERVAL, JB_SERIAL_REFRESH_OFFSET);
-
-    if (tud_cdc_available()) {
-        // read datas
-        char buf[64];
-        uint32_t count = tud_cdc_read(buf, sizeof(buf)-1);
-        strncpy(recv, buf, count);
-        recv[count] = '\0';
-    }
-}
-
 inline void lcd_init(void) {
     st7789_lcd_init();
     
@@ -123,7 +110,7 @@ void lcd_task(void) {
             lcd_print_raw("MaxStats", 55 * scr_scale, 50 * scr_scale, scr_scale);
             lcd_print_raw("Waiting for connection...", 5 * scr_scale, 60 * scr_scale, scr_scale);
         } else {
-            if (cpuName.substring(0, 3).equals("AMD")) {
+            if (strncmp(cpuName, "AMD", 3) == 0) {
                 lcd_set_color(255, 0, 0);
             } else {
                 lcd_set_color(0, 63, 255);
@@ -140,7 +127,7 @@ void lcd_task(void) {
             // tft.drawLine(51 * scr_scale, 12 * scr_scale, 51 * scr_scale, 34 * scr_scale, ST77XX_WHITE);
             // tft.drawLine(106 * scr_scale, 12 * scr_scale, 106 * scr_scale, 34 * scr_scale, ST77XX_WHITE);
 
-            if (gpuName.substring(0, 3).equals("AMD")) {
+            if (strncmp(cpuName, "AMD", 3) == 0) {
                 lcd_set_color(255, 0, 0);
             } else {
                 lcd_set_color(63, 255, 63);
@@ -179,7 +166,7 @@ void lcd_task(void) {
 
         // lcd_print_raw(ramUsed, scr_width - 5 * 10 * scr_scale, scr_height - 24 * scr_scale, 2 * scr_scale);
 
-        countermax = 1000;
+        // countermax = 1000;
     }
 }
 

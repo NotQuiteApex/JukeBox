@@ -19,6 +19,13 @@
         start_ms += X; \
     } while (0);
 
+#ifndef MAX
+    #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+#endif
+#ifndef MIN
+    #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#endif
+
 
 // Config checking
 // TODO

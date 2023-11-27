@@ -1,276 +1,226 @@
-// #include <Arduino.h>
+#include "serial.h"
 
-// #include "serialhelp.h"
+#include <string.h>
+#include <tusb.h>
+
+extern ScreenState screenstate;
 
 // Stages of serial communication
-enum SerialStage
+typedef enum
 {
   Handshake,      // The initial stage, where the computer and MCU greet
   ComputerParts,  // The computer sends some constant data over the wire
   ContinuousStats // The computer sends data that gets updated over time
-} commstage;
+} SerialStage;
+SerialStage commstage = Handshake;
 
 // The parts of comm stages (stage recieve and response)
-int commstagepart;
+int commstagepart = 0;
 
 // The data string we use to store received data
-String inputString = "";
-
-// A temporary string for sorting data in the serial files.
-String tempInput = "";
+// TODO: BOOST TO 128
+char inputString[64] = "";
 
 // Data we store!
 // Data that we receive only at the time a connection is made.
-String cpuName = "-";
-String gpuName = "-";
-String ramCount = "-";
+char cpuName[30] = "";
+char gpuName[30] = "";
+char ramCount[6] = "";
 // Data we constantly receive after a connection is made.
-String cpuFreq = "-";
-String cpuTemp = "-";
-String cpuLoad = "-";
-String ramUsed = "-";
-String gpuTemp = "-";
-String gpuCoreClock = "-";
-String gpuCoreLoad = "-";
-String gpuVramClock = "-";
-String gpuVramLoad = "-";
+char cpuFreq[6] = "";
+char cpuTemp[6] = "";
+char cpuLoad[6] = "";
+char ramUsed[6] = "";
+char gpuTemp[6] = "";
+char gpuCoreClock[8] = "";
+char gpuCoreLoad[6]  = "";
+char gpuVramClock[8] = "";
+char gpuVramLoad[6]  = "";
 
-extern ScreenState screenstate;
+// extern u32 counter;
+// extern u32 countermax;
 
-extern u32 counter;
-extern u32 countermax;
-
-void serial_begin() {
-  // Set up serial communication for the board
-  #if defined (TEENSYDUINO)
-    Serial.begin(115200); // Teensy doesn't have settings for Serial.
-  #else
-    Serial.begin(115200, SERIAL_8E2);
-  #endif
-
-  // Initialize the communications stage
-  commstage = SerialStage::Handshake;
-  commstagepart = 0;
-
-  // Reserve some space for the strings
-  inputString.reserve(125);
-  tempInput.reserve(50);
-
-  cpuName.reserve(30);
-  gpuName.reserve(40);
-  ramCount.reserve(4);
-
-  cpuFreq.reserve(4);
-  cpuTemp.reserve(4);
-  cpuLoad.reserve(4);
-  ramUsed.reserve(4);
-  gpuTemp.reserve(4);
-  gpuCoreClock.reserve(8);
-  gpuCoreLoad.reserve(4);
-  gpuVramClock.reserve(8);
-  gpuVramLoad.reserve(6);
+void serial_init() {
+  
 }
 
-void serial_loop() {
-  static byte errorcount = 0;
+void serial_task(void) {
+  REFRESH_CHECK(JB_SERIAL_REFRESH_INTERVAL, JB_SERIAL_REFRESH_OFFSET);
+
+  // check serial string
+  if (tud_cdc_available()) {
+    // read datas
+    uint32_t count = tud_cdc_read(inputString, sizeof(inputString)-1);
+    inputString[count] = '\0';
+  }
+  
+  // comms management
+  static uint8_t errorcount = 0;
   // we mustve lost comms, reset!
   if (errorcount >= 5) {
     errorcount = 0;
 
-    commstage = SerialStage::Handshake;
+    commstage = Handshake;
     commstagepart = 0;
 
-    screenstate = ScreenState::WaitingConnection;
+    screenstate = WaitingConnection;
 
-    cpuName = "-";
-    gpuName = "-";
-    ramCount = "-";
+    cpuName[0] = '\0';
+    gpuName[0] = '\0';
+    ramCount[0] = '\0';
 
-    cpuFreq = "-";
-    cpuTemp = "-";
-    cpuLoad = "-";
-    ramUsed = "-";
-    gpuTemp = "-";
-    gpuCoreClock = "-";
-    gpuCoreLoad = "-";
-    gpuVramClock = "-";
-    gpuVramLoad = "-";
+    cpuFreq[0] = '\0';
+    cpuTemp[0] = '\0';
+    cpuLoad[0] = '\0';
+    ramUsed[0] = '\0';
+    gpuTemp[0] = '\0';
+    gpuCoreClock[0] = '\0';
+    gpuCoreLoad[0] = '\0';
+    gpuVramClock[0] = '\0';
+    gpuVramLoad[0] = '\0';
   }
 
-    if (commstage == SerialStage::Handshake) {
-      if (commstagepart == 0) {
-        if (serial_matches("010")) {
-          commstagepart = 1;
-        }
-      } else if (commstagepart == 1) {
-        Serial.write("101");
-        commstage = SerialStage::ComputerParts;
-        commstagepart = 0;
+  if (commstage == Handshake) {
+    if (commstagepart == 0) {
+      if (strncmp(inputString, "010", 3) == 0) {
+        commstagepart = 1;
       }
-    } else if (commstage == SerialStage::ComputerParts) {
-      if (commstagepart == 0) {
-        // wait for info on CPU, GPU, and RAM
-        if (receive_once_data()) {
-          commstagepart = 1;
-          errorcount = 0;
-        }
-        else {
-          errorcount++;
-          countermax = 1000; //delay(1000);
-        }
-      } else if (commstagepart == 1) {
-        // respond that we got it, and move to the next stage
-        Serial.write("222");
-        commstage = SerialStage::ContinuousStats;
-        screenstate = ScreenState::ShowStats;
-        commstagepart = 0;
-      }
-    } else if (commstage == SerialStage::ContinuousStats) {
-      if (commstagepart == 0) {
-        // recieve
-        if (receive_cont_data()) {
-          commstagepart = 1;
-          errorcount = 0;
-        } else {
-          errorcount++;
-          countermax = 1000; //delay(1000);
-        }
-      } else if (commstagepart == 1) {
-        // respond that we got it, and repeat
-        Serial.write("333");
-        commstagepart = 0;
-      }
+    } else if (commstagepart == 1) {
+      // TODO: double check that this works as expected
+      tud_cdc_write("101", 4);
+      tud_cdc_write_flush();
+      commstage = ComputerParts;
+      commstagepart = 0;
     }
-}
-
-void serial_receive()
-{
-  inputString = "";
-  if (Serial.available() > 0)
-  {
-    while (Serial.available() > 0)
-    {
-      // Read in data to a string
-      int readbyte = Serial.read();
-      if (readbyte != -1)
-        inputString += (char)readbyte;
+  } else if (commstage == ComputerParts) {
+    if (commstagepart == 0) {
+      // wait for info on CPU, GPU, and RAM
+      if (receive_once_data()) {
+        commstagepart = 1;
+        errorcount = 0;
+      }
+      else {
+        errorcount++;
+        // countermax = 1000; //delay(1000);
+      }
+    } else if (commstagepart == 1) {
+      // respond that we got it, and move to the next stage
+      // TODO: double check that this works as expected
+      tud_cdc_write("222", 4);
+      tud_cdc_write_flush();
+      commstage = ContinuousStats;
+      screenstate = ShowStats;
+      commstagepart = 0;
+    }
+  } else if (commstage == ContinuousStats) {
+    if (commstagepart == 0) {
+      // recieve
+      if (receive_cont_data()) {
+        commstagepart = 1;
+        errorcount = 0;
+      } else {
+        errorcount++;
+        // countermax = 1000; //delay(1000);
+      }
+    } else if (commstagepart == 1) {
+      // respond that we got it, and repeat
+      // TODO: double check that this works as expected
+      tud_cdc_write("333", 4);
+      tud_cdc_write_flush();
+      commstagepart = 0;
     }
   }
 }
 
-bool serial_matches(char * matcher)
-{
-  serial_receive();
-
-  return inputString.equals(matcher);
-}
-
-bool receive_once_data()
-{
+uint8_t receive_once_data() {
   // string format of computer parts stats
   // $"{cpuName}|{gpuName}|{ramTotal}GB|"
 
-  // recieve data
-  serial_receive();
-
   // if data isn't empty, process it
-  if (!inputString.equals(""))
-  {
+  if (inputString[0] != '\0') {
     // process the names!
-    tempInput = "";
-
     // beginning index and end index, and the variable to store data into
-    unsigned int idx1 = 0;
-    unsigned int idx2 = 0;
-    byte count = 0;
+    uint8_t idx1 = 0;
+    uint8_t idx2 = 0;
+    uint8_t count = 0;
 
     // Loop through the string, finding the pipe seperators
-    for (unsigned int i = 0; i < inputString.length(); i++)
-    {
+    for (uint8_t i = 0; i < strnlen(inputString, sizeof(inputString)); i++) {
       // if character matches a pipe, we process the data before
-      if (inputString[i] == '|')
-      {
+      if (inputString[i] == '|') {
         // Old start index, to end index
         idx1 = idx2;
-        if (inputString[idx1] == '|')
+        if (inputString[idx1] == '|') {
           idx1++;
+        }
         idx2 = i;
 
-        // slice string, grab the data
-        tempInput = inputString.substring(idx1, idx2);
-
         // hand off data to proper variable
-        if (count == 0)
-          cpuName = tempInput;
-        else if (count == 1)
-          gpuName = tempInput;
-        else if (count == 2)
-          ramCount = tempInput;
+        if (count == 0) {
+          strncpy(cpuName, inputString+idx1, MIN(sizeof(cpuName), idx2-idx1));
+        } else if (count == 1) {
+          strncpy(gpuName, inputString+idx1, MIN(sizeof(gpuName), idx2-idx1));
+        } else if (count == 2) {
+          strncpy(ramCount, inputString+idx1, MIN(sizeof(ramCount), idx2-idx1));
+        }
 
         // update variable to determine what variable to hand off to next
         count++;
       }
     }
 
-    return true; // we sucessfully processed data
+    return 1; // we sucessfully processed data
   }
 
-  return false; // we didn't have any data to process, we bounce
+  return 0; // we didn't have any data to process, we bounce
 }
 
-bool receive_cont_data()
-{
+uint8_t receive_cont_data() {
   // Format string of continuous stats
   // $"{cpuFreq}|{cpuTemp}|{cpuLoad}|{ramUsed}|{gpuTemp}|" +
   // $"{gpuCoreClock}|{gpuCoreLoad}|{gpuVramClock}|{gpuVramLoad}|"
 
   // this is the same as above, just with more variables to hand data to
 
-  serial_receive();
-  if (!inputString.equals(""))
-  {
-    tempInput = "";
+  if (inputString[0] != '\0') {
+    uint8_t idx1 = 0;
+    uint8_t idx2 = 0;
+    uint8_t count = 0;
 
-    unsigned int idx1 = 0;
-    unsigned int idx2 = 0;
-    byte count = 0;
-
-    for (unsigned int i = 0; i < inputString.length(); i++)
-    {
-      if (inputString[i] == '|')
-      {
+    for (uint8_t i = 0; i < strnlen(inputString, sizeof(inputString)); i++) {
+      if (inputString[i] == '|') {
         idx1 = idx2;
-        if (inputString[idx1] == '|')
+        if (inputString[idx1] == '|') {
           idx1++;
+        }
         idx2 = i;
 
-        tempInput = inputString.substring(idx1, idx2);
-
-        if (count == 0)
-          cpuFreq = tempInput;
-        else if (count == 1)
-          cpuTemp = tempInput;
-        else if (count == 2)
-          cpuLoad = tempInput;
-        else if (count == 3)
-          ramUsed = tempInput;
-        else if (count == 4)
-          gpuTemp = tempInput;
-        else if (count == 5)
-          gpuCoreClock = tempInput;
-        else if (count == 6)
-          gpuCoreLoad = tempInput;
-        else if (count == 7)
-          gpuVramClock = tempInput;
-        else if (count == 8)
-          gpuVramLoad = tempInput;
+        if (count == 0) {
+          strncpy(cpuFreq, inputString+idx1, MIN(sizeof(cpuFreq), idx2-idx1));
+        } else if (count == 1) {
+          strncpy(cpuTemp, inputString+idx1, MIN(sizeof(cpuTemp), idx2-idx1));
+        } else if (count == 2) {
+          strncpy(cpuLoad, inputString+idx1, MIN(sizeof(cpuLoad), idx2-idx1));
+        } else if (count == 3) {
+          strncpy(ramUsed, inputString+idx1, MIN(sizeof(ramUsed), idx2-idx1));
+        } else if (count == 4) {
+          strncpy(gpuTemp, inputString+idx1, MIN(sizeof(gpuTemp), idx2-idx1));
+        } else if (count == 5) {
+          strncpy(gpuCoreClock, inputString+idx1, MIN(sizeof(gpuCoreClock), idx2-idx1));
+        } else if (count == 6) {
+          strncpy(gpuCoreLoad, inputString+idx1, MIN(sizeof(gpuCoreLoad), idx2-idx1));
+        } else if (count == 7) {
+          strncpy(gpuVramClock, inputString+idx1, MIN(sizeof(gpuVramClock), idx2-idx1));
+        } else if (count == 8) {
+          strncpy(gpuVramLoad, inputString+idx1, MIN(sizeof(gpuVramLoad), idx2-idx1));
+        }
 
         count++;
       }
     }
 
-    return true;
+    return 1;
   }
 
-  return false;
+  return 0;
 }
