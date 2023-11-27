@@ -107,6 +107,7 @@ void lcd_task(void) {
 
         // Initialize the new screen
         if (screenstate == WaitingConnection) {
+            lcd_clear();
             lcd_print_raw("MaxStats", 55 * scr_scale, 50 * scr_scale, scr_scale);
             lcd_print_raw("Waiting for connection...", 5 * scr_scale, 60 * scr_scale, scr_scale);
         } else {
@@ -174,5 +175,5 @@ void lcd_draw_task(void) {
     REFRESH_CHECK(JB_SCREEN_DRAW_INTERVAL, JB_SCREEN_DRAW_OFFSET);
     
     lcd_present();
-    lcd_clear();
+    // lcd_clear();
 }
