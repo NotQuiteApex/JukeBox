@@ -9,6 +9,8 @@
 
 
 ScreenState screenstate, previousstate;
+extern uint32_t countermax;
+
 
 inline uint16_t lcd_rgb565(uint8_t r, uint8_t g, uint8_t b) {
     // https://stackoverflow.com/a/76442697/13977827
@@ -167,7 +169,7 @@ void lcd_task(void) {
 
         // lcd_print_raw(ramUsed, scr_width - 5 * 10 * scr_scale, scr_height - 24 * scr_scale, 2 * scr_scale);
 
-        // countermax = 1000;
+        countermax = 1000;
     }
 }
 

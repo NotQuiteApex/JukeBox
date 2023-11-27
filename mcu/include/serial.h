@@ -6,8 +6,8 @@
 #ifndef JUKEBOX_SERIAL_H
 #define JUKEBOX_SERIAL_H
 
-void serial_init();
-void serial_task();
+void serial_init(void);
+void serial_task(void);
 
 uint8_t receive_once_data(void);
 uint8_t receive_cont_data(void);

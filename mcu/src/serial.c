@@ -37,14 +37,13 @@ char gpuCoreLoad[6]  = "";
 char gpuVramClock[8] = "";
 char gpuVramLoad[6]  = "";
 
-// extern u32 counter;
-// extern u32 countermax;
+uint32_t countermax;
 
-void serial_init() {
+void serial_init(void) {
   
 }
 
-void serial_task(void) {
+void serial_update(void) {
   REFRESH_CHECK(JB_SERIAL_REFRESH_INTERVAL, JB_SERIAL_REFRESH_OFFSET);
 
   // check serial string
@@ -53,6 +52,12 @@ void serial_task(void) {
     uint32_t count = tud_cdc_read(inputString, sizeof(inputString)-1);
     inputString[count] = '\0';
   }
+}
+
+void serial_task(void) {
+  serial_update();
+  
+  REFRESH_CHECK(countermax, JB_SERIAL_REFRESH_OFFSET);
   
   // comms management
   static uint8_t errorcount = 0;
@@ -101,7 +106,7 @@ void serial_task(void) {
       }
       else {
         errorcount++;
-        // countermax = 1000; //delay(1000);
+        countermax = 1000;
       }
     } else if (commstagepart == 1) {
       // respond that we got it, and move to the next stage
@@ -120,7 +125,7 @@ void serial_task(void) {
         errorcount = 0;
       } else {
         errorcount++;
-        // countermax = 1000; //delay(1000);
+        countermax = 1000;
       }
     } else if (commstagepart == 1) {
       // respond that we got it, and repeat
