@@ -31,7 +31,4 @@ Global
 		{7977AAFD-7394-4F6A-BB04-5C59D3F8952E}.Release|x86.ActiveCfg = Release|Any CPU
 		{7977AAFD-7394-4F6A-BB04-5C59D3F8952E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{7977AAFD-7394-4F6A-BB04-5C59D3F8952E} = {E229BB77-4290-42AD-ACF2-E6BB9597A465}
-	EndGlobalSection
 EndGlobal

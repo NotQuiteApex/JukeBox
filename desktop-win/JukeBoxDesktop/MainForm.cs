@@ -59,9 +59,12 @@ namespace JukeBoxDesktop
         // The stages of denial-- I mean communications.
         enum SerialStage
         {
-            Handshake,
-            ComputerParts,
-            ContinuousStats,
+            GreetHost,
+            GreetDevice,
+            RecvParts,
+            RecvConfirm,
+            ContStats,
+            ContConfrim,
         }
 
         // Serial comms variables.
@@ -70,8 +73,8 @@ namespace JukeBoxDesktop
         private readonly object _compMutex = new object();
         private SerialPort serial = new SerialPort();
         private Thread comms;
-        private SerialStage stage = SerialStage.Handshake;
-        private byte stagepart = 0;
+        private SerialStage stage = SerialStage.GreetHost;
+        // private byte stagepart = 0;
 
         public MainForm()
         {
@@ -260,105 +263,64 @@ namespace JukeBoxDesktop
 
                 lock (serial)
                 {
-                    if (stage == SerialStage.Handshake)
+                    Console.WriteLine("stage: " + stage);
+                    if (stage == SerialStage.GreetHost)
                     {
                         // First, send a message to the device
-                        if (stagepart == 0)
-                        {
-                            serial.Write("010");
-                            stagepart = 1;
-                        }
+                        serial.Write("010");
+                        stage = SerialStage.GreetDevice;
+                    }
+                    else if (stage == SerialStage.GreetDevice)
+                    {
                         // Next, wait for a response. If one isn't recieved in 5 seconds, restart.
-                        else if (stagepart == 1)
-                        {
-                            var check = Task.Run(() => SerialResponse("101"));
-
-                            if (check.Wait(TimeSpan.FromSeconds(5)))
-                            {
-                                stage = SerialStage.ComputerParts;
-                                stagepart = 0;
-                            }
-                            else
-                            {
-                                stage = SerialStage.Handshake;
-                                stagepart = 0;
-                            }
-                        }
+                        var check = Task.Run(() => SerialResponse("101"));
+                        stage = check.Wait(TimeSpan.FromSeconds(5)) ? SerialStage.RecvParts : SerialStage.GreetHost;
                     }
-                    else if (stage == SerialStage.ComputerParts)
+                    else if (stage == SerialStage.RecvParts)
                     {
-                        if (stagepart == 0)
+                        lock (_compMutex)
                         {
-                            lock (_compMutex)
-                            {
-                                serial.Write($"{cpuName}|{gpuName}|{ramTotal}GB|");
-                            }
-                            stagepart = 1;
+                            serial.Write($"{cpuName}|{gpuName}|{ramTotal}GB|");
                         }
-                        else if (stagepart == 1)
-                        {
-                            var check = Task.Run(() => SerialResponse("222"));
-
-                            if (check.Wait(TimeSpan.FromSeconds(5)))
-                            {
-                                stage = SerialStage.ContinuousStats;
-                                stagepart = 0;
-                            }
-                            else
-                            {
-                                stage = SerialStage.Handshake;
-                                stagepart = 0;
-                            }
-                        }
+                        stage = SerialStage.RecvConfirm;
                     }
-                    else if (stage == SerialStage.ContinuousStats)
+                    else if (stage == SerialStage.RecvConfirm)
                     {
-
-                        if (stagepart == 0)
+                        var check = Task.Run(() => SerialResponse("222"));
+                        stage = check.Wait(TimeSpan.FromSeconds(5)) ? SerialStage.ContStats : SerialStage.GreetHost;
+                    }
+                    else if (stage == SerialStage.ContStats)
+                    {
+                        lock (_compMutex)
                         {
-                            lock (_compMutex)
-                            {
-                                serial.Write($"{cpuFreq}|{cpuTemp}|{cpuLoad}|{ramUsed}|{gpuTemp}|" +
-                                    $"{gpuCoreClock}|{gpuCoreLoad}|{gpuVramClock}|{gpuVramLoad}|");
-                            }
-                            stagepart = 1;
+                            serial.Write($"{cpuFreq}|{cpuTemp}|{cpuLoad}|{ramUsed}|{gpuTemp}|" +
+                                $"{gpuCoreClock}|{gpuCoreLoad}|{gpuVramClock}|{gpuVramLoad}|");
                         }
-                        else if (stagepart == 1)
-                        {
-                            // wait for response "333" for 5 seconds, if nothing then restart
-                            var check = Task.Run(() => SerialResponse("333"));
-
-                            if (check.Wait(TimeSpan.FromSeconds(5)))
-                            {
-                                stage = SerialStage.ContinuousStats;
-                                stagepart = 0;
-                            }
-                            else
-                            {
-                                stage = SerialStage.Handshake;
-                                stagepart = 0;
-                            }
-                        }
+                        stage = SerialStage.ContConfrim;
+                    }
+                    else if (stage == SerialStage.ContConfrim)
+                    {
+                        // wait for response "333" for 5 seconds, if nothing then restart
+                        var check = Task.Run(() => SerialResponse("333"));
+                        stage = check.Wait(TimeSpan.FromSeconds(5)) ? SerialStage.ContStats : SerialStage.GreetHost;
                     }
                 }
 
                 // Sleep for a moment, we don't need to spam the serial pipe.
-                Thread.Sleep(50);
+                Thread.Sleep(100);
             }
         }
 
         private void SerialResponse(string expected)
         {
-            string complete = "";
             while (true)
             {
-                while (serial.BytesToRead > 0)
-                {
-                    int thebyte = serial.ReadByte();
-                    if (thebyte != -1)
-                        complete += (char)thebyte;
+                if (serial.BytesToRead > 0) {
 
-                    if (complete == expected) return;
+                    string s = serial.ReadExisting();
+                    Console.WriteLine("serial: " + s);
+                    if (s == expected)
+                        return;
                 }
                 Thread.Sleep(25);
             }
@@ -495,8 +457,7 @@ namespace JukeBoxDesktop
 
                     serial.PortName = match.Groups[1].Value;
 
-                    stage = SerialStage.Handshake;
-                    stagepart = 0;
+                    stage = SerialStage.GreetHost;
 
                     if (shouldCheck)
                         serial.Open();

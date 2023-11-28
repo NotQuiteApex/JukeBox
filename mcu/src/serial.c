@@ -4,7 +4,7 @@
 #include <tusb.h>
 
 extern ScreenState screenstate;
-SerialStage commstage = Handshake;
+SerialStage commstage = GreetHost;
 
 // The parts of comm stages (stage recieve and response)
 int commstagepart = 0;
@@ -44,7 +44,8 @@ void serial_task(void) {
     inputString[count] = '\0';
   }
   
-  REFRESH_CHECK(countermax, JB_SERIAL_REFRESH_OFFSET);
+  REFRESH_CHECK(500, JB_SERIAL_REFRESH_OFFSET);
+  countermax = 0;
   
   // comms management
   static uint8_t errorcount = 0;
@@ -52,7 +53,7 @@ void serial_task(void) {
   if (errorcount >= 5) {
     errorcount = 0;
 
-    commstage = Handshake;
+    commstage = GreetHost;
     commstagepart = 0;
 
     screenstate = WaitingConnection;
@@ -75,59 +76,48 @@ void serial_task(void) {
     gpuVramLoad[0] = '\0';
   }
 
-  if (commstage == Handshake) {
-    if (commstagepart == 0) {
-      if (strncmp(inputString, "010", 3) == 0) {
-        inputString[0] = '\0';
-        commstagepart = 1;
-      }
-    } else if (commstagepart == 1) {
-      // TODO: double check that this works as expected
-      strncpy(sentString, "101", 4);
-      tud_cdc_write("101", 4);
-      tud_cdc_write_flush();
-      commstage = ComputerParts;
-      commstagepart = 0;
+  if (commstage == GreetHost) {
+    if (strncmp(inputString, "010", 3) == 0) {
+      inputString[0] = '\0';
+      commstage = GreetDevice;
     }
-  } else if (commstage == ComputerParts) {
-    if (commstagepart == 0) {
-      // wait for info on CPU, GPU, and RAM
-      if (receive_once_data()) {
-        commstagepart = 1;
-        errorcount = 0;
-      }
-      else {
-        errorcount++;
-        countermax = 1000;
-      }
-    } else if (commstagepart == 1) {
-      // respond that we got it, and move to the next stage
-      // TODO: double check that this works as expected
-      strncpy(sentString, "222", 4);
-      tud_cdc_write("222", 4);
-      tud_cdc_write_flush();
-      commstage = ContinuousStats;
-      screenstate = ShowStats;
-      commstagepart = 0;
+  } else if (commstage == GreetDevice) {
+    // TODO: double check that this works as expected
+    strncpy(sentString, "101", 4);
+    tud_cdc_write("101", 4);
+    tud_cdc_write_flush();
+    commstage = RecvParts;
+  } else if (commstage == RecvParts) {
+    if (receive_once_data()) {
+      commstage = RecvConfirm;
+      errorcount = 0;
+    } else {
+      errorcount++;
+      countermax = 1000;
     }
-  } else if (commstage == ContinuousStats) {
-    if (commstagepart == 0) {
-      // recieve
-      if (receive_cont_data()) {
-        commstagepart = 1;
-        errorcount = 0;
-      } else {
-        errorcount++;
-        countermax = 1000;
-      }
-    } else if (commstagepart == 1) {
-      // respond that we got it, and repeat
-      // TODO: double check that this works as expected
-      strncpy(sentString, "333", 4);
-      tud_cdc_write("333", 4);
-      tud_cdc_write_flush();
-      commstagepart = 0;
+  } else if (commstage == RecvConfirm) {
+    // respond that we got it, and move to the next stage
+    // TODO: double check that this works as expected
+    strncpy(sentString, "222", 4);
+    tud_cdc_write("222", 4);
+    tud_cdc_write_flush();
+    commstage = ContStats;
+    screenstate = ShowStats;
+  } else if (commstage == ContStats) {
+    if (receive_cont_data()) {
+      commstage = ContConfrim;
+      errorcount = 0;
+    } else {
+      errorcount++;
+      countermax = 1000;
     }
+  } else if (commstage == ContConfrim) {
+    // respond that we got it, and repeat
+    // TODO: double check that this works as expected
+    strncpy(sentString, "333", 4);
+    tud_cdc_write("333", 4);
+    tud_cdc_write_flush();
+    commstage = ContStats;
   }
 }
 
@@ -166,6 +156,10 @@ uint8_t receive_once_data() {
         // update variable to determine what variable to hand off to next
         count++;
       }
+    }
+
+    if (count == 0) {
+      return 0;
     }
     
     inputString[0] = '\0';
@@ -217,6 +211,10 @@ uint8_t receive_cont_data() {
 
         count++;
       }
+    }
+
+    if (count == 0) {
+      return 0;
     }
 
     inputString[0] = '\0';

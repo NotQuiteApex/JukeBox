@@ -103,15 +103,19 @@ void lcd_task(void) {
         lcd_print_raw("ShowStats", 0, 0, 1);
     }
 
-    if (commstage == Handshake) {
-        lcd_print_raw("HandShake", 0, 10, 1);
-    } else if (commstage == ComputerParts) {
-        lcd_print_raw("ComputerParts", 0, 10, 1);
-    } else if (commstage == ContinuousStats) {
-        lcd_print_raw("ContinuousStats", 0, 10, 1);
+    if (commstage == GreetHost) {
+        lcd_print_raw("GreetHost", 0, 10, 1);
+    } else if (commstage == GreetDevice) {
+        lcd_print_raw("GreetDevice", 0, 10, 1);
+    } else if (commstage == RecvParts) {
+        lcd_print_raw("RecvParts", 0, 10, 1);
+    } else if (commstage == RecvConfirm) {
+        lcd_print_raw("RecvConfirm", 0, 10, 1);
+    } else if (commstage == ContStats) {
+        lcd_print_raw("ContStats", 0, 10, 1);
+    } else if (commstage == ContConfrim) {
+        lcd_print_raw("ContConfrim", 0, 10, 1);
     }
-    char stg[2] = {(char)commstagepart+48, 0};
-    lcd_print_raw(stg, 180, 10, 1);
 
     const uint8_t x = 30;
     lcd_print_raw("0", 0,   0+x, 1); lcd_print_raw(cpuName,      15,   0+x, 1);

@@ -11,7 +11,7 @@
 // Screen, for displaying things like PC stats.
 #define JB_MOD_SCREEN
 // RGB LEDs, for bright fun colors to entertain the children.
-#define JB_MOD_RGBLEDS
+// #define JB_MOD_RGBLEDS
 
 
 // -----------------------------------------------------------------------------
@@ -32,11 +32,11 @@
 #define JB_SERIAL_REFRESH_OFFSET 0
 
 // Screen
-#ifdef JB_MOD_SCREEN
+// #ifdef JB_MOD_SCREEN
     #define JB_SCREEN_REFRESH_INTERVAL 250
     #define JB_SCREEN_REFRESH_OFFSET 100
 
-    #define JB_SCREEN_DRAW_INTERVAL 250
+    #define JB_SCREEN_DRAW_INTERVAL 100
     #define JB_SCREEN_DRAW_OFFSET 200
 
     #define JB_SCREEN_PIN_DIN 0
@@ -53,16 +53,16 @@
 
     #define JB_SCREEN_ORIENTATION JB_LANDSCAPE
     // #define JB_SCREEN_MIRROR_FLIP
-#endif
+// #endif
 
 // RGB LEDs
-#ifdef JB_MOD_RGBLEDS
+// #ifdef JB_MOD_RGBLEDS
     #define JB_RGBLEDS_REFRESH_INTERVAL 250
     #define JB_RGBLEDS_REFRESH_OFFSET 100
 
     #define JB_RGBLEDS_PIN 6
     #define JB_RGBLEDS_FREQ 800000.f
     // #define JB_RGBLEDS_IS_RGBW
-#endif
+// #endif
 
 #endif // JUKEBOX_CONFIG_H
