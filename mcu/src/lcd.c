@@ -10,7 +10,8 @@
 
 ScreenState screenstate, previousstate;
 extern uint32_t countermax;
-
+extern SerialStage commstage;
+extern int commstagepart;
 
 inline uint16_t lcd_rgb565(uint8_t r, uint8_t g, uint8_t b) {
     // https://stackoverflow.com/a/76442697/13977827
@@ -91,25 +92,55 @@ inline void lcd_init(void) {
 }
 
 void lcd_task(void) {
-    REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
+    // REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
+    
+    lcd_clear();
+    if (screenstate == Unknown) {
+        lcd_print_raw("Unknown", 0, 0, 1);
+    } else if (screenstate == WaitingConnection) {
+        lcd_print_raw("WaitingConnection", 0, 0, 1);
+    } else {
+        lcd_print_raw("ShowStats", 0, 0, 1);
+    }
+
+    if (commstage == Handshake) {
+        lcd_print_raw("HandShake", 0, 10, 1);
+    } else if (commstage == ComputerParts) {
+        lcd_print_raw("ComputerParts", 0, 10, 1);
+    } else if (commstage == ContinuousStats) {
+        lcd_print_raw("ContinuousStats", 0, 10, 1);
+    }
+    char stg[2] = {(char)commstagepart+48, 0};
+    lcd_print_raw(stg, 180, 10, 1);
+
+    const uint8_t x = 30;
+    lcd_print_raw("0", 0,   0+x, 1); lcd_print_raw(cpuName,      15,   0+x, 1);
+    lcd_print_raw("1", 0,  10+x, 1); lcd_print_raw(gpuName,      15,  10+x, 1);
+    lcd_print_raw("2", 0,  20+x, 1); lcd_print_raw(ramCount,     15,  20+x, 1);
+    lcd_print_raw("3", 0,  30+x, 1); lcd_print_raw(cpuFreq,      15,  30+x, 1);
+    lcd_print_raw("4", 0,  40+x, 1); lcd_print_raw(cpuTemp,      15,  40+x, 1);
+    lcd_print_raw("5", 0,  50+x, 1); lcd_print_raw(cpuLoad,      15,  50+x, 1);
+    lcd_print_raw("6", 0,  60+x, 1); lcd_print_raw(ramUsed,      15,  60+x, 1);
+    lcd_print_raw("7", 0,  70+x, 1); lcd_print_raw(gpuTemp,      15,  70+x, 1);
+    lcd_print_raw("8", 0,  80+x, 1); lcd_print_raw(gpuCoreClock, 15,  80+x, 1);
+    lcd_print_raw("9", 0,  90+x, 1); lcd_print_raw(gpuCoreLoad,  15,  90+x, 1);
+    lcd_print_raw("0", 0, 100+x, 1); lcd_print_raw(gpuVramClock, 15, 100+x, 1);
+    lcd_print_raw("1", 0, 110+x, 1); lcd_print_raw(gpuVramLoad,  15, 110+x, 1);
+    lcd_print_raw("#", 0, 150+x, 1); lcd_print_raw(inputString,  15, 150+x, 1);
+    lcd_print_raw("~", 0, 170+x, 1); lcd_print_raw(sentString,   15, 170+x, 1);
+
+    return;
+    // old code, ignore for now
 
     const int scr_scale = 1; // temp
     
-    // lcd_print_raw("test", 20, 20, 1);
-    // lcd_print_raw(recv, 1, 1, 1);
-    
-    // char c[2] = {(char) strnlen(recv, 64), 0};
-    // lcd_print_raw(c, 1, 44, 1);
-
     // Drawing on screen!
     if (screenstate != previousstate) {
         previousstate = screenstate;
-        // tft.fillScreen(ST77XX_BLACK);
-        // tft.setTextSize(1);
+        lcd_clear();
 
         // Initialize the new screen
         if (screenstate == WaitingConnection) {
-            lcd_clear();
             lcd_print_raw("MaxStats", 55 * scr_scale, 50 * scr_scale, scr_scale);
             lcd_print_raw("Waiting for connection...", 5 * scr_scale, 60 * scr_scale, scr_scale);
         } else {

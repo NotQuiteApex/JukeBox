@@ -4,14 +4,6 @@
 #include <tusb.h>
 
 extern ScreenState screenstate;
-
-// Stages of serial communication
-typedef enum
-{
-  Handshake,      // The initial stage, where the computer and MCU greet
-  ComputerParts,  // The computer sends some constant data over the wire
-  ContinuousStats // The computer sends data that gets updated over time
-} SerialStage;
 SerialStage commstage = Handshake;
 
 // The parts of comm stages (stage recieve and response)
@@ -20,11 +12,12 @@ int commstagepart = 0;
 // The data string we use to store received data
 // TODO: BOOST TO 128
 char inputString[64] = "";
+char sentString[10] = "";
 
 // Data we store!
 // Data that we receive only at the time a connection is made.
-char cpuName[30] = "";
-char gpuName[30] = "";
+char cpuName[28] = "";
+char gpuName[28] = "";
 char ramCount[6] = "";
 // Data we constantly receive after a connection is made.
 char cpuFreq[6] = "";
@@ -43,19 +36,13 @@ void serial_init(void) {
   
 }
 
-void serial_update(void) {
-  REFRESH_CHECK(JB_SERIAL_REFRESH_INTERVAL, JB_SERIAL_REFRESH_OFFSET);
-
+void serial_task(void) {
   // check serial string
   if (tud_cdc_available()) {
     // read datas
     uint32_t count = tud_cdc_read(inputString, sizeof(inputString)-1);
     inputString[count] = '\0';
   }
-}
-
-void serial_task(void) {
-  serial_update();
   
   REFRESH_CHECK(countermax, JB_SERIAL_REFRESH_OFFSET);
   
@@ -69,6 +56,9 @@ void serial_task(void) {
     commstagepart = 0;
 
     screenstate = WaitingConnection;
+
+    inputString[0] = '\0';
+    sentString[0] = '\0';
 
     cpuName[0] = '\0';
     gpuName[0] = '\0';
@@ -88,10 +78,12 @@ void serial_task(void) {
   if (commstage == Handshake) {
     if (commstagepart == 0) {
       if (strncmp(inputString, "010", 3) == 0) {
+        inputString[0] = '\0';
         commstagepart = 1;
       }
     } else if (commstagepart == 1) {
       // TODO: double check that this works as expected
+      strncpy(sentString, "101", 4);
       tud_cdc_write("101", 4);
       tud_cdc_write_flush();
       commstage = ComputerParts;
@@ -111,6 +103,7 @@ void serial_task(void) {
     } else if (commstagepart == 1) {
       // respond that we got it, and move to the next stage
       // TODO: double check that this works as expected
+      strncpy(sentString, "222", 4);
       tud_cdc_write("222", 4);
       tud_cdc_write_flush();
       commstage = ContinuousStats;
@@ -130,6 +123,7 @@ void serial_task(void) {
     } else if (commstagepart == 1) {
       // respond that we got it, and repeat
       // TODO: double check that this works as expected
+      strncpy(sentString, "333", 4);
       tud_cdc_write("333", 4);
       tud_cdc_write_flush();
       commstagepart = 0;
@@ -173,7 +167,8 @@ uint8_t receive_once_data() {
         count++;
       }
     }
-
+    
+    inputString[0] = '\0';
     return 1; // we sucessfully processed data
   }
 
@@ -224,6 +219,7 @@ uint8_t receive_cont_data() {
       }
     }
 
+    inputString[0] = '\0';
     return 1;
   }
 

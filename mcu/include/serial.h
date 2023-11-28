@@ -12,8 +12,19 @@ void serial_task(void);
 uint8_t receive_once_data(void);
 uint8_t receive_cont_data(void);
 
-extern char cpuName[30];
-extern char gpuName[30];
+// Stages of serial communication
+typedef enum
+{
+  Handshake,      // The initial stage, where the computer and MCU greet
+  ComputerParts,  // The computer sends some constant data over the wire
+  ContinuousStats // The computer sends data that gets updated over time
+} SerialStage;
+
+extern char inputString[64];
+extern char sentString[10];
+
+extern char cpuName[28];
+extern char gpuName[28];
 extern char ramCount[6];
 
 extern char cpuFreq[6];
