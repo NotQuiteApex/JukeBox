@@ -59,17 +59,22 @@ namespace JukeBoxDesktop
         // The stages of denial-- I mean communications.
         enum SerialStage
         {
+            ErrorWait,
             GreetHost,
             GreetDevice,
-            RecvParts,
-            RecvConfirm,
-            ContStats,
-            ContConfrim,
-        }
+            LinkConfirmHost,
+            LinkConfirmDevice,
+            TransmitReady,
+            // RecvParts,
+            // RecvConfirm,
+            // ContStats,
+            // ContConfrim,
+        };
 
         // Serial comms variables.
         private bool _continueComms = true;
         private bool _sendmessage = false;
+        private bool startedTransmitTasks = false;
         private readonly object _compMutex = new object();
         private SerialPort serial = new SerialPort();
         private Thread comms;
@@ -264,66 +269,130 @@ namespace JukeBoxDesktop
                 lock (serial)
                 {
                     Console.WriteLine("stage: " + stage);
-                    if (stage == SerialStage.GreetHost)
+                    if (stage == SerialStage.ErrorWait)
+                    {
+                        // TODO: error and disconnect device or something here idk
+                        Thread.Sleep(5000);
+                        stage = SerialStage.GreetHost;
+                    }
+                    else if (stage == SerialStage.GreetHost)
                     {
                         // First, send a message to the device
-                        serial.Write("010");
+                        serial.Write("JB\x05\r\n");
                         stage = SerialStage.GreetDevice;
                     }
                     else if (stage == SerialStage.GreetDevice)
                     {
                         // Next, wait for a response. If one isn't recieved in 5 seconds, restart.
-                        var check = Task.Run(() => SerialResponse("101"));
-                        stage = check.Wait(TimeSpan.FromSeconds(5)) ? SerialStage.RecvParts : SerialStage.GreetHost;
+                        var check = Task.Run(() => SerialResponseCheckAwait("P001\r\n", false));
+                        stage = check.Wait(TimeSpan.FromSeconds(1)) ? SerialStage.LinkConfirmHost : SerialStage.ErrorWait;
                     }
-                    else if (stage == SerialStage.RecvParts)
+                    else if (stage == SerialStage.LinkConfirmHost)
                     {
-                        lock (_compMutex)
+                        if (true) // if protocol good
                         {
-                            serial.Write($"{cpuName}|{gpuName}|{ramTotal}GB|");
+                            serial.Write("P\x06\r\n");
+                            stage = SerialStage.LinkConfirmDevice;
                         }
-                        stage = SerialStage.RecvConfirm;
-                    }
-                    else if (stage == SerialStage.RecvConfirm)
-                    {
-                        var check = Task.Run(() => SerialResponse("222"));
-                        stage = check.Wait(TimeSpan.FromSeconds(5)) ? SerialStage.ContStats : SerialStage.GreetHost;
-                    }
-                    else if (stage == SerialStage.ContStats)
-                    {
-                        lock (_compMutex)
+                        else
                         {
-                            serial.Write($"{cpuFreq}|{cpuTemp}|{cpuLoad}|{ramUsed}|{gpuTemp}|" +
-                                $"{gpuCoreClock}|{gpuCoreLoad}|{gpuVramClock}|{gpuVramLoad}|");
+                            // protocol bad, disconnect after this last message send
+                            serial.Write("P\x15\r\n");
+                            stage = SerialStage.ErrorWait;
                         }
-                        stage = SerialStage.ContConfrim;
                     }
-                    else if (stage == SerialStage.ContConfrim)
+                    else if (stage == SerialStage.LinkConfirmDevice)
                     {
-                        // wait for response "333" for 5 seconds, if nothing then restart
-                        var check = Task.Run(() => SerialResponse("333"));
-                        stage = check.Wait(TimeSpan.FromSeconds(5)) ? SerialStage.ContStats : SerialStage.GreetHost;
+                        var check = Task.Run(() => SerialResponseCheckAwait("L\x06\r\n", false));
+                        stage = check.Wait(TimeSpan.FromSeconds(1)) ? SerialStage.TransmitReady : SerialStage.ErrorWait;
                     }
-                }
+                    else if (stage == SerialStage.TransmitReady)
+                    {
+                        // TODO: whatever this is
+
+                        do
+                        {
+                            if (!startedTransmitTasks) {
+                                startedTransmitTasks = true;
+                                
+                                lock (_compMutex)
+                                {
+                                    serial.Write(
+                                        $"D\x11\x30{cpuName}\x1F{gpuName}\x1F{ramTotal}GB\x1F\r\n"
+                                    );
+                                }
+                                var check0 = Task.Run(() => SerialResponseCheckAwait("D\x11\x06\r\n", false));
+                                if (!check0.Wait(TimeSpan.FromSeconds(3)))
+                                    break;
+                            }
+                            
+                            serial.Write("H\x30\r\n");
+                            var check1 = Task.Run(() => SerialResponseCheckAwait("H\x31\r\n", false));
+                            if (!check1.Wait(TimeSpan.FromSeconds(3)))
+                                break;
+                            
+                            lock (_compMutex)
+                            {
+                                serial.Write(
+                                    $"D\x11\x31{cpuFreq}\x1F{cpuTemp}\x1F{cpuLoad}\x1F{ramUsed}\x1F{gpuTemp}\x1F" +
+                                    $"{gpuCoreClock}\x1F{gpuCoreLoad}\x1F{gpuVramClock}\x1F{gpuVramLoad}\x1F\r\n"
+                                );
+                            }
+                            var check2 = Task.Run(() => SerialResponseCheckAwait("D\x11\x06\r\n", false));
+                            if (!check2.Wait(TimeSpan.FromSeconds(3)))
+                                break;
+                        } while (false);
+                    }
 
                 // Sleep for a moment, we don't need to spam the serial pipe.
-                Thread.Sleep(100);
+                Thread.Sleep(25);
+            }
+        }
+        
+        private string SerialRecieve() {
+            string complete = "";
+            while (true) {
+                bool ready = false;
+                while (serial.BytesToRead > 0)
+                {
+                    int thebyte = serial.ReadByte();
+                    if (thebyte != -1)
+                    {
+                        complete += (char)thebyte;
+                    }
+                    if (complete.Contains("\r\n"))
+                    {
+                        ready = true;
+                        break;
+                    }
+                }
+                if (ready)
+                {
+                    return complete;
+                }
+                Thread.Sleep(5);
             }
         }
 
-        private void SerialResponse(string expected)
-        {
-            while (true)
-            {
-                if (serial.BytesToRead > 0) {
-
-                    string s = serial.ReadExisting();
-                    Console.WriteLine("serial: " + s);
-                    if (s == expected)
-                        return;
-                }
-                Thread.Sleep(25);
+        private bool SerialResponseCheckAwait(string expected, bool earlyExit) {
+            if (serial.BytesToRead <= 0 && earlyExit) {
+                return false;
             }
+
+            string complete = SerialRecieve();
+
+            return complete == expected;
+        }
+
+        private void SerialDisconnect()
+        {
+            _continueComms = false;
+            comms.Join();
+
+            if (serial.IsOpen)
+                serial.Close();
+
+            startedTransmitTasks = false;
         }
 
         private void updatetick_Tick(object sender, EventArgs e)
@@ -347,7 +416,8 @@ namespace JukeBoxDesktop
             // Break down serial comms
             _continueComms = false;
             comms.Join();
-            if (serial.IsOpen) serial.Close();
+            if (serial.IsOpen)
+                serial.Close();
 
             // Close the program
             _closing = true;

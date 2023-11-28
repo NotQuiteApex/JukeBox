@@ -103,18 +103,18 @@ void lcd_task(void) {
         lcd_print_raw("ShowStats", 0, 0, 1);
     }
 
-    if (commstage == GreetHost) {
+    if (commstage == ErrorWait) {
+        lcd_print_raw("ErrorWait", 0, 10, 1);
+    } else if (commstage == GreetHost) {
         lcd_print_raw("GreetHost", 0, 10, 1);
     } else if (commstage == GreetDevice) {
         lcd_print_raw("GreetDevice", 0, 10, 1);
-    } else if (commstage == RecvParts) {
-        lcd_print_raw("RecvParts", 0, 10, 1);
-    } else if (commstage == RecvConfirm) {
-        lcd_print_raw("RecvConfirm", 0, 10, 1);
-    } else if (commstage == ContStats) {
-        lcd_print_raw("ContStats", 0, 10, 1);
-    } else if (commstage == ContConfrim) {
-        lcd_print_raw("ContConfrim", 0, 10, 1);
+    } else if (commstage == LinkConfirmHost) {
+        lcd_print_raw("LinkConfirmHost", 0, 10, 1);
+    } else if (commstage == LinkConfirmDevice) {
+        lcd_print_raw("LinkConfirmDevice", 0, 10, 1);
+    } else if (commstage == TransmitReady) {
+        lcd_print_raw("TransmitReady", 0, 10, 1);
     }
 
     const uint8_t x = 30;
@@ -131,7 +131,7 @@ void lcd_task(void) {
     lcd_print_raw("0", 0, 100+x, 1); lcd_print_raw(gpuVramClock, 15, 100+x, 1);
     lcd_print_raw("1", 0, 110+x, 1); lcd_print_raw(gpuVramLoad,  15, 110+x, 1);
     lcd_print_raw("#", 0, 150+x, 1); lcd_print_raw(inputString,  15, 150+x, 1);
-    lcd_print_raw("~", 0, 170+x, 1); lcd_print_raw(sentString,   15, 170+x, 1);
+    // lcd_print_raw("~", 0, 170+x, 1); lcd_print_raw(sentString,   15, 170+x, 1);
 
     return;
     // old code, ignore for now

@@ -9,21 +9,17 @@
 void serial_init(void);
 void serial_task(void);
 
-uint8_t receive_once_data(void);
-uint8_t receive_cont_data(void);
-
 typedef enum
 {
+  ErrorWait,
   GreetHost,
   GreetDevice,
-  RecvParts,
-  RecvConfirm,
-  ContStats,
-  ContConfrim,
+  LinkConfirmHost,
+  LinkConfirmDevice,
+  TransmitReady,
 } SerialStage;
 
-extern char inputString[64];
-extern char sentString[10];
+extern char inputString[65];
 
 extern char cpuName[28];
 extern char gpuName[28];
