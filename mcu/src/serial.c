@@ -61,7 +61,7 @@ inline void reset_state_data(void) {
   gpuVramLoad[0] = '\0';
 }
 
-inline uint8_t parse_pc_part_info(void) {
+uint8_t parse_pc_part_info(void) {
   // process the names!
   // string format of computer parts stats
   // $"{cpuName}|{gpuName}|{ramTotal}GB|"
@@ -101,11 +101,11 @@ inline uint8_t parse_pc_part_info(void) {
     return 0;
   }
   
-  reset_input_string()
+  reset_input_string();
   return 1; // we sucessfully processed data
 }
 
-inline uint8_t parse_pc_part_stats(void) {
+uint8_t parse_pc_part_stats(void) {
   // Format string of continuous stats
   // $"{cpuFreq}|{cpuTemp}|{cpuLoad}|{ramUsed}|{gpuTemp}|" +
   // $"{gpuCoreClock}|{gpuCoreLoad}|{gpuVramClock}|{gpuVramLoad}|"
@@ -117,9 +117,9 @@ inline uint8_t parse_pc_part_stats(void) {
   uint8_t count = 0;
 
   for (uint8_t i = 0; i < strnlen(inputString, sizeof(inputString)); i++) {
-    if (inputString[i] == '|') {
+    if (inputString[i] == '\x1F') {
       idx1 = idx2;
-      if (inputString[idx1] == '|') {
+      if (inputString[idx1] == '\x1F') {
         idx1++;
       }
       idx2 = i;
@@ -168,18 +168,22 @@ void serial_task(void) {
     uint32_t count = tud_cdc_read(inputString+inputStringLen, sizeof(inputString)-1-inputStringLen);
     inputStringLen += count;
     inputString[inputStringLen] = '\0';
-    if (inputString[inputStringLen-1] == '\r' && inputString[inputStringLen-1] == '\n') {
+    if (inputString[inputStringLen-2] == '\r' && inputString[inputStringLen-1] == '\n') {
       inputStringReady = 1;
     }
   }
 
   static uint64_t heartbeat_ms = 0;
+  const uint64_t offset_heartbeat = 2000000;
 
   if (commstage == ErrorWait) {
     // Nothing here yet! TODO: have the device show an error screen and hold on it for some period of time.
     // screenstate = ErrorScreen;
     // REFRESH_CHECK(5000, 0);
-    reset_state_data()
+    if (time_us_64() < heartbeat_ms) {
+      return;
+    }
+    reset_state_data();
   } else if (commstage == GreetHost) {
     if (inputStringReady && strncmp(inputString, "JB\x05", 3) == 0) {
       commstage = GreetDevice;
@@ -189,24 +193,32 @@ void serial_task(void) {
     tud_cdc_write("P001\r\n", 6);
     tud_cdc_write_flush();
     commstage = LinkConfirmHost;
+    heartbeat_ms = time_us_64() + offset_heartbeat;
   } else if (commstage == LinkConfirmHost) {
     if (inputStringReady) {
-      if (strncmp(inputString, "P\x06", 3) == 0) {
+      if (strncmp(inputString, "P\x06", 2) == 0) {
         commstage = LinkConfirmDevice;
-      } else if (strncmp(inputString, "P\x15", 3) == 0) { // OR WE TIME OUT
+      } else if (strncmp(inputString, "P\x15", 2) == 0) { // OR WE TIME OUT
         commstage = ErrorWait;
+        heartbeat_ms = time_us_64() + offset_heartbeat;
       }
       reset_input_string();
+    }
+    if (time_us_64() >= heartbeat_ms) {
+      reset_input_string();
+      commstage = ErrorWait;
+      heartbeat_ms = time_us_64() + offset_heartbeat;
     }
   } else if (commstage == LinkConfirmDevice) {
     tud_cdc_write("L\x06\r\n", 4);
     tud_cdc_write_flush();
     commstage = TransmitReady;
-    heartbeat_ms = time_us_64();
+    heartbeat_ms = time_us_64() + offset_heartbeat;
   } else if (commstage == TransmitReady) {
     // Check how long we've been waiting on a message
     if (!inputStringReady && time_us_64() >= heartbeat_ms) {
       commstage = ErrorWait;
+      heartbeat_ms = time_us_64() + offset_heartbeat;
     }
 
     // Parse any incoming messages appropriately!
@@ -235,7 +247,7 @@ void serial_task(void) {
       // Heartbeat
       tud_cdc_write("H\x31\r\n", 4);
       tud_cdc_write_flush();
-      heartbeat_ms = time_us_64() + 3000000;
+      heartbeat_ms = time_us_64() + offset_heartbeat;
     }
   }
 }

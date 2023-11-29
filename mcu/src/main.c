@@ -13,8 +13,9 @@ int main() {
     led_init();
     keyboard_init();
 
+    serial_init();
+
     #ifdef JB_MOD_SCREEN
-        serial_init();
         lcd_init();
     #endif
     #ifdef JB_MOD_RGBLEDS
@@ -27,9 +28,9 @@ int main() {
         tud_task();
 
         keyboard_task();
+        serial_task();
 
         #ifdef JB_MOD_SCREEN
-            serial_task();
             lcd_task();
             lcd_draw_task();
         #endif

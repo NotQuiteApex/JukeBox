@@ -116,6 +116,8 @@ void lcd_task(void) {
     } else if (commstage == TransmitReady) {
         lcd_print_raw("TransmitReady", 0, 10, 1);
     }
+    char msg[3] = {inputStringReady+1, inputStringLen, 0};
+    lcd_print_raw(msg, 200, 10, 1);
 
     const uint8_t x = 30;
     lcd_print_raw("0", 0,   0+x, 1); lcd_print_raw(cpuName,      15,   0+x, 1);

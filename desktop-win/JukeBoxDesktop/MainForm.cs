@@ -94,8 +94,8 @@ namespace JukeBoxDesktop
             comms = new Thread(SerialComms);
             serial.BaudRate = 115200;
             serial.DataBits = 8;
-            serial.Parity = Parity.Even;
-            serial.StopBits = StopBits.Two;
+            // serial.Parity = Parity.Even;
+            // serial.StopBits = StopBits.Two;
             serial.Handshake = Handshake.None;
             serial.DtrEnable = true;
             serial.RtsEnable = true;
@@ -262,36 +262,45 @@ namespace JukeBoxDesktop
                 // TODO: lock the serial object when doing comms so it doesnt get interrupted mid-write.
                 if (!serial.IsOpen)
                 {
+                    Console.WriteLine("SerialComms: Serial is not open!");
                     Thread.Sleep(1000); // just so CPU usage doesn't spike.
                     continue;
                 }
 
                 lock (serial)
                 {
-                    Console.WriteLine("stage: " + stage);
                     if (stage == SerialStage.ErrorWait)
                     {
+                        Console.WriteLine("SerialStage: ErrorWait");
                         // TODO: error and disconnect device or something here idk
-                        Thread.Sleep(5000);
+                        Thread.Sleep(10000);
                         stage = SerialStage.GreetHost;
                     }
-                    else if (stage == SerialStage.GreetHost)
+                    
+                    if (stage == SerialStage.GreetHost)
                     {
+                        Console.WriteLine("SerialStage: GreetHost");
                         // First, send a message to the device
                         serial.Write("JB\x05\r\n");
+                        Console.WriteLine("Sent: JB\\x05");
                         stage = SerialStage.GreetDevice;
                     }
-                    else if (stage == SerialStage.GreetDevice)
+                    
+                    if (stage == SerialStage.GreetDevice)
                     {
+                        Console.WriteLine("SerialStage: GreetDevice");
                         // Next, wait for a response. If one isn't recieved in 5 seconds, restart.
                         var check = Task.Run(() => SerialResponseCheckAwait("P001\r\n", false));
-                        stage = check.Wait(TimeSpan.FromSeconds(1)) ? SerialStage.LinkConfirmHost : SerialStage.ErrorWait;
+                        stage = check.Wait(TimeSpan.FromSeconds(2)) ? SerialStage.LinkConfirmHost : SerialStage.ErrorWait;
                     }
-                    else if (stage == SerialStage.LinkConfirmHost)
+                    
+                    if (stage == SerialStage.LinkConfirmHost)
                     {
+                        Console.WriteLine("SerialStage: LinkConfirmHost");
                         if (true) // if protocol good
                         {
                             serial.Write("P\x06\r\n");
+                            Console.WriteLine("Sent: P\\x06");
                             stage = SerialStage.LinkConfirmDevice;
                         }
                         else
@@ -301,18 +310,23 @@ namespace JukeBoxDesktop
                             stage = SerialStage.ErrorWait;
                         }
                     }
-                    else if (stage == SerialStage.LinkConfirmDevice)
+                    
+                    if (stage == SerialStage.LinkConfirmDevice)
                     {
+                        Console.WriteLine("SerialStage: LinkConfirmDevice");
                         var check = Task.Run(() => SerialResponseCheckAwait("L\x06\r\n", false));
-                        stage = check.Wait(TimeSpan.FromSeconds(1)) ? SerialStage.TransmitReady : SerialStage.ErrorWait;
+                        stage = check.Wait(TimeSpan.FromSeconds(3)) ? SerialStage.TransmitReady : SerialStage.ErrorWait;
                     }
-                    else if (stage == SerialStage.TransmitReady)
+                    
+                    if (stage == SerialStage.TransmitReady)
                     {
+                        Console.WriteLine("SerialStage: TransmitReady");
                         // TODO: whatever this is
 
                         do
                         {
-                            if (!startedTransmitTasks) {
+                            if (!startedTransmitTasks)
+                            {
                                 startedTransmitTasks = true;
                                 
                                 lock (_compMutex)
@@ -344,9 +358,11 @@ namespace JukeBoxDesktop
                         } while (false);
                     }
 
-                // Sleep for a moment, we don't need to spam the serial pipe.
-                Thread.Sleep(25);
+                    // Sleep for a moment, we don't need to spam the serial pipe.
+                    Thread.Sleep(5);
+                }
             }
+            Console.WriteLine("oops we exited serial comms");
         }
         
         private string SerialRecieve() {
@@ -362,6 +378,12 @@ namespace JukeBoxDesktop
                     }
                     if (complete.Contains("\r\n"))
                     {
+                        string cc = "";
+                        foreach (char c in complete) {
+                            cc += ((int)c).ToString() + ",";
+                        }
+                        Console.WriteLine(cc);
+                        Console.WriteLine("FOUND CONTROL");
                         ready = true;
                         break;
                     }
@@ -379,20 +401,29 @@ namespace JukeBoxDesktop
                 return false;
             }
 
-            string complete = SerialRecieve();
+            while (SerialRecieve() != expected) {
+                Thread.Sleep(5);
+            }
 
-            return complete == expected;
+            return true;
         }
 
         private void SerialDisconnect()
         {
             _continueComms = false;
+            startedTransmitTasks = false;
             comms.Join();
 
-            if (serial.IsOpen)
-                serial.Close();
+            lock (serial)
+            {
+                if (serial.IsOpen)
+                    serial.Close();
+            }
 
-            startedTransmitTasks = false;
+            stage = SerialStage.GreetHost;
+            _continueComms = true;
+            comms = new Thread(SerialComms);
+            comms.Start();
         }
 
         private void updatetick_Tick(object sender, EventArgs e)
@@ -414,10 +445,7 @@ namespace JukeBoxDesktop
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             // Break down serial comms
-            _continueComms = false;
-            comms.Join();
-            if (serial.IsOpen)
-                serial.Close();
+            SerialDisconnect();
 
             // Close the program
             _closing = true;
@@ -520,18 +548,12 @@ namespace JukeBoxDesktop
             // Time to connect with serial!
             try
             {
-                lock (serial)
-                {
-                    if (serial.IsOpen)
-                        serial.Close();
+                SerialDisconnect();
 
-                    serial.PortName = match.Groups[1].Value;
+                serial.PortName = match.Groups[1].Value;
 
-                    stage = SerialStage.GreetHost;
-
-                    if (shouldCheck)
-                        serial.Open();
-                }
+                if (shouldCheck)
+                    serial.Open();
             }
             catch (System.UnauthorizedAccessException)
             {

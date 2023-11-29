@@ -20,6 +20,8 @@ typedef enum
 } SerialStage;
 
 extern char inputString[65];
+extern uint8_t inputStringLen;
+extern uint8_t inputStringReady;
 
 extern char cpuName[28];
 extern char gpuName[28];
