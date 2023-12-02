@@ -15,7 +15,10 @@ Created with Inventor 2022. See `prints` directory for STL files.
 You will need to print 1 case bottom, 2 case legs, 1 case top for Cherry MX switches OR case top for Kailh Choc switches, and 12 keycaps of either Cherry MX or Kailh Choc.
 
 ## Microcontroller Code
-Programmed with PlatformIO with VSCode. See `mcu` directory.
+Programmed with VSCode for the RP2040. See `mcu` directory.
+
+## Desktop Code
+There exist two versions to target Windows and Linux respectively. Both connect to the JukeBox over USB serial to control RGB and show fun graphics on the screen. Eventually, it'd be nice to unify the two under a single project.
 
 # License
 Copyright (c) 2020-2023 Logan "NotQuiteApex" Hickok-Dickson
