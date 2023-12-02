@@ -41,9 +41,6 @@
     #if JB_SCREEN_REFRESH_INTERVAL > 250
         #error "Screen framebuffer refresh interval must be greater than 250 ms."
     #endif
-    #if JB_SCREEN_DRAW_INTERVAL > 250
-        #error "Screen draw interval must be greater than 250 ms."
-    #endif
 
     #if JB_SCREEN_PIN_DIN > 22
         #error "Screen pin DIN must be 22 or less."

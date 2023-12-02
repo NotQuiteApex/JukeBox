@@ -33,7 +33,6 @@ int main() {
 
             #ifdef JB_MOD_SCREEN
                 lcd_task();
-                lcd_draw_task();
             #endif
 
             #ifdef JB_MOD_RGBLEDS

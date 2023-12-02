@@ -26,6 +26,5 @@ void lcd_print(char * text, uint16_t x, uint16_t y, uint8_t s);
 void lcd_print_raw(char * text, uint16_t x, uint16_t y, uint8_t s);
 
 void lcd_task(void);
-void lcd_draw_task(void);
 
 #endif // JUKEBOX_LCD_H

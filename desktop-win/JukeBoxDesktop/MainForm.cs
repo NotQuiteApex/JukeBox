@@ -273,6 +273,12 @@ namespace JukeBoxDesktop
                     {
                         Console.WriteLine("SerialStage: ErrorWait");
                         // TODO: error and disconnect device or something here idk
+                MessageBox.Show(
+                    PopupSerialFailed,
+                    PopupFailedToOpen,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
                         Thread.Sleep(10000);
                         stage = SerialStage.GreetHost;
                     }
@@ -281,8 +287,7 @@ namespace JukeBoxDesktop
                     {
                         Console.WriteLine("SerialStage: GreetHost");
                         // First, send a message to the device
-                        serial.Write("JB\x05\r\n");
-                        Console.WriteLine("Sent: JB\\x05");
+                        SerialWrite("JB\x05\r\n");
                         stage = SerialStage.GreetDevice;
                     }
                     
@@ -299,14 +304,13 @@ namespace JukeBoxDesktop
                         Console.WriteLine("SerialStage: LinkConfirmHost");
                         if (true) // if protocol good
                         {
-                            serial.Write("P\x06\r\n");
-                            Console.WriteLine("Sent: P\\x06");
+                            SerialWrite("P\x06\r\n");
                             stage = SerialStage.LinkConfirmDevice;
                         }
                         else
                         {
                             // protocol bad, disconnect after this last message send
-                            serial.Write("P\x15\r\n");
+                            SerialWrite("P\x15\r\n");
                             stage = SerialStage.ErrorWait;
                         }
                     }
@@ -333,7 +337,7 @@ namespace JukeBoxDesktop
                                 
                                 lock (_compMutex)
                                 {
-                                    serial.Write(
+                                    SerialWrite(
                                         $"D\x11\x30{cpuName}\x1F{gpuName}\x1F{ramTotal}GB\x1F\r\n"
                                     );
                                 }
@@ -346,7 +350,7 @@ namespace JukeBoxDesktop
                             }
                             
                             // TODO: only run the heartbeat every second to save on power
-                            serial.Write("H\x30\r\n");
+                            SerialWrite("H\x30\r\n");
                             var check1 = Task.Run(() => SerialResponseCheckAwait("H\x31\r\n", false));
                             if (!check1.Wait(TimeSpan.FromSeconds(3)))
                             {
@@ -356,7 +360,7 @@ namespace JukeBoxDesktop
                             
                             lock (_compMutex)
                             {
-                                serial.Write(
+                                SerialWrite(
                                     $"D\x11\x31{cpuFreq}\x1F{cpuTemp}\x1F{cpuLoad}\x1F{ramUsed}\x1F{gpuTemp}\x1F" +
                                     $"{gpuCoreClock}\x1F{gpuCoreLoad}\x1F{gpuVramClock}\x1F{gpuVramLoad}\x1F\r\n"
                                 );
@@ -375,6 +379,21 @@ namespace JukeBoxDesktop
                 }
             }
             Console.WriteLine("oops we exited serial comms");
+        }
+
+        private void SerialWrite(string s) {
+            try {
+                serial.Write(s);
+            } catch {
+                // TODO: adjust this message
+                MessageBox.Show(
+                    PopupSerialFailed,
+                    PopupFailedToOpen,
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                SerialDisconnect();
+            }
         }
         
         private string SerialRecieve() {
