@@ -27,17 +27,19 @@ int main() {
     while (true) {
         tud_task();
 
-        keyboard_task();
-        serial_task();
+        if (tud_mounted()) {
+            keyboard_task();
+            serial_task();
 
-        #ifdef JB_MOD_SCREEN
-            lcd_task();
-            lcd_draw_task();
-        #endif
+            #ifdef JB_MOD_SCREEN
+                lcd_task();
+                lcd_draw_task();
+            #endif
 
-        #ifdef JB_MOD_RGBLEDS
-            rgb_task();
-        #endif
+            #ifdef JB_MOD_RGBLEDS
+                rgb_task();
+            #endif
+        }
 
         led_blinking_task();
     }

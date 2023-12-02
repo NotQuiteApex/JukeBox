@@ -172,16 +172,15 @@ void serial_task(void) {
   }
 
   static uint64_t heartbeat_ms = 0;
-  const uint64_t offset_heartbeat = 2000000;
+  const uint64_t offset_heartbeat = 3000000;
 
   if (commstage == ErrorWait) {
-    // Nothing here yet! TODO: have the device show an error screen and hold on it for some period of time.
+    // TODO: have the device show an error screen and hold on it for some period of time.
     // screenstate = ErrorScreen;
-    // REFRESH_CHECK(5000, 0);
     if (time_us_64() >= heartbeat_ms) {
+      reset_state_data();
       return;
     }
-    reset_state_data();
   } else if (commstage == GreetHost) {
     if (inputStringReady && strncmp(inputString, "JB\x05", 3) == 0) {
       commstage = GreetDevice;

@@ -316,11 +316,13 @@ namespace JukeBoxDesktop
                         Console.WriteLine("SerialStage: LinkConfirmDevice");
                         var check = Task.Run(() => SerialResponseCheckAwait("L\x06\r\n", false));
                         stage = check.Wait(TimeSpan.FromSeconds(3)) ? SerialStage.TransmitReady : SerialStage.ErrorWait;
+                        if (stage == SerialStage.TransmitReady)
+                            Console.WriteLine("SerialStage: TransmitReady");
                     }
                     
                     if (stage == SerialStage.TransmitReady)
                     {
-                        Console.WriteLine("SerialStage: TransmitReady");
+                        // Console.WriteLine("SerialStage: TransmitReady");
                         // TODO: whatever this is
 
                         do
@@ -343,6 +345,7 @@ namespace JukeBoxDesktop
                                 }
                             }
                             
+                            // TODO: only run the heartbeat every second to save on power
                             serial.Write("H\x30\r\n");
                             var check1 = Task.Run(() => SerialResponseCheckAwait("H\x31\r\n", false));
                             if (!check1.Wait(TimeSpan.FromSeconds(3)))
@@ -391,8 +394,8 @@ namespace JukeBoxDesktop
                         foreach (char c in complete) {
                             cc += ((int)c).ToString() + ",";
                         }
-                        Console.WriteLine(cc);
-                        Console.WriteLine("FOUND CONTROL");
+                        // Console.WriteLine(cc);
+                        // Console.WriteLine("FOUND CONTROL");
                         ready = true;
                         break;
                     }
