@@ -20,16 +20,16 @@
     <!-- https://stackoverflow.com/a/55173543 -->
     <DebugType>portable</DebugType>
 
-    <ApplicationIcon>..\icon.ico</ApplicationIcon>
+    <ApplicationIcon>.\icon.ico</ApplicationIcon>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="HidSharp">
-      <HintPath>..\HidSharp.dll</HintPath>
+      <HintPath>.\HidSharp.dll</HintPath>
     </Reference>
     <Reference Include="LibreHardwareMonitorLib">
-      <HintPath>..\LibreHardwareMonitorLib.dll</HintPath>
+      <HintPath>.\LibreHardwareMonitorLib.dll</HintPath>
     </Reference>
 
     <Reference Include="System" />
