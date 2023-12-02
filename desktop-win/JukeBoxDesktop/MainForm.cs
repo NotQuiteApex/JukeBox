@@ -337,13 +337,19 @@ namespace JukeBoxDesktop
                                 }
                                 var check0 = Task.Run(() => SerialResponseCheckAwait("D\x11\x06\r\n", false));
                                 if (!check0.Wait(TimeSpan.FromSeconds(3)))
+                                {
+                                    stage = SerialStage.ErrorWait;
                                     break;
+                                }
                             }
                             
                             serial.Write("H\x30\r\n");
                             var check1 = Task.Run(() => SerialResponseCheckAwait("H\x31\r\n", false));
                             if (!check1.Wait(TimeSpan.FromSeconds(3)))
+                            {
+                                stage = SerialStage.ErrorWait;
                                 break;
+                            }
                             
                             lock (_compMutex)
                             {
@@ -354,7 +360,10 @@ namespace JukeBoxDesktop
                             }
                             var check2 = Task.Run(() => SerialResponseCheckAwait("D\x11\x06\r\n", false));
                             if (!check2.Wait(TimeSpan.FromSeconds(3)))
+                            {
+                                stage = SerialStage.ErrorWait;
                                 break;
+                            }
                         } while (false);
                     }
 

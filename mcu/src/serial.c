@@ -101,7 +101,6 @@ uint8_t parse_pc_part_info(void) {
     return 0;
   }
   
-  reset_input_string();
   return 1; // we sucessfully processed data
 }
 
@@ -112,8 +111,8 @@ uint8_t parse_pc_part_stats(void) {
 
   // this is the same as above, just with more variables to hand data to
 
-  uint8_t idx1 = 0;
-  uint8_t idx2 = 0;
+  uint8_t idx1 = 3;
+  uint8_t idx2 = 3;
   uint8_t count = 0;
 
   for (uint8_t i = 0; i < strnlen(inputString, sizeof(inputString)); i++) {
@@ -153,7 +152,6 @@ uint8_t parse_pc_part_stats(void) {
     return 0;
   }
 
-  reset_input_string();
   return 1;
 }
 
@@ -180,7 +178,7 @@ void serial_task(void) {
     // Nothing here yet! TODO: have the device show an error screen and hold on it for some period of time.
     // screenstate = ErrorScreen;
     // REFRESH_CHECK(5000, 0);
-    if (time_us_64() < heartbeat_ms) {
+    if (time_us_64() >= heartbeat_ms) {
       return;
     }
     reset_state_data();
@@ -215,10 +213,16 @@ void serial_task(void) {
     commstage = TransmitReady;
     heartbeat_ms = time_us_64() + offset_heartbeat;
   } else if (commstage == TransmitReady) {
+    screenstate = ShowStats;
     // Check how long we've been waiting on a message
     if (!inputStringReady && time_us_64() >= heartbeat_ms) {
       commstage = ErrorWait;
       heartbeat_ms = time_us_64() + offset_heartbeat;
+      return;
+    }
+
+    if (!inputStringReady) {
+      return;
     }
 
     // Parse any incoming messages appropriately!
@@ -240,14 +244,18 @@ void serial_task(void) {
         } else {
           tud_cdc_write("D\x11\x15\r\n", 5);
         }
+        tud_cdc_write_flush();
+        reset_input_string();
       } else if (inputString[1] == '\x12') {
         // RGB Control
+        reset_input_string();
       }
     } else if (inputString[0] == 'H' && inputString[1] == '\x30') {
       // Heartbeat
       tud_cdc_write("H\x31\r\n", 4);
       tud_cdc_write_flush();
       heartbeat_ms = time_us_64() + offset_heartbeat;
+      reset_input_string();
     }
   }
 }
