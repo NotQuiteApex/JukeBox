@@ -22,14 +22,8 @@ inline uint16_t lcd_rgb565(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 uint16_t lcd_color_full = 65535;
-// uint8_t lcd_color_r = 255;
-// uint8_t lcd_color_g = 255;
-// uint8_t lcd_color_b = 255;
 
 inline void lcd_set_color(uint8_t r, uint8_t g, uint8_t b) {
-    // lcd_color_r = r;
-    // lcd_color_g = g;
-    // lcd_color_b = b;
     lcd_color_full = lcd_rgb565(r, g, b);
 }
 
@@ -108,18 +102,35 @@ inline void lcd_init(void) {
 void lcd_task(void) {
     REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
     
+    lcd_clear();
 
     if (screenstate == WaitingConnection) {
-        for (uint8_t i=0; i<50; i++) {
-            lcd_set_color(get_rand_32() % 255, get_rand_32() % 255, get_rand_32() % 255);
-            lcd_put(get_rand_32() % st7789_get_width(), get_rand_32() % st7789_get_height());
-        }
-        lcd_set_color(255, 255, 255);
-        lcd_print_raw("JukeBoxStats", 20, 114, 2);
-        lcd_print_raw("Waiting for connection...", 15, 156, 1);
-    } else if (screenstate == ShowStats) {
-        lcd_clear();
+        static uint8_t spinner = 0;
+        static const uint8_t rect_size = 8;
+        static const uint8_t rect_space = 4;
+        static const uint16_t rects[8][2] = {
+            {rect_size/2 + 0 * (rect_size + rect_space), rect_size/2 + 0 * (rect_size + rect_space)}, // top left
+            {rect_size/2 + 1 * (rect_size + rect_space),               0 * (rect_size + rect_space)}, // top mid --
+            {rect_size/2 + 2 * (rect_size + rect_space), rect_size/2 + 0 * (rect_size + rect_space)}, // top right
+            {rect_size   + 2 * (rect_size + rect_space), rect_size/2 + 1 * (rect_size + rect_space)}, // mid right --
+            {rect_size/2 + 2 * (rect_size + rect_space), rect_size/2 + 2 * (rect_size + rect_space)}, // bottom right
+            {rect_size/2 + 1 * (rect_size + rect_space), rect_size   + 2 * (rect_size + rect_space)}, // bottom mid --
+            {rect_size/2 + 0 * (rect_size + rect_space), rect_size/2 + 2 * (rect_size + rect_space)}, // bottom left
+            {              0 * (rect_size + rect_space), rect_size/2 + 1 * (rect_size + rect_space)}, // mid left --
+        };
+        static const uint16_t spinner_mid = rects[3][0] / 2 + rect_size / 2;
+        uint8_t r1 = (spinner + 1) % 8;
+        uint8_t r2 = (spinner + 2) % 8;
+        uint8_t r3 = (spinner + 3) % 8;
+        lcd_set_color(0, 21,  85); lcd_rect(rects[r1][0] - spinner_mid + st7789_get_width() / 2, rects[r1][1] - spinner_mid + st7789_get_height() / 2 + 80, rect_size, rect_size);
+        lcd_set_color(0, 42, 170); lcd_rect(rects[r2][0] - spinner_mid + st7789_get_width() / 2, rects[r2][1] - spinner_mid + st7789_get_height() / 2 + 80, rect_size, rect_size);
+        lcd_set_color(0, 64, 255); lcd_rect(rects[r3][0] - spinner_mid + st7789_get_width() / 2, rects[r3][1] - spinner_mid + st7789_get_height() / 2 + 80, rect_size, rect_size);
+        spinner = (spinner + 1) % 8;
 
+        lcd_set_color(255, 255, 255);
+        lcd_print_raw("JukeBoxStats", 18, 114, 2);
+        lcd_print_raw("Waiting for connection...", 16, 156, 1);
+    } else if (screenstate == ShowStats) {
         if (strncmp(cpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 63, 0);
         } else if (strncmp(cpuName, "INTEL", 5) == 0) {
