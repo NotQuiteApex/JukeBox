@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "JukeBoxDesktopLinux"
+name = "jukeboxcli"
 version = "0.1.0"
