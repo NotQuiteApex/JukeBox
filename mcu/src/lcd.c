@@ -1,6 +1,8 @@
 #include "lcd.h"
 
-#include <stdarg.h>
+#include <pico/rand.h>
+
+// #include <stdarg.h>
 #include <string.h>
 
 #include "font.h"
@@ -106,12 +108,18 @@ inline void lcd_init(void) {
 void lcd_task(void) {
     REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
     
-    lcd_clear();
 
     if (screenstate == WaitingConnection) {
+        for (uint8_t i=0; i<50; i++) {
+            lcd_set_color(get_rand_32() % 255, get_rand_32() % 255, get_rand_32() % 255);
+            lcd_put(get_rand_32() % st7789_get_width(), get_rand_32() % st7789_get_height());
+        }
+        lcd_set_color(255, 255, 255);
         lcd_print_raw("JukeBoxStats", 20, 114, 2);
         lcd_print_raw("Waiting for connection...", 15, 156, 1);
     } else if (screenstate == ShowStats) {
+        lcd_clear();
+
         if (strncmp(cpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 63, 0);
         } else if (strncmp(cpuName, "INTEL", 5) == 0) {

@@ -1,6 +1,7 @@
 // JukeBox V5 Firmware
 
 #include "common.h"
+#include <pico/multicore.h>
 
 #include "keyboard.h"
 #include "lcd.h"
@@ -8,8 +9,23 @@
 #include "rgb.h"
 #include "serial.h"
 
+void task_updates(void) {
+    while (true) {
+        keyboard_task();
+        serial_task();
 
-int main() {
+        #ifdef JB_MOD_SCREEN
+            lcd_task();
+        #endif
+
+        #ifdef JB_MOD_RGBLEDS
+            rgb_task();
+        #endif
+    }
+}
+
+
+int main(void) {
     led_init();
     keyboard_init();
 
@@ -23,21 +39,14 @@ int main() {
     #endif
 
     tusb_init();
+    bool started_tasks = false;
 
     while (true) {
         tud_task();
 
-        if (tud_mounted()) {
-            keyboard_task();
-            serial_task();
-
-            #ifdef JB_MOD_SCREEN
-                lcd_task();
-            #endif
-
-            #ifdef JB_MOD_RGBLEDS
-                rgb_task();
-            #endif
+        if (!started_tasks && tud_mounted()) {
+            started_tasks = true;
+            multicore_launch_core1(task_updates);
         }
 
         led_blinking_task();

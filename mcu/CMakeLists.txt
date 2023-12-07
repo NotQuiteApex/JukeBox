@@ -43,6 +43,7 @@ target_link_libraries(jukebox_firmware PUBLIC
     pico_stdlib
     pico_rand
     pico_unique_id
+    pico_multicore
     hardware_pio
     tinyusb_device
     tinyusb_board
