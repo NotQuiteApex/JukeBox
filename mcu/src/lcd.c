@@ -58,6 +58,8 @@ void lcd_print(char * text, uint16_t x, uint16_t y, uint8_t s) {
 void lcd_print_raw(char * text, uint16_t x, uint16_t y, uint8_t s) {
     // TODO: use `s` for scaling text
 
+    uint16_t sx = x, sy = y;
+
     uint16_t len = strlen(text);
     for (uint16_t i=0; i<len; i++) {
         char t = text[i];
@@ -68,7 +70,14 @@ void lcd_print_raw(char * text, uint16_t x, uint16_t y, uint8_t s) {
             }
             for (uint8_t c=0; c<font_width; c++) {
                 if (row & BIT(c)) {
-                    lcd_put((font_width-c) + i * (font_width-2) + x, r + y);
+                    uint16_t tx, ty;
+                    tx = ((font_width-c) + i * (kern_width-2) + x - sx) * s + sx;
+                    ty = (r + y - sy) * s + sy;
+                    for (uint8_t by=0; by<s; by++) {
+                        for (uint8_t bx=0; bx<s; bx++) {
+                            lcd_put(tx + bx, ty + by);
+                        }
+                    }
                 }
             }
         }
@@ -102,53 +111,57 @@ void lcd_task(void) {
     const int scr_scale = 1; // temp
 
     if (screenstate == WaitingConnection) {
-        lcd_print_raw("JukeBoxStats", 55, 50, scr_scale);
-        lcd_print_raw("Waiting for connection...", 5, 60, scr_scale);
+        lcd_print_raw("JukeBoxStats", 20, 50-16, 2*scr_scale);
+        lcd_print_raw("Waiting for connection...", 15, 60, scr_scale);
     } else if (screenstate == ShowStats) {
         if (strncmp(cpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 63, 0);
-        } else {
+        } else if (strncmp(cpuName, "INTEL", 5) == 0) {
             lcd_set_color(0, 127, 255);
+        } else {
+            lcd_set_color(255, 0, 255);
         }
         lcd_print_raw(cpuName, 0, 0, scr_scale);
         lcd_set_color(255, 255, 255);
 
-        lcd_print_raw(cpuFreq,   0, 14, 2);
-        lcd_print_raw(cpuLoad,  88, 14, 2);
-        lcd_print_raw(cpuTemp, 152, 14, 2);
+        lcd_print_raw(cpuFreq,   0, 14, 2*scr_scale);
+        lcd_print_raw(cpuLoad,  88, 14, 2*scr_scale);
+        lcd_print_raw(cpuTemp, 176, 14, 2*scr_scale);
 
-        lcd_print_raw("FreqGHz",       0, 28, scr_scale);
-        lcd_print_raw("Load%",        88, 28, scr_scale);
-        lcd_print_raw("Temp\xF8""C", 152, 28, scr_scale);
+        lcd_print_raw("FreqGHz",       0, 38, scr_scale);
+        lcd_print_raw("Load%",        88, 38, scr_scale);
+        lcd_print_raw("Temp\xF8""C", 176, 38, scr_scale);
 
         if (strncmp(gpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 0, 0);
-        } else {
+        } else if (strncmp(gpuName, "NVIDIA", 6) == 0) {
             lcd_set_color(127, 255, 127);
+        } else {
+            lcd_set_color(255, 0, 255);
         }
         lcd_print_raw(gpuName, 0, 64, scr_scale);
         lcd_set_color(255, 255, 255);
         
-        lcd_print_raw(gpuCoreLoad,   0, 78, 2);
-        lcd_print_raw(gpuVramLoad,  88, 78, 2);
-        lcd_print_raw(gpuTemp,     150, 78, 2);
+        lcd_print_raw(gpuCoreLoad,   0, 78, 2*scr_scale);
+        lcd_print_raw(gpuVramLoad,  88, 78, 2*scr_scale);
+        lcd_print_raw(gpuTemp,     176, 78, 2*scr_scale);
 
-        lcd_print_raw("Load%",         0, 92, scr_scale);
-        lcd_print_raw("Vram%",        88, 92, scr_scale);
-        lcd_print_raw("Temp\xF8""C", 150, 92, scr_scale);
+        lcd_print_raw("Load%",         0, 102, scr_scale);
+        lcd_print_raw("Vram%",        88, 102, scr_scale);
+        lcd_print_raw("Temp\xF8""C", 176, 102, scr_scale);
 
-        lcd_print_raw(gpuCoreClock,  0, 106, scr_scale);
-        lcd_print_raw(gpuVramClock, 88, 106, scr_scale);
+        lcd_print_raw(gpuCoreClock,  0, 116, 2*scr_scale);
+        lcd_print_raw(gpuVramClock, 144, 116, 2*scr_scale);
 
-        lcd_print_raw("CoreMHz",  0, 120, scr_scale);
-        lcd_print_raw("VramMHz", 88, 120, scr_scale);
+        lcd_print_raw("CoreMHz",  0, 120+20, scr_scale);
+        lcd_print_raw("VramMHz", 144, 120+20, scr_scale);
 
         lcd_set_color(255,   0, 255);
-        lcd_print_raw("RAM:",     0, 160, scr_scale);
+        lcd_print_raw("RAM:",     0, 164, scr_scale);
         lcd_set_color(255, 255, 255);
-        lcd_print_raw(ramUsed,   60, 160, scr_scale);
-        lcd_print_raw("/",      106, 160, scr_scale);
-        lcd_print_raw(ramCount, 120, 160, scr_scale);
+        lcd_print_raw(ramUsed,   60, 164, 2*scr_scale);
+        lcd_print_raw("/",      130, 174, scr_scale);
+        lcd_print_raw(ramCount, 144, 174, scr_scale);
     }
 
     lcd_present();

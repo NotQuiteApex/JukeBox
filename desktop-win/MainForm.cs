@@ -145,7 +145,7 @@ namespace JukeBoxDesktop
                         cpuName = hardware.Name;
                         cpuFreq = (_freqSum / _coreCount / 1000).ToString("n2");
                         cpuTemp = _cpuTemp.ToString("f1");
-                        cpuLoad = _cpuLoad.ToString("f1").PadLeft(4, ' ');
+                        cpuLoad = _cpuLoad.ToString("f1"); //.PadLeft(4, ' ');
                     }
                     else if (hardware.HardwareType == HardwareType.GpuNvidia || hardware.HardwareType == HardwareType.GpuAmd)
                     {
@@ -192,10 +192,10 @@ namespace JukeBoxDesktop
 
                         gpuName = hardware.Name;
                         gpuTemp = _gpuTemp.ToString("f1");
-                        gpuCoreLoad = _gpuCoreLoad.ToString("f1").PadLeft(4, ' ');
-                        gpuCoreClock = _gpuCoreClock.ToString("f1").PadLeft(6, ' ');
-                        gpuVramLoad = _gpuVramLoad.ToString("f1").PadLeft(4, ' ');
-                        gpuVramClock = _gpuVramClock.ToString("f1").PadLeft(6, ' ');
+                        gpuCoreLoad = _gpuCoreLoad.ToString("f1"); //.PadLeft(4, ' ');
+                        gpuCoreClock = _gpuCoreClock.ToString("f1"); //.PadLeft(6, ' ');
+                        gpuVramLoad = _gpuVramLoad.ToString("f1"); //.PadLeft(4, ' ');
+                        gpuVramClock = _gpuVramClock.ToString("f1"); //.PadLeft(6, ' ');
                     }
                     else if (hardware.HardwareType == HardwareType.Memory)
                     {

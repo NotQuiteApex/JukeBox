@@ -5,6 +5,7 @@
 
 // Based on IBM Code Page 437, and the Curses font from Dwarf Fortress
 
+const uint8_t kern_width = 10;
 const uint8_t font_width = 12;
 const uint8_t font_height = 12;
 

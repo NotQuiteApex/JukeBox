@@ -123,24 +123,44 @@ uint8_t parse_pc_part_stats(void) {
       }
       idx2 = i;
 
+      size_t s = 0;
+      char * i1 = inputString+idx1;
       if (count == 0) {
-        strncpy(cpuFreq, inputString+idx1, MIN(sizeof(cpuFreq), idx2-idx1));
+        s = MIN(sizeof(cpuFreq), idx2-idx1);
+        strncpy(cpuFreq, i1, s);
+        cpuFreq[s] = '\0';
       } else if (count == 1) {
-        strncpy(cpuTemp, inputString+idx1, MIN(sizeof(cpuTemp), idx2-idx1));
+        s = MIN(sizeof(cpuTemp), idx2-idx1);
+        strncpy(cpuTemp, i1, s);
+        cpuTemp[s] = '\0';
       } else if (count == 2) {
-        strncpy(cpuLoad, inputString+idx1, MIN(sizeof(cpuLoad), idx2-idx1));
+        s = MIN(sizeof(cpuLoad), idx2-idx1);
+        strncpy(cpuLoad, i1, s);
+        cpuLoad[s] = '\0';
       } else if (count == 3) {
-        strncpy(ramUsed, inputString+idx1, MIN(sizeof(ramUsed), idx2-idx1));
+        s = MIN(sizeof(ramUsed), idx2-idx1);
+        strncpy(ramUsed, i1, s);
+        ramUsed[s] = '\0';
       } else if (count == 4) {
-        strncpy(gpuTemp, inputString+idx1, MIN(sizeof(gpuTemp), idx2-idx1));
+        s = MIN(sizeof(gpuTemp), idx2-idx1);
+        strncpy(gpuTemp, i1, s);
+        gpuTemp[s] = '\0';
       } else if (count == 5) {
-        strncpy(gpuCoreClock, inputString+idx1, MIN(sizeof(gpuCoreClock), idx2-idx1));
+        s = MIN(sizeof(gpuCoreClock), idx2-idx1);
+        strncpy(gpuCoreClock, i1, s);
+        gpuCoreClock[s] = '\0';
       } else if (count == 6) {
-        strncpy(gpuCoreLoad, inputString+idx1, MIN(sizeof(gpuCoreLoad), idx2-idx1));
+        s = MIN(sizeof(gpuCoreLoad), idx2-idx1);
+        strncpy(gpuCoreLoad, i1, s);
+        gpuCoreLoad[s] = '\0';
       } else if (count == 7) {
-        strncpy(gpuVramClock, inputString+idx1, MIN(sizeof(gpuVramClock), idx2-idx1));
+        s = MIN(sizeof(gpuVramClock), idx2-idx1);
+        strncpy(gpuVramClock, i1, s);
+        gpuVramClock[s] = '\0';
       } else if (count == 8) {
-        strncpy(gpuVramLoad, inputString+idx1, MIN(sizeof(gpuVramLoad), idx2-idx1));
+        s = MIN(sizeof(gpuVramLoad), idx2-idx1);
+        strncpy(gpuVramLoad, i1, s);
+        gpuVramLoad[s] = '\0';
       }
 
       count++;
@@ -172,7 +192,7 @@ void serial_task(void) {
   }
 
   static uint64_t heartbeat_ms = 0;
-  const uint64_t offset_heartbeat = 3000000;
+  const uint64_t offset_heartbeat = 1000000;
 
   if (commstage == ErrorWait) {
     // TODO: have the device show an error screen and hold on it for some period of time.
