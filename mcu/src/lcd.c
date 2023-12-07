@@ -108,11 +108,9 @@ void lcd_task(void) {
     
     lcd_clear();
 
-    const int scr_scale = 1; // temp
-
     if (screenstate == WaitingConnection) {
-        lcd_print_raw("JukeBoxStats", 20, 50-16, 2*scr_scale);
-        lcd_print_raw("Waiting for connection...", 15, 60, scr_scale);
+        lcd_print_raw("JukeBoxStats", 20, 50-16, 2);
+        lcd_print_raw("Waiting for connection...", 15, 60, 1);
     } else if (screenstate == ShowStats) {
         if (strncmp(cpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 63, 0);
@@ -121,16 +119,16 @@ void lcd_task(void) {
         } else {
             lcd_set_color(255, 0, 255);
         }
-        lcd_print_raw(cpuName, 0, 0, scr_scale);
+        lcd_print_raw(cpuName, 0, 0, 1);
         lcd_set_color(255, 255, 255);
 
-        lcd_print_raw(cpuFreq,   0, 14, 2*scr_scale);
-        lcd_print_raw(cpuLoad,  88, 14, 2*scr_scale);
-        lcd_print_raw(cpuTemp, 176, 14, 2*scr_scale);
+        lcd_print_raw(cpuFreq,   0, 14, 2);
+        lcd_print_raw(cpuLoad,  88, 14, 2);
+        lcd_print_raw(cpuTemp, 170, 14, 2);
 
-        lcd_print_raw("FreqGHz",       0, 38, scr_scale);
-        lcd_print_raw("Load%",        88, 38, scr_scale);
-        lcd_print_raw("Temp\xF8""C", 176, 38, scr_scale);
+        lcd_print_raw("FreqGHz",       0, 38, 1);
+        lcd_print_raw("Load%",        88, 38, 1);
+        lcd_print_raw("Temp\xF8""C", 170, 38, 1);
 
         if (strncmp(gpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 0, 0);
@@ -139,29 +137,29 @@ void lcd_task(void) {
         } else {
             lcd_set_color(255, 0, 255);
         }
-        lcd_print_raw(gpuName, 0, 64, scr_scale);
+        lcd_print_raw(gpuName, 0, 80, 1);
         lcd_set_color(255, 255, 255);
         
-        lcd_print_raw(gpuCoreLoad,   0, 78, 2*scr_scale);
-        lcd_print_raw(gpuVramLoad,  88, 78, 2*scr_scale);
-        lcd_print_raw(gpuTemp,     176, 78, 2*scr_scale);
+        lcd_print_raw(gpuCoreLoad,   0, 94, 2);
+        lcd_print_raw(gpuVramLoad,  88, 94, 2);
+        lcd_print_raw(gpuTemp,     170, 94, 2);
 
-        lcd_print_raw("Load%",         0, 102, scr_scale);
-        lcd_print_raw("Vram%",        88, 102, scr_scale);
-        lcd_print_raw("Temp\xF8""C", 176, 102, scr_scale);
+        lcd_print_raw("Load%",         0, 118, 1);
+        lcd_print_raw("Vram%",        88, 118, 1);
+        lcd_print_raw("Temp\xF8""C", 170, 118, 1);
 
-        lcd_print_raw(gpuCoreClock,  0, 116, 2*scr_scale);
-        lcd_print_raw(gpuVramClock, 144, 116, 2*scr_scale);
+        lcd_print_raw(gpuCoreClock,  0, 132, 2);
+        lcd_print_raw(gpuVramClock, 138, 132, 2);
 
-        lcd_print_raw("CoreMHz",  0, 120+20, scr_scale);
-        lcd_print_raw("VramMHz", 144, 120+20, scr_scale);
+        lcd_print_raw("CoreMHz",   0, 156, 1);
+        lcd_print_raw("VramMHz", 138, 156, 1);
 
         lcd_set_color(255,   0, 255);
-        lcd_print_raw("RAM:",     0, 164, scr_scale);
+        lcd_print_raw("RAM:",     0, 196, 1);
         lcd_set_color(255, 255, 255);
-        lcd_print_raw(ramUsed,   60, 164, 2*scr_scale);
-        lcd_print_raw("/",      130, 174, scr_scale);
-        lcd_print_raw(ramCount, 144, 174, scr_scale);
+        lcd_print_raw(ramUsed,   60, 196, 2);
+        lcd_print_raw("/",      130, 206, 1);
+        lcd_print_raw(ramCount, 144, 206, 1);
     }
 
     lcd_present();
