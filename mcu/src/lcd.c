@@ -109,8 +109,8 @@ void lcd_task(void) {
     lcd_clear();
 
     if (screenstate == WaitingConnection) {
-        lcd_print_raw("JukeBoxStats", 20, 50-16, 2);
-        lcd_print_raw("Waiting for connection...", 15, 60, 1);
+        lcd_print_raw("JukeBoxStats", 20, 114, 2);
+        lcd_print_raw("Waiting for connection...", 15, 156, 1);
     } else if (screenstate == ShowStats) {
         if (strncmp(cpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 63, 0);
