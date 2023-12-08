@@ -11,12 +11,12 @@ void serial_task(void);
 
 typedef enum
 {
-  ErrorWait,
-  GreetHost,
-  GreetDevice,
-  LinkConfirmHost,
-  LinkConfirmDevice,
-  TransmitReady,
+	ErrorWait,
+	GreetHost,
+	GreetDevice,
+	LinkConfirmHost,
+	LinkConfirmDevice,
+	TransmitReady,
 } SerialStage;
 
 extern char inputString[65];

@@ -6,9 +6,9 @@
 // Screen states, for what to display, when to display it, and how!
 typedef enum
 {
-  Unknown,
-  WaitingConnection,
-  ShowStats,
+	Unknown,
+	WaitingConnection,
+	ShowStats,
 } ScreenState;
 
 void lcd_init(void);
