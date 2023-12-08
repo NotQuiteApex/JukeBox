@@ -33,8 +33,13 @@ char gpuVramLoad[6]  = "";
 
 uint32_t countermax = 0;
 
+#define clear_string(s) \
+  for (uint8_t i=0; i<sizeof(s); i++) { \
+    s[i] = '\0'; \
+  }
+
 inline void reset_input_string(void) {
-  inputString[0] = '\0';
+  clear_string(inputString);
   inputStringLen = 0;
   inputStringReady = 0;
 }
@@ -46,26 +51,23 @@ inline void reset_state_data(void) {
 
   reset_input_string();
 
-  cpuName[0] = '\0';
-  gpuName[0] = '\0';
-  ramCount[0] = '\0';
+  clear_string(cpuName);
+  clear_string(gpuName);
+  clear_string(ramCount);
 
-  cpuFreq[0] = '\0';
-  cpuTemp[0] = '\0';
-  cpuLoad[0] = '\0';
-  ramUsed[0] = '\0';
-  gpuTemp[0] = '\0';
-  gpuCoreClock[0] = '\0';
-  gpuCoreLoad[0] = '\0';
-  gpuVramClock[0] = '\0';
-  gpuVramLoad[0] = '\0';
+  clear_string(cpuFreq);
+  clear_string(cpuTemp);
+  clear_string(cpuLoad);
+  clear_string(ramUsed);
+  clear_string(gpuTemp);
+  clear_string(gpuCoreClock);
+  clear_string(gpuCoreLoad);
+  clear_string(gpuVramClock);
+  clear_string(gpuVramLoad);
 }
 
 uint8_t parse_pc_part_info(void) {
   // process the names!
-  // string format of computer parts stats
-  // $"{cpuName}|{gpuName}|{ramTotal}GB|"
-
   // beginning index and end index, and the variable to store data into
   uint8_t idx1 = 3;
   uint8_t idx2 = 3;
@@ -83,12 +85,20 @@ uint8_t parse_pc_part_info(void) {
       idx2 = i;
 
       // hand off data to proper variable
+      size_t s = 0;
+      char * i1 = inputString+idx1;
       if (count == 0) {
-        strncpy(cpuName, inputString+idx1, MIN(sizeof(cpuName), idx2-idx1));
+        s = MIN(sizeof(cpuName) - 1, idx2 - idx1);
+        strncpy(cpuName, i1, s);
+        cpuName[s] = '\0';
       } else if (count == 1) {
-        strncpy(gpuName, inputString+idx1, MIN(sizeof(gpuName), idx2-idx1));
+        s = MIN(sizeof(gpuName) - 1, idx2 - idx1);
+        strncpy(gpuName, i1, s);
+        gpuName[s] = '\n';
       } else if (count == 2) {
-        strncpy(ramCount, inputString+idx1, MIN(sizeof(ramCount), idx2-idx1));
+        s = MIN(sizeof(ramCount) - 1, idx2 - idx1);
+        strncpy(ramCount, i1, s);
+        ramCount[s] = '\n';
       }
 
       // update variable to determine what variable to hand off to next
@@ -106,9 +116,6 @@ uint8_t parse_pc_part_info(void) {
 
 uint8_t parse_pc_part_stats(void) {
   // Format string of continuous stats
-  // $"{cpuFreq}|{cpuTemp}|{cpuLoad}|{ramUsed}|{gpuTemp}|" +
-  // $"{gpuCoreClock}|{gpuCoreLoad}|{gpuVramClock}|{gpuVramLoad}|"
-
   // this is the same as above, just with more variables to hand data to
 
   uint8_t idx1 = 3;
@@ -126,39 +133,39 @@ uint8_t parse_pc_part_stats(void) {
       size_t s = 0;
       char * i1 = inputString+idx1;
       if (count == 0) {
-        s = MIN(sizeof(cpuFreq), idx2-idx1);
+        s = MIN(sizeof(cpuFreq) - 1, idx2 - idx1);
         strncpy(cpuFreq, i1, s);
         cpuFreq[s] = '\0';
       } else if (count == 1) {
-        s = MIN(sizeof(cpuTemp), idx2-idx1);
+        s = MIN(sizeof(cpuTemp) - 1, idx2 - idx1);
         strncpy(cpuTemp, i1, s);
         cpuTemp[s] = '\0';
       } else if (count == 2) {
-        s = MIN(sizeof(cpuLoad), idx2-idx1);
+        s = MIN(sizeof(cpuLoad) - 1, idx2 - idx1);
         strncpy(cpuLoad, i1, s);
         cpuLoad[s] = '\0';
       } else if (count == 3) {
-        s = MIN(sizeof(ramUsed), idx2-idx1);
+        s = MIN(sizeof(ramUsed) - 1, idx2 - idx1);
         strncpy(ramUsed, i1, s);
         ramUsed[s] = '\0';
       } else if (count == 4) {
-        s = MIN(sizeof(gpuTemp), idx2-idx1);
+        s = MIN(sizeof(gpuTemp) - 1, idx2 - idx1);
         strncpy(gpuTemp, i1, s);
         gpuTemp[s] = '\0';
       } else if (count == 5) {
-        s = MIN(sizeof(gpuCoreClock), idx2-idx1);
+        s = MIN(sizeof(gpuCoreClock) - 1, idx2 - idx1);
         strncpy(gpuCoreClock, i1, s);
         gpuCoreClock[s] = '\0';
       } else if (count == 6) {
-        s = MIN(sizeof(gpuCoreLoad), idx2-idx1);
+        s = MIN(sizeof(gpuCoreLoad) - 1, idx2 - idx1);
         strncpy(gpuCoreLoad, i1, s);
         gpuCoreLoad[s] = '\0';
       } else if (count == 7) {
-        s = MIN(sizeof(gpuVramClock), idx2-idx1);
+        s = MIN(sizeof(gpuVramClock) - 1, idx2 - idx1);
         strncpy(gpuVramClock, i1, s);
         gpuVramClock[s] = '\0';
       } else if (count == 8) {
-        s = MIN(sizeof(gpuVramLoad), idx2-idx1);
+        s = MIN(sizeof(gpuVramLoad) - 1, idx2 - idx1);
         strncpy(gpuVramLoad, i1, s);
         gpuVramLoad[s] = '\0';
       }
