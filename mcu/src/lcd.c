@@ -131,6 +131,10 @@ void lcd_task(void) {
         lcd_print_raw("JukeBoxStats", 18, 114, 2);
         lcd_print_raw("Waiting for connection...", 16, 156, 1);
     } else if (screenstate == ShowStats) {
+        lcd_set_color( 0, 132, 255); lcd_rect(0, st7789_get_height()-50, st7789_get_width(), 20);
+        lcd_set_color(77, 224, 255); lcd_rect(0, st7789_get_height()-30, st7789_get_width(), 10);
+        lcd_set_color(68, 171, 255); lcd_rect(0, st7789_get_height()-20, st7789_get_width(), 20);
+
         if (strncmp(cpuName, "AMD", 3) == 0) {
             lcd_set_color(255, 63, 0);
         } else if (strncmp(cpuName, "INTEL", 5) == 0) {

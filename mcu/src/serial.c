@@ -38,13 +38,13 @@ uint32_t countermax = 0;
     s[i] = '\0'; \
   }
 
-inline void reset_input_string(void) {
+void reset_input_string(void) {
   clear_string(inputString);
   inputStringLen = 0;
   inputStringReady = 0;
 }
 
-inline void reset_state_data(void) {
+void reset_state_data(void) {
   commstage = GreetHost;
 
   screenstate = WaitingConnection;
@@ -94,11 +94,11 @@ uint8_t parse_pc_part_info(void) {
       } else if (count == 1) {
         s = MIN(sizeof(gpuName) - 1, idx2 - idx1);
         strncpy(gpuName, i1, s);
-        gpuName[s] = '\n';
+        gpuName[s] = '\0';
       } else if (count == 2) {
         s = MIN(sizeof(ramCount) - 1, idx2 - idx1);
         strncpy(ramCount, i1, s);
-        ramCount[s] = '\n';
+        ramCount[s] = '\0';
       }
 
       // update variable to determine what variable to hand off to next
@@ -183,7 +183,7 @@ uint8_t parse_pc_part_stats(void) {
 }
 
 void serial_init(void) {
-  
+  reset_state_data();
 }
 
 void serial_task(void) {
