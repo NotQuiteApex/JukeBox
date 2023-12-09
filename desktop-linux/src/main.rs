@@ -4,7 +4,6 @@ mod serial;
 mod util;
 
 use crate::util::{ExitCode, ExitMsg};
-use sysinfo::{CpuExt, System, SystemExt};
 
 fn deffered_main() -> Result<(), ExitMsg> {
     // Setup the logger
@@ -75,13 +74,6 @@ fn deffered_main() -> Result<(), ExitMsg> {
         ));
     }
     let mut f = f.unwrap();
-
-    let mut sys = System::new_all();
-    sys.refresh_all();
-
-    println!("{}", sys.global_cpu_info().brand());
-    println!("{}", sys.global_cpu_info().frequency());
-    println!("{}", sys.global_cpu_info().cpu_usage());
 
     serial::serial_task(&mut f)
 }

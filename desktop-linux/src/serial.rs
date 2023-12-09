@@ -3,6 +3,7 @@
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
+use sysinfo::{CpuExt, System, SystemExt};
 use std::ops::Add;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -53,9 +54,9 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
 
 // Stages
 
-fn serial_greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     // Send enquire message to JukeBox
-    log::trace!("SerialStage: GreetHost");
+    log::debug!("SerialStage: GreetHost");
 
     if f.write_all(b"JB\x05\r\n").is_err() {
         return Err(ExitMsg::new(
@@ -67,9 +68,9 @@ fn serial_greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     Ok(())
 }
 
-fn serial_greet_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn greet_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     // Recieve response, which should contain protocol version.
-    log::trace!("SerialStage: GreetDevice");
+    log::debug!("SerialStage: GreetDevice");
 
     let s = get_serial_string(f);
     if s.is_err() || s.unwrap() != String::from("P001\r\n") {
@@ -83,8 +84,8 @@ fn serial_greet_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     Ok(())
 }
 
-fn serial_link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    log::trace!("SerialStage: LinkConfirmHost");
+fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    log::debug!("SerialStage: LinkConfirmHost");
 
     if f.write_all(b"P\x06\r\n").is_err() {
         return Err(ExitMsg::new(
@@ -96,8 +97,8 @@ fn serial_link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> 
     Ok(())
 }
 
-fn serial_link_confirm_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    log::trace!("SerialStage: LinkConfirmDevice");
+fn link_confirm_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    log::debug!("SerialStage: LinkConfirmDevice");
 
     let s = get_serial_string(f);
     if s.is_err() || s.unwrap() != String::from("L\x06\r\n") {
@@ -111,27 +112,18 @@ fn serial_link_confirm_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg
     Ok(())
 }
 
-fn serial_transmit(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    transmit_tasks_init(f)?;
-
-    loop {
-        let exit = transmit_tasks_loop(f)?;
-        if exit {
-            break;
-        }
-    }
-
-    Ok(())
-}
-
 // Tasks
 
-fn transmit_tasks_init(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<(), ExitMsg> {
+    log::debug!("CPU Brand: '{}'.", sys.global_cpu_info().brand());
+    log::debug!("Memory: {} Bytes.", sys.total_memory());
+
+    let cpu = sys.global_cpu_info().brand().replace("12th Gen Intel(R) Core(TM)", "Intel Core");
     let m = format!(
-        "D\x11\x30{}\x1F{}\x1F{}GB\x1F\r\n",
-        "a0", //"TestCPU",
-        "a1", //"TestGPU",
-        "a2", //"0",
+        "D\x11\x30{}\x1F{}\x1F{:.1}GiB\x1F\r\n",
+        cpu,
+        "TEST_GPU_DO_NOT_STEAL", //"TestGPU",
+        (sys.total_memory() as f64) / ((1 << 30) as f64)
     );
     let m = m.as_bytes();
 
@@ -155,7 +147,7 @@ fn transmit_tasks_init(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     Ok(())
 }
 
-fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>) -> Result<bool, ExitMsg> {
+fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool, ExitMsg> {
     if f.write_all(b"H\x30\r\n").is_err() {
         return Err(ExitMsg::new(
             ExitCode::SerialTransmitHeartbeatSend,
@@ -170,12 +162,16 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>) -> Result<bool, ExitMsg> {
         ));
     }
 
+    let cpu_freq = sys.global_cpu_info().frequency();
+    let cpu_usage = sys.global_cpu_info().cpu_usage() as f64;
+    let mem_used = sys.used_memory();
+
     let m = format!(
-        "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
-        "b0", //"cpuFreq",
+        "D\x11\x31{:.2}\x1F{}\x1F{:.1}\x1F{:.1}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
+        (sys.global_cpu_info().frequency() as f64) / (1000 as f64), // "b0", //"cpuFreq",
         "b1", //"cpuTemp",
-        "b2", //"cpuLoad",
-        "b3", //"ramUsed",
+        sys.global_cpu_info().cpu_usage(), // "b2", //"cpuLoad",
+        (sys.used_memory() as f64) / ((1 << 30) as f64), // "b3", //"ramUsed",
         "b4", //"gpuTemp",
         "b5", //"gpuCoreClock",
         "b6", //"gpuCoreLoad",
@@ -199,14 +195,32 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>) -> Result<bool, ExitMsg> {
 
     // TODO: include a clause for closing the connection and returning true.
 
+    sleep(Duration::from_millis(900));
+
     Ok(false)
 }
 
 pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    serial_greet_host(f)?;
-    serial_greet_device(f)?;
-    serial_link_confirm_host(f)?;
-    serial_link_confirm_device(f)?;
+    greet_host(f)?;
+    greet_device(f)?;
+    link_confirm_host(f)?;
+    link_confirm_device(f)?;
 
-    serial_transmit(f)
+    let mut sys = System::new_all();
+    sys.refresh_cpu();
+    sys.refresh_memory();
+
+    transmit_tasks_init(f, &sys)?;
+
+    loop {
+        sys.refresh_cpu();
+        sys.refresh_memory();
+
+        let exit = transmit_tasks_loop(f, &sys)?;
+        if exit {
+            break;
+        }
+    }
+
+    Ok(())
 }
