@@ -19,22 +19,22 @@ typedef enum
 	TransmitReady,
 } SerialStage;
 
-extern char inputString[65];
-extern uint8_t inputStringLen;
+extern char inputString[128];
+extern uint16_t inputStringLen;
 extern uint8_t inputStringReady;
 
-extern char cpuName[28];
-extern char gpuName[28];
-extern char ramCount[6];
+extern char cpuName[48];
+extern char gpuName[48];
+extern char ramCount[10];
 
-extern char cpuFreq[6];
-extern char cpuTemp[6];
-extern char cpuLoad[6];
-extern char ramUsed[6];
-extern char gpuTemp[6];
-extern char gpuCoreClock[8];
-extern char gpuCoreLoad[6];
-extern char gpuVramClock[8];
-extern char gpuVramLoad[6];
+extern char cpuFreq[8];
+extern char cpuTemp[8];
+extern char cpuLoad[8];
+extern char ramUsed[8];
+extern char gpuTemp[8];
+extern char gpuCoreClock[10];
+extern char gpuCoreLoad[8];
+extern char gpuVramClock[10];
+extern char gpuVramLoad[8];
 
 #endif // JUKEBOX_SERIAL_H

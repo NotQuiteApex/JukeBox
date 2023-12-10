@@ -3,6 +3,8 @@
 mod serial;
 mod util;
 
+use serialport::SerialPortType;
+
 use crate::util::{ExitCode, ExitMsg};
 
 fn deffered_main() -> Result<(), ExitMsg> {
@@ -10,6 +12,7 @@ fn deffered_main() -> Result<(), ExitMsg> {
     stderrlog::new()
         .module(module_path!())
         .timestamp(stderrlog::Timestamp::Millisecond)
+        .verbosity(3)
         // .verbosity(args.verbose as usize)
         .init()
         .map_err(|e| {
@@ -39,41 +42,43 @@ fn deffered_main() -> Result<(), ExitMsg> {
         )
     })?;
 
-    // TODO: replace this with clap
-    let args: Vec<_> = std::env::args().collect();
-    // let exe = args.get(0).map_or("jukeboxcli", |v| v.as_str());
-    if args.len() != 2 {
+    let ports = serialport::available_ports().map_err(|why| {
+        ExitMsg::new(
+            ExitCode::GenericError,
+            format!("Failed to enumerate serial ports, reason: \"{}\".", why),
+        )
+    })?;
+    let ports: Vec<_> = ports
+        .iter()
+        .filter(|p| match &p.port_type {
+            SerialPortType::UsbPort(p) => p.pid == 0xF20A && p.vid == 0x1209,
+            _ => false,
+        })
+        .collect();
+    log::info!(
+        "Found ports: {:?}",
+        ports
+            .iter()
+            .map(|f| f.port_name.clone())
+            .collect::<Vec<_>>()
+    );
+    if ports.len() == 0 {
         return Err(ExitMsg::new(
             ExitCode::GenericError,
-            "Invalid arguments.".to_owned(),
+            format!("Failed to find JukeBox serial port."),
         ));
     }
+    let port = ports.get(0).unwrap(); // TODO: provide an argument to choose from this vector
 
-    let md = std::fs::metadata(&args[1]);
-    if md.is_err() {
-        return Err(ExitMsg::new(
-            ExitCode::GenericError,
-            "Failed to read FILE metadata.".to_owned(),
-        ));
-    }
-    let md = md.unwrap();
-    if md.is_dir() {
-        return Err(ExitMsg::new(
-            ExitCode::GenericError,
-            "FILE cannot be a directory.".to_owned(),
-        ));
-    }
-
-    let f = serialport::new(&args[1], 115200)
+    let mut f = serialport::new(port.port_name.clone(), 115200)
         // .timeout(Duration::from_millis(10))
-        .open();
-    if f.is_err() {
-        return Err(ExitMsg::new(
-            ExitCode::GenericError,
-            "Cannot open FILE.".to_owned(),
-        ));
-    }
-    let mut f = f.unwrap();
+        .open()
+        .map_err(|why| {
+            ExitMsg::new(
+                ExitCode::GenericError,
+                format!("Failed to open serial port, reason: \"{}\".", why),
+            )
+        })?;
 
     serial::serial_task(&mut f)
 }

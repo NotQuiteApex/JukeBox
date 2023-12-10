@@ -10,26 +10,25 @@ SerialStage commstage = GreetHost;
 int commstagepart = 0;
 
 // The data string we use to store received data
-// TODO: BOOST TO 128
-char inputString[65] = "";
-uint8_t inputStringLen = 0;
+char inputString[128] = "";
+uint16_t inputStringLen = 0;
 uint8_t inputStringReady = 0;
 
 // Data we store!
 // Data that we receive only at the time a connection is made.
-char cpuName[28] = "";
-char gpuName[28] = "";
-char ramCount[6] = "";
+char cpuName[48] = "";
+char gpuName[48] = "";
+char ramCount[10] = "";
 // Data we constantly receive after a connection is made.
-char cpuFreq[6] = "";
-char cpuTemp[6] = "";
-char cpuLoad[6] = "";
-char ramUsed[6] = "";
-char gpuTemp[6] = "";
-char gpuCoreClock[8] = "";
-char gpuCoreLoad[6]  = "";
-char gpuVramClock[8] = "";
-char gpuVramLoad[6]  = "";
+char cpuFreq[8] = "";
+char cpuTemp[8] = "";
+char cpuLoad[8] = "";
+char ramUsed[8] = "";
+char gpuTemp[8] = "";
+char gpuCoreClock[10] = "";
+char gpuCoreLoad[8]  = "";
+char gpuVramClock[10] = "";
+char gpuVramLoad[8]  = "";
 
 uint32_t countermax = 0;
 

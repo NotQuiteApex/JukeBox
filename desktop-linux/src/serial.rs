@@ -3,10 +3,10 @@
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
-use sysinfo::{CpuExt, System, SystemExt};
 use std::ops::Add;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
+use sysinfo::{CpuExt, System, SystemExt};
 
 // Utility
 
@@ -64,6 +64,7 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
             "Failed to send host greeting.".to_owned(),
         ));
     }
+    f.flush();
 
     Ok(())
 }
@@ -93,6 +94,7 @@ fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
             "Failed to send protocol ack.".to_owned(),
         ));
     }
+    f.flush();
 
     Ok(())
 }
@@ -115,32 +117,42 @@ fn link_confirm_device(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 // Tasks
 
 fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<(), ExitMsg> {
-    log::debug!("CPU Brand: '{}'.", sys.global_cpu_info().brand());
-    log::debug!("Memory: {} Bytes.", sys.total_memory());
+    let cpu_name = sys.global_cpu_info().brand().trim();
+    let gpu_name = "TestGPU";
+    let memory = format!("{:.1}", (sys.total_memory() as f64) / ((1 << 30) as f64));
 
-    let cpu = sys.global_cpu_info().brand().replace("12th Gen Intel(R) Core(TM)", "Intel Core");
     let m = format!(
         "D\x11\x30{}\x1F{}\x1F{:.1}GiB\x1F\r\n",
-        cpu,
-        "TEST_GPU_DO_NOT_STEAL", //"TestGPU",
-        (sys.total_memory() as f64) / ((1 << 30) as f64)
+        cpu_name, gpu_name, memory,
     );
     let m = m.as_bytes();
-
-    if f.write_all(m).is_err() {
-        println!("Error: Failed to send computer part info.");
-        return Err(ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartInitSend,
-            "Failed to send computer part info.".to_owned(),
-        ));
+    if m.len() > 128 {
+        log::warn!("TInit string longer than 64 bytes!");
+        log::warn!("TInit CPU Brand: '{}'.", cpu_name);
+        log::warn!("TInit GPU Brand: '{}'.", gpu_name);
+        log::warn!("TInit Memory: '{}'.", memory);
+        log::warn!("TInit string len: {} bytes.", m.len());
+        // log::warn!("TInit string: {:?}", m);
     }
 
-    let s = get_serial_string(f);
-    if s.is_err() || s.unwrap() != String::from("D\x11\x06\r\n") {
-        println!("Error: Failed to get computer part info ack'd.");
+    f.write_all(m).map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialTransmitComputerPartInitSend,
+            format!("Failed to send computer part info, reason '{}'.", why),
+        )
+    })?;
+    f.flush();
+
+    let s = get_serial_string(f).map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialTransmitComputerPartInitAck,
+            format!("Failed to get computer part info ack'd, reason '{}'.", why),
+        )
+    })?;
+    if s != String::from("D\x11\x06\r\n") {
         return Err(ExitMsg::new(
             ExitCode::SerialTransmitComputerPartInitAck,
-            "Failed to get computer part info ack'd.".to_owned(),
+            format!("Computer part info ack incorrect, got '{}'.", s),
         ));
     }
 
@@ -154,6 +166,7 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
             "Failed to send heartbeat.".to_owned(),
         ));
     }
+    f.flush();
     let s = get_serial_string(f);
     if s.is_err() || s.unwrap() != String::from("H\x31\r\n") {
         return Err(ExitMsg::new(
@@ -162,21 +175,21 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
         ));
     }
 
-    let cpu_freq = sys.global_cpu_info().frequency();
-    let cpu_usage = sys.global_cpu_info().cpu_usage() as f64;
-    let mem_used = sys.used_memory();
+    // let cpu_freq = sys.global_cpu_info().frequency();
+    // let cpu_usage = sys.global_cpu_info().cpu_usage() as f64;
+    // let mem_used = sys.used_memory();
 
     let m = format!(
         "D\x11\x31{:.2}\x1F{}\x1F{:.1}\x1F{:.1}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
         (sys.global_cpu_info().frequency() as f64) / (1000 as f64), // "b0", //"cpuFreq",
-        "b1", //"cpuTemp",
-        sys.global_cpu_info().cpu_usage(), // "b2", //"cpuLoad",
-        (sys.used_memory() as f64) / ((1 << 30) as f64), // "b3", //"ramUsed",
-        "b4", //"gpuTemp",
-        "b5", //"gpuCoreClock",
-        "b6", //"gpuCoreLoad",
-        "b7", //"gpuVramClock",
-        "b8", //"gpuVramLoad",
+        "b1",                                                       //"cpuTemp",
+        sys.global_cpu_info().cpu_usage(),                          // "b2", //"cpuLoad",
+        (sys.used_memory() as f64) / ((1 << 30) as f64),            // "b3", //"ramUsed",
+        "b4",                                                       //"gpuTemp",
+        "b5",                                                       //"gpuCoreClock",
+        "b6",                                                       //"gpuCoreLoad",
+        "b7",                                                       //"gpuVramClock",
+        "b8",                                                       //"gpuVramLoad",
     );
     let m = m.as_bytes();
     if f.write_all(m).is_err() {
@@ -185,6 +198,7 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
             "Failed to send computer part stats.".to_owned(),
         ));
     }
+    f.flush();
     let s = get_serial_string(f);
     if s.is_err() || s.unwrap() != String::from("D\x11\x06\r\n") {
         return Err(ExitMsg::new(
@@ -195,31 +209,36 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
 
     // TODO: include a clause for closing the connection and returning true.
 
-    sleep(Duration::from_millis(900));
-
     Ok(false)
 }
 
 pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    let mut sys = System::new_all();
+    sys.refresh_cpu();
+    sys.refresh_memory();
+
     greet_host(f)?;
     greet_device(f)?;
     link_confirm_host(f)?;
     link_confirm_device(f)?;
 
-    let mut sys = System::new_all();
-    sys.refresh_cpu();
-    sys.refresh_memory();
-
     transmit_tasks_init(f, &sys)?;
 
-    loop {
-        sys.refresh_cpu();
-        sys.refresh_memory();
+    let mut timer = SystemTime::now();
 
-        let exit = transmit_tasks_loop(f, &sys)?;
-        if exit {
+    loop {
+        if SystemTime::now() < timer {
+            continue;
+        }
+
+        if transmit_tasks_loop(f, &sys)? {
             break;
         }
+
+        sys.refresh_cpu();
+        sys.refresh_memory();
+        // sleep(Duration::from_millis(900));
+        timer = SystemTime::now().add(Duration::from_millis(500));
     }
 
     Ok(())
