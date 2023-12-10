@@ -12,7 +12,7 @@ fn deffered_main() -> Result<(), ExitMsg> {
     stderrlog::new()
         .module(module_path!())
         .timestamp(stderrlog::Timestamp::Millisecond)
-        .verbosity(3)
+        .verbosity(5)
         // .verbosity(args.verbose as usize)
         .init()
         .map_err(|e| {
