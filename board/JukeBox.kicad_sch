@@ -5,10 +5,10 @@
   (paper "A3")
 
   (title_block
-    (title "RP2040 Minimal Design Example")
-    (date "2020-12-18")
+    (title "JukeBoxV5")
+    (date "2023-12-25")
     (rev "REV1")
-    (company "Raspberry Pi (Trading) Ltd")
+    (company "Friend Team Inc.")
   )
 
   (lib_symbols
