@@ -7,49 +7,7 @@ use serialport::SerialPortType;
 
 use crate::util::{ExitCode, ExitMsg};
 
-use nvml_wrapper::enum_wrappers::device::{Clock, TemperatureSensor};
-use nvml_wrapper::error::NvmlError;
-use nvml_wrapper::{cuda_driver_version_major, cuda_driver_version_minor, Nvml};
-use pretty_bytes::converter::convert;
-
-fn nvtest() -> Result<(), NvmlError> {
-    let nvml = Nvml::init()?;
-
-    let device_count = nvml.device_count()?;
-    println!("NVIDIA GPU Devices:");
-    for i in 0..device_count {
-        let device = nvml.device_by_index(i)?;
-
-        let name = device.name()?;
-        let temp = device.temperature(TemperatureSensor::Gpu)?;
-        let gfx_clock = device.clock_info(Clock::Graphics)?;
-        let mem_clock = device.clock_info(Clock::Memory)?;
-        let utils = device.utilization_rates()?;
-
-        println!(
-            "{}. {}: {}*C, {} MHz, {} MHz, {} %, {} %",
-            i+1,
-            name,
-            temp,
-            gfx_clock,
-            mem_clock,
-            utils.gpu,
-            utils.memory,
-        )
-    }
-
-    Ok(())
-}
-
 fn deffered_main() -> Result<(), ExitMsg> {
-    // nvtest().map_err(|why|
-    //     ExitMsg::new(
-    //         ExitCode::GenericError,
-    //         format!("Failed to run nvtest: {}", why)
-    //     )
-    // )?;
-    // return Ok(());
-
     // Setup the logger
     stderrlog::new()
         .module(module_path!())

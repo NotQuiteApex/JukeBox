@@ -5,7 +5,11 @@ use crate::util::{ExitCode, ExitMsg};
 use serialport::SerialPort;
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
-use sysinfo::{CpuExt, System, SystemExt, ComponentExt};
+use sysinfo::{CpuExt, System, SystemExt};
+
+use nvml_wrapper::enum_wrappers::device::{Clock, TemperatureSensor};
+use nvml_wrapper::error::NvmlError;
+use nvml_wrapper::Nvml;
 
 // Utility
 
@@ -63,7 +67,12 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
             "Failed to send host greeting.".to_owned(),
         ));
     }
-    f.flush();
+    f.flush().map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialStageGreetHost,
+            format!("Failed to flush string, reason: '{}'.", why),
+        )
+    })?;
 
     let s = get_serial_string(f);
     if s.is_err() || s.unwrap() != String::from("P001\r\n") {
@@ -86,7 +95,12 @@ fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
             "Failed to send protocol ack.".to_owned(),
         ));
     }
-    f.flush();
+    f.flush().map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialStageLinkConfirmHost,
+            format!("Failed to flush string, reason: '{}'.", why),
+        )
+    })?;
 
     let s = get_serial_string(f);
     if s.is_err() || s.unwrap() != String::from("L\x06\r\n") {
@@ -127,7 +141,12 @@ fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<(), 
             format!("Failed to send computer part info, reason '{}'.", why),
         )
     })?;
-    f.flush();
+    f.flush().map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialTransmitComputerPartInitSend,
+            format!("Failed to flush string, reason: '{}'.", why),
+        )
+    })?;
 
     let s = get_serial_string(f).map_err(|why| {
         ExitMsg::new(
@@ -152,7 +171,12 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
             format!("Failed to send heartbeat, reason: '{}'.", why),
         )
     })?;
-    f.flush();
+    f.flush().map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialTransmitHeartbeatSend,
+            format!("Failed to flush string, reason: '{}'.", why),
+        )
+    })?;
 
     let s = get_serial_string(f).map_err(|why| {
         ExitMsg::new(
@@ -197,7 +221,12 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
             format!("Failed to send computer part stats, reason: '{}'.", why),
         )
     })?;
-    f.flush();
+    f.flush().map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialTransmitComputerPartStatSend,
+            format!("Failed to flush string, reason: '{}'.", why),
+        )
+    })?;
 
     let s = get_serial_string(f).map_err(|why| {
         ExitMsg::new(
@@ -221,6 +250,8 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
 }
 
 pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    nvtest();
+
     let mut sys = System::new_all();
     log::info!("Getting components...");
     sys.refresh_components_list();
@@ -252,6 +283,37 @@ pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 
         sys.refresh_cpu();
         sys.refresh_memory();
+    }
+
+    Ok(())
+}
+
+// GPU TESTING
+
+fn nvtest() -> Result<(), NvmlError> {
+    let nvml = Nvml::init()?;
+
+    let device_count = nvml.device_count()?;
+    println!("NVIDIA GPU Devices:");
+    for i in 0..device_count {
+        let device = nvml.device_by_index(i)?;
+
+        let name = device.name()?;
+        let temp = device.temperature(TemperatureSensor::Gpu)?;
+        let gfx_clock = device.clock_info(Clock::Graphics)?;
+        let mem_clock = device.clock_info(Clock::Memory)?;
+        let utils = device.utilization_rates()?;
+
+        println!(
+            "{}. {}: {}*C, {} MHz, {} MHz, {} %, {} %",
+            i + 1,
+            name,
+            temp,
+            gfx_clock,
+            mem_clock,
+            utils.gpu,
+            utils.memory,
+        )
     }
 
     Ok(())
