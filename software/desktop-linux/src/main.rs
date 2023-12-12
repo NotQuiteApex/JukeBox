@@ -42,13 +42,13 @@ fn nvtest() -> Result<(), NvmlError> {
 }
 
 fn deffered_main() -> Result<(), ExitMsg> {
-    nvtest().map_err(|why|
-        ExitMsg::new(
-            ExitCode::GenericError,
-            format!("Failed to run nvtest: {}", why)
-        )
-    )?;
-    return Ok(());
+    // nvtest().map_err(|why|
+    //     ExitMsg::new(
+    //         ExitCode::GenericError,
+    //         format!("Failed to run nvtest: {}", why)
+    //     )
+    // )?;
+    // return Ok(());
 
     // Setup the logger
     stderrlog::new()

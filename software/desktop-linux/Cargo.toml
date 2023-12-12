@@ -2,6 +2,7 @@
 name = "jukeboxcli"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,3 +14,6 @@ pretty-bytes = "0.2.2"
 serialport = "4.2.2"
 stderrlog = "0.5.4"
 sysinfo = "0.29.11"
+
+[build-dependencies]
+winres = "0.1.12"

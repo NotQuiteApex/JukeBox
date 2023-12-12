@@ -5,7 +5,7 @@ use crate::util::{ExitCode, ExitMsg};
 use serialport::SerialPort;
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
-use sysinfo::{CpuExt, System, SystemExt};
+use sysinfo::{CpuExt, System, SystemExt, ComponentExt};
 
 // Utility
 
@@ -104,7 +104,7 @@ fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 
 fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<(), ExitMsg> {
     let cpu_name = sys.global_cpu_info().brand().trim();
-    let gpu_name = "TestGPU";
+    let gpu_name = "N/A";
     let memory = format!("{:.1}", (sys.total_memory() as f64) / ((1 << 30) as f64));
 
     let m = format!(
@@ -222,6 +222,14 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
 
 pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     let mut sys = System::new_all();
+    log::info!("Getting components...");
+    sys.refresh_components_list();
+    sys.refresh_components();
+    for c in sys.components() {
+        log::info!("{:?}", c);
+    }
+    log::info!("Got components.");
+
     sys.refresh_cpu();
     sys.refresh_memory();
 

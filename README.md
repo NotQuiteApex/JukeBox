@@ -46,6 +46,8 @@ See [`software`](software/) directory for the files.
 
 There exist two versions to target Windows (C#) and Linux (Rust) respectively. Both connect to the JukeBox over USB serial to control RGB and show fun graphics on the screen. Eventually, it'd be nice to unify the two under a single project.
 
+TODO: add gpu support to Rust version through nvml-wrapper crate, AMD Display Library through Rust wrappers, and Intel Graphics Control Library through Rust wrappers.
+
 # License
 Copyright (c) 2020-2024 Logan "NotQuiteApex" Hickok-Dickson
 
