@@ -1,7 +1,7 @@
 # JukeBox V5
 A board that exposes the keys F13-F24 for use with macros, or hotkeys for streaming (or anything, really)!
 
-TODO: Pictures here.
+TODO: Pictures and badges here.
 
 ### Compatible programs
 Sadly, not every program is compatible with these additional function keys, and some do not allow the use of these keys. There is a running list [here](docs/program-compatibility.md) of what programs do and do not work with the keys provided by JukeBox.

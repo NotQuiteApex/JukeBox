@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 ctrlc = "3.4.1"
 log = "0.4.20"
+nvml-wrapper = "0.9.0"
+pretty-bytes = "0.2.2"
 serialport = "4.2.2"
 stderrlog = "0.5.4"
 sysinfo = "0.29.11"
