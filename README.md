@@ -42,9 +42,7 @@ TODO: replace with the footprints and models found [here](https://github.com/kis
 TODO: put prints in [`hardware/prints`](hardware/prints/) directory.
 
 # Software
-See [`software`](software/) directory for the files.
-
-There exist two versions to target Windows (C#) and Linux (Rust) respectively. Both connect to the JukeBox over USB serial to control RGB and show fun graphics on the screen. Eventually, it'd be nice to unify the two under a single project.
+The desktop app that connects to the JukeBox to control its RGB and display, written in Rust for Windows and Linux. See [`software`](software/) directory for the files.
 
 TODO: add gpu support to Rust version through nvml-wrapper crate, AMD Display Library through Rust wrappers, and Intel Graphics Control Library through Rust wrappers.
 
