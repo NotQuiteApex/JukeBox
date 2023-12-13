@@ -163,7 +163,8 @@ impl PCSystem {
     }
 
     pub fn cpu_freq(&self) -> String {
-        println!("TEST {:?}", self.sys.global_cpu_info());
+        log::debug!("{:#?}", self.sys.cpus());
+        log::debug!("{:#?}", self.sys.global_cpu_info());
         format!(
             "{:.2}",
             (self.sys.global_cpu_info().frequency() as f64) / (1000 as f64)

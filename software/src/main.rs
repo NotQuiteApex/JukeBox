@@ -115,7 +115,7 @@ fn deffered_main() -> Result<(), ExitMsg> {
             let port = ports.get(0).unwrap(); // TODO: provide an argument to choose from this vector
 
             let mut f = serialport::new(port.port_name.clone(), 115200)
-                .timeout(std::time::Duration::from_secs(2))
+                .timeout(std::time::Duration::from_millis(10))
                 .open()
                 .map_err(|why| {
                     ExitMsg::new(
