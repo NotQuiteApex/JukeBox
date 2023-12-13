@@ -115,7 +115,9 @@ fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<(), ExitMsg> {
     let m = format!(
         "D\x11\x30{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_name(), pcs.gpu_name(), pcs.memory_total(),
+        pcs.cpu_name(),
+        pcs.gpu_name(),
+        pcs.memory_total(),
     );
     let m = m.as_bytes();
     if m.len() > 128 {

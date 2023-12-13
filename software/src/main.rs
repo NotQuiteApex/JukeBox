@@ -6,7 +6,10 @@ mod util;
 
 use serialport::SerialPortType;
 
-use crate::{util::{ExitCode, ExitMsg}, system::PCSystem};
+use crate::{
+    system::PCSystem,
+    util::{ExitCode, ExitMsg},
+};
 
 fn deffered_main() -> Result<(), ExitMsg> {
     println!("{:?}", PCSystem::new()?);
