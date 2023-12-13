@@ -13,6 +13,8 @@ pub enum ExitCode {
     StderrLogger,
     CannotRegisterSignalHandler,
 
+    CannotInitializeGpu,
+
     GenericError,
 
     SerialReadBadData,

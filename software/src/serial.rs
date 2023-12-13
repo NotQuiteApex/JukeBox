@@ -1,15 +1,11 @@
 // Serial communication
 
+use crate::system::PCSystem;
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
-use sysinfo::{CpuExt, System, SystemExt};
-
-use nvml_wrapper::enum_wrappers::device::{Clock, TemperatureSensor};
-use nvml_wrapper::error::NvmlError;
-use nvml_wrapper::Nvml;
 
 // Utility
 
@@ -116,21 +112,17 @@ fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 
 // Tasks
 
-fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<(), ExitMsg> {
-    let cpu_name = sys.global_cpu_info().brand().trim();
-    let gpu_name = "N/A";
-    let memory = format!("{:.1}", (sys.total_memory() as f64) / ((1 << 30) as f64));
-
+fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<(), ExitMsg> {
     let m = format!(
-        "D\x11\x30{}\x1F{}\x1F{:.1}GiB\x1F\r\n",
-        cpu_name, gpu_name, memory,
+        "D\x11\x30{}\x1F{}\x1F{}\x1F\r\n",
+        pcs.cpu_name(), pcs.gpu_name(), pcs.memory_total(),
     );
     let m = m.as_bytes();
     if m.len() > 128 {
         log::warn!("TInit string longer than 64 bytes!");
-        log::warn!("TInit CPU Brand: '{}'.", cpu_name);
-        log::warn!("TInit GPU Brand: '{}'.", gpu_name);
-        log::warn!("TInit Memory: '{}'.", memory);
+        log::warn!("TInit CPU Brand: '{}'.", pcs.cpu_name());
+        log::warn!("TInit GPU Brand: '{}'.", pcs.gpu_name());
+        log::warn!("TInit Memory: '{}'.", pcs.memory_total());
         log::warn!("TInit string len: {} bytes.", m.len());
         // log::warn!("TInit string: {:?}", m);
     }
@@ -164,7 +156,7 @@ fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<(), 
     Ok(())
 }
 
-fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool, ExitMsg> {
+fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<bool, ExitMsg> {
     f.write_all(b"H\x30\r\n").map_err(|why| {
         ExitMsg::new(
             ExitCode::SerialTransmitHeartbeatSend,
@@ -191,27 +183,17 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
         ));
     }
 
-    let cpu_freq = (sys.global_cpu_info().frequency() as f64) / (1000 as f64);
-    let cpu_temp = "N/A";
-    let cpu_load = sys.global_cpu_info().cpu_usage();
-    let mem_used = (sys.used_memory() as f64) / ((1 << 30) as f64);
-    let gpu_temp = "N/A";
-    let gpu_core_clock = "N/A";
-    let gpu_core_load = "N/A";
-    let gpu_vram_clock = "N/A";
-    let gpu_vram_load = "N/A";
-
     let m = format!(
-        "D\x11\x31{:.2}\x1F{}\x1F{:.1}\x1F{:.1}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
-        cpu_freq,
-        cpu_temp,
-        cpu_load,
-        mem_used,
-        gpu_temp,
-        gpu_core_clock,
-        gpu_core_load,
-        gpu_vram_clock,
-        gpu_vram_load,
+        "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
+        pcs.cpu_freq(),
+        pcs.cpu_temp(),
+        pcs.cpu_load(),
+        pcs.memory_used(),
+        pcs.gpu_temp(),
+        pcs.gpu_core_clock(),
+        pcs.gpu_core_load(),
+        pcs.gpu_memory_clock(),
+        pcs.gpu_memory_load(),
     );
     let m = m.as_bytes();
 
@@ -250,24 +232,12 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, sys: &System) -> Result<bool
 }
 
 pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    nvtest();
-
-    let mut sys = System::new_all();
-    log::info!("Getting components...");
-    sys.refresh_components_list();
-    sys.refresh_components();
-    for c in sys.components() {
-        log::info!("{:?}", c);
-    }
-    log::info!("Got components.");
-
-    sys.refresh_cpu();
-    sys.refresh_memory();
+    let mut pcs = PCSystem::new()?;
 
     greet_host(f)?;
     link_confirm_host(f)?;
 
-    transmit_tasks_init(f, &sys)?;
+    transmit_tasks_init(f, &pcs)?;
 
     let mut timer = SystemTime::now();
 
@@ -275,45 +245,13 @@ pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
         if SystemTime::now() < timer {
             continue;
         }
-        timer = SystemTime::now().add(Duration::from_millis(500));
+        timer = SystemTime::now().add(Duration::from_millis(900));
 
-        if transmit_tasks_loop(f, &sys)? {
+        if transmit_tasks_loop(f, &pcs)? {
             break;
         }
 
-        sys.refresh_cpu();
-        sys.refresh_memory();
-    }
-
-    Ok(())
-}
-
-// GPU TESTING
-
-fn nvtest() -> Result<(), NvmlError> {
-    let nvml = Nvml::init()?;
-
-    let device_count = nvml.device_count()?;
-    println!("NVIDIA GPU Devices:");
-    for i in 0..device_count {
-        let device = nvml.device_by_index(i)?;
-
-        let name = device.name()?;
-        let temp = device.temperature(TemperatureSensor::Gpu)?;
-        let gfx_clock = device.clock_info(Clock::Graphics)?;
-        let mem_clock = device.clock_info(Clock::Memory)?;
-        let utils = device.utilization_rates()?;
-
-        println!(
-            "{}. {}: {}*C, {} MHz, {} MHz, {} %, {} %",
-            i + 1,
-            name,
-            temp,
-            gfx_clock,
-            mem_clock,
-            utils.gpu,
-            utils.memory,
-        )
+        pcs.update();
     }
 
     Ok(())

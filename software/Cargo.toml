@@ -17,3 +17,6 @@ sysinfo = "0.29.11"
 
 [build-dependencies]
 winres = "0.1.12"
+
+[patch.crates-io]
+sysinfo = { path = "../../sysinfo" }

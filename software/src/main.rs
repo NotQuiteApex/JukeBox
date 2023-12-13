@@ -1,13 +1,18 @@
 // A lightweight program to simulate JukeBox serial communication.
 
 mod serial;
+mod system;
 mod util;
 
 use serialport::SerialPortType;
 
-use crate::util::{ExitCode, ExitMsg};
+use crate::{util::{ExitCode, ExitMsg}, system::PCSystem};
 
 fn deffered_main() -> Result<(), ExitMsg> {
+    println!("{:?}", PCSystem::new()?);
+
+    return Ok(());
+
     // Setup the logger
     stderrlog::new()
         .module(module_path!())
@@ -71,7 +76,7 @@ fn deffered_main() -> Result<(), ExitMsg> {
     let port = ports.get(0).unwrap(); // TODO: provide an argument to choose from this vector
 
     let mut f = serialport::new(port.port_name.clone(), 115200)
-        // .timeout(Duration::from_millis(10))
+        .timeout(std::time::Duration::from_secs(2))
         .open()
         .map_err(|why| {
             ExitMsg::new(
