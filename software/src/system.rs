@@ -9,14 +9,53 @@ use sysinfo::{Component, CpuExt, System, SystemExt};
 
 use crate::util::{ExitCode, ExitMsg};
 
+trait SysGpu {
+    fn update(&mut self);
+    fn name(&self) -> String;
+    fn temperature(&self) -> String;
+    fn core_clock(&self) -> String;
+    fn core_load(&self) -> String;
+    fn vram_clock(&self) -> String;
+    fn vram_load(&self) -> String;
+}
+
+struct NoneGpu {}
+impl SysGpu for NoneGpu {
+    fn update(&mut self) {}
+
+    fn name(&self) -> String {
+        "N/A".to_owned()
+    }
+
+    fn temperature(&self) -> String {
+        "N/A".to_owned()
+    }
+
+    fn core_clock(&self) -> String {
+        "N/A".to_owned()
+    }
+
+    fn core_load(&self) -> String {
+        "N/A".to_owned()
+    }
+
+    fn vram_clock(&self) -> String {
+        "N/A".to_owned()
+    }
+
+    fn vram_load(&self) -> String {
+        "N/A".to_owned()
+    }
+}
+
 struct NvidiaGpu {
     nvml: Nvml,
-    pub name: String,
-    pub temp: String,
-    pub gfx_clock: String,
-    pub gfx_load: String,
-    pub mem_clock: String,
-    pub mem_load: String,
+    name: String,
+    temperature: String,
+    core_clock: String,
+    core_load: String,
+    vram_clock: String,
+    vram_load: String,
 }
 impl NvidiaGpu {
     pub fn new() -> Result<Self, NvmlError> {
@@ -29,44 +68,67 @@ impl NvidiaGpu {
                 nvml
             },
             name: String::new(),
-            temp: String::new(),
-            gfx_clock: String::new(),
-            gfx_load: String::new(),
-            mem_clock: String::new(),
-            mem_load: String::new(),
+            temperature: String::new(),
+            core_clock: String::new(),
+            core_load: String::new(),
+            vram_clock: String::new(),
+            vram_load: String::new(),
         })
     }
-
-    pub fn update(&mut self) {
+}
+impl SysGpu for NvidiaGpu {
+    fn update(&mut self) {
         let device = self.nvml.device_by_index(0).unwrap();
         self.name = device.name().unwrap();
-        self.temp = device
+        self.temperature = device
             .temperature(TemperatureSensor::Gpu)
             .unwrap()
             .to_string();
         let utils = device.utilization_rates().unwrap();
-        self.gfx_clock = device.clock_info(Clock::Graphics).unwrap().to_string();
-        self.gfx_load = utils.gpu.to_string();
-        self.mem_clock = device.clock_info(Clock::Memory).unwrap().to_string();
-        self.mem_load = utils.memory.to_string();
+        self.core_clock = device.clock_info(Clock::Graphics).unwrap().to_string();
+        self.core_load = utils.gpu.to_string();
+        self.vram_clock = device.clock_info(Clock::Memory).unwrap().to_string();
+        self.vram_load = utils.memory.to_string();
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn temperature(&self) -> String {
+        self.temperature.clone()
+    }
+
+    fn core_clock(&self) -> String {
+        self.core_clock.clone()
+    }
+
+    fn core_load(&self) -> String {
+        self.core_load.clone()
+    }
+
+    fn vram_clock(&self) -> String {
+        self.vram_clock.clone()
+    }
+
+    fn vram_load(&self) -> String {
+        self.vram_load.clone()
     }
 }
 
 pub struct PCSystem {
     sys: System,
-    gpu: NvidiaGpu,
+    gpu: Box<dyn SysGpu>,
 }
 impl PCSystem {
     pub fn new() -> Result<Self, ExitMsg> {
-        let gpu = NvidiaGpu::new().map_err(|why| {
-            ExitMsg::new(
-                ExitCode::CannotInitializeGpu,
-                format!(
-                    "Failed to initialize NVIDIA GPU telemetry, reason: '{}'.",
-                    why
-                ),
-            )
-        })?;
+        let gpu: Box<dyn SysGpu> = match NvidiaGpu::new() {
+            Ok(g) => Box::new(g),
+            Err(_) => {
+                log::warn!("Could not initialize NVIDIA GPU.");
+                Box::new(NoneGpu {})
+            }
+        };
 
         let mut pcs = PCSystem {
             sys: System::new_all(),
@@ -89,7 +151,7 @@ impl PCSystem {
     }
 
     pub fn gpu_name(&self) -> String {
-        self.gpu.name.clone()
+        self.gpu.name()
     }
 
     pub fn memory_total(&self) -> String {
@@ -124,23 +186,23 @@ impl PCSystem {
     }
 
     pub fn gpu_temp(&self) -> String {
-        self.gpu.temp.clone()
+        self.gpu.temperature()
     }
 
     pub fn gpu_core_clock(&self) -> String {
-        self.gpu.gfx_clock.clone()
+        self.gpu.core_clock()
     }
 
     pub fn gpu_core_load(&self) -> String {
-        self.gpu.gfx_load.clone()
+        self.gpu.core_load()
     }
 
     pub fn gpu_memory_clock(&self) -> String {
-        self.gpu.mem_clock.clone()
+        self.gpu.vram_clock()
     }
 
     pub fn gpu_memory_load(&self) -> String {
-        self.gpu.mem_load.clone()
+        self.gpu.vram_load()
     }
 
     pub fn sensors(&self) -> &[Component] {
