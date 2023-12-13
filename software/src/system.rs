@@ -5,21 +5,10 @@ use nvml_wrapper::{
     error::NvmlError,
     Nvml,
 };
-use sysinfo::{CpuExt, System, SystemExt};
+use sysinfo::{Component, CpuExt, System, SystemExt};
 
 use crate::util::{ExitCode, ExitMsg};
 
-fn get_nvml() -> Result<Nvml, NvmlError> {
-    let nvml = Nvml::init()?;
-
-    if nvml.device_count()? == 0 {
-        return Err(NvmlError::NotFound);
-    }
-
-    Ok(nvml)
-}
-
-#[derive(Debug)]
 struct NvidiaGpu {
     nvml: Nvml,
     pub name: String,
@@ -63,7 +52,6 @@ impl NvidiaGpu {
     }
 }
 
-#[derive(Debug)]
 pub struct PCSystem {
     sys: System,
     gpu: NvidiaGpu,
@@ -93,6 +81,7 @@ impl PCSystem {
         self.gpu.update();
         self.sys.refresh_cpu();
         self.sys.refresh_memory();
+        self.sys.refresh_components();
     }
 
     pub fn cpu_name(&self) -> String {
@@ -112,6 +101,7 @@ impl PCSystem {
     }
 
     pub fn cpu_freq(&self) -> String {
+        println!("TEST {:?}", self.sys.global_cpu_info());
         format!(
             "{:.2}",
             (self.sys.global_cpu_info().frequency() as f64) / (1000 as f64)
@@ -119,7 +109,7 @@ impl PCSystem {
     }
 
     pub fn cpu_temp(&self) -> String {
-        "N/A".to_owned()
+        "(N/A)".to_owned()
     }
 
     pub fn cpu_load(&self) -> String {
@@ -151,5 +141,9 @@ impl PCSystem {
 
     pub fn gpu_memory_load(&self) -> String {
         self.gpu.mem_load.clone()
+    }
+
+    pub fn sensors(&self) -> &[Component] {
+        self.sys.components()
     }
 }
