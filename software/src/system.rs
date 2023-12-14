@@ -164,6 +164,7 @@ impl PCSystem {
     }
 
     pub fn cpu_freq(&self) -> String {
+        // See https://github.com/GuillaumeGomez/sysinfo/issues/543 on why this doesn't use global_cpu_info
         let cpus = self.sys.cpus();
         let mut freq = 0u64;
         for cpu in cpus {
