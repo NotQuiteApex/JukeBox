@@ -7,7 +7,7 @@ mod util;
 
 use clap::Parser;
 use serialport::SerialPortType;
-use sysinfo::{System, SystemExt};
+// use sysinfo::{System, SystemExt};
 
 use crate::{
     cli::{Cli, Commands},
@@ -76,9 +76,9 @@ fn deffered_main() -> Result<(), ExitMsg> {
             println!("");
 
             println!("Sensors:");
-            for (i, c) in pcs.sensors().iter().enumerate() {
-                println!("\t{}. {:?}", i + 1, c)
-            }
+            // for (i, c) in pcs.sensors().iter().enumerate() {
+            //     println!("\t{}. {:?}", i + 1, c)
+            // }
 
             println!("");
             println!("Probed!");

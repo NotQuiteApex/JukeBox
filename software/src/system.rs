@@ -5,7 +5,8 @@ use nvml_wrapper::{
     error::NvmlError,
     Nvml,
 };
-use sysinfo::{Component, CpuExt, System, SystemExt};
+// use sysinfo::{Component, CpuExt, System, SystemExt};
+use sysinfo::{Component, System};
 
 use crate::util::{ExitCode, ExitMsg};
 
@@ -143,11 +144,11 @@ impl PCSystem {
         self.gpu.update();
         self.sys.refresh_cpu();
         self.sys.refresh_memory();
-        self.sys.refresh_components();
+        // self.sys.refresh_components();
     }
 
     pub fn cpu_name(&self) -> String {
-        self.sys.global_cpu_info().brand().trim().to_owned()
+        self.sys.cpus().get(0).unwrap().brand().trim().to_owned()
     }
 
     pub fn gpu_name(&self) -> String {
@@ -163,11 +164,15 @@ impl PCSystem {
     }
 
     pub fn cpu_freq(&self) -> String {
-        log::debug!("{:#?}", self.sys.cpus());
-        log::debug!("{:#?}", self.sys.global_cpu_info());
+        let cpus = self.sys.cpus();
+        let mut freq = 0u64;
+        for cpu in cpus {
+            freq += cpu.frequency();
+        }
+
         format!(
             "{:.2}",
-            (self.sys.global_cpu_info().frequency() as f64) / (1000 as f64)
+            ((freq/cpus.len() as u64) as f64) / (1000 as f64)
         )
     }
 
@@ -206,7 +211,7 @@ impl PCSystem {
         self.gpu.vram_load()
     }
 
-    pub fn sensors(&self) -> &[Component] {
-        self.sys.components()
-    }
+    // pub fn sensors(&self) -> &[Component] {
+    //     self.sys.components()
+    // }
 }
