@@ -185,6 +185,8 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<bo
         ));
     }
 
+    pcs.probe_report();
+
     let m = format!(
         "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
         pcs.cpu_freq(),
@@ -247,13 +249,13 @@ pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
         if SystemTime::now() < timer {
             continue;
         }
-        timer = SystemTime::now().add(Duration::from_millis(900));
+        timer = SystemTime::now().add(Duration::from_millis(1000));
+
+        pcs.update();
 
         if transmit_tasks_loop(f, &pcs)? {
             break;
         }
-
-        pcs.update();
     }
 
     Ok(())

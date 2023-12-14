@@ -198,7 +198,7 @@ void serial_task(void) {
 	}
 
 	static uint64_t heartbeat_ms = 0;
-	const uint64_t offset_heartbeat = 1000000;
+	const uint64_t offset_heartbeat = 1500000;
 
 	if (commstage == ErrorWait) {
 		// TODO: have the device show an error screen and hold on it for some period of time.

@@ -54,35 +54,7 @@ fn deffered_main() -> Result<(), ExitMsg> {
 
     match cli.command {
         Commands::Probe => {
-            println!("Probing...");
-            println!("");
-            let mut pcs = PCSystem::new()?;
-            // std::thread::sleep(<sysinfo::System as SystemExt>::MINIMUM_CPU_UPDATE_INTERVAL);
-            // pcs.update();
-
-            println!("CPU Name: ---- '{}'", pcs.cpu_name());
-            println!("GPU Name: ---- '{}'", pcs.gpu_name());
-            println!("Total Memory: - {} GiB", pcs.memory_total());
-            println!("");
-            println!("CPU Freq: ------- {} GHz", pcs.cpu_freq());
-            println!("CPU Temp: ------- {} * C", pcs.cpu_temp());
-            println!("CPU Load: ------- {} %", pcs.cpu_load());
-            println!("Memory Used: ---- {} GiB", pcs.memory_used());
-            println!("GPU Temp: ------- {} * C", pcs.gpu_temp());
-            println!("GPU Core Clock: - {} MHz", pcs.gpu_core_clock());
-            println!("GPU Core Load: -- {} %", pcs.gpu_core_load());
-            println!("GPU VRAM Clock: - {} MHz", pcs.gpu_memory_clock());
-            println!("GPU VRAM Load: -- {} %", pcs.gpu_memory_load());
-            println!("");
-
-            println!("Sensors:");
-            // for (i, c) in pcs.sensors().iter().enumerate() {
-            //     println!("\t{}. {:?}", i + 1, c)
-            // }
-
-            println!("");
-            println!("Probed!");
-
+            PCSystem::new()?.probe_report();
             Ok(())
         }
         Commands::Commune => {

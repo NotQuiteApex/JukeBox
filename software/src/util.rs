@@ -13,7 +13,7 @@ pub enum ExitCode {
     StderrLogger,
     CannotRegisterSignalHandler,
 
-    CannotInitializeGpu,
+    _CannotInitializeGpu,
 
     GenericError,
 
