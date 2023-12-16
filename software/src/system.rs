@@ -1,14 +1,18 @@
 // Representation of the PC System
 
+use once_cell::sync::OnceCell;
+
 use nvml_wrapper::{
     enum_wrappers::device::{Clock, TemperatureSensor},
     error::NvmlError,
-    Nvml,
+    Device, Nvml,
 };
 use sysinfo::{Component, CpuExt, CpuRefreshKind, System, SystemExt};
 // use sysinfo::{Component, System};
 
 use crate::util::{ExitCode, ExitMsg};
+
+static NVML: OnceCell<Nvml> = OnceCell::new();
 
 trait SysGpu {
     fn update(&mut self);
@@ -50,7 +54,7 @@ impl SysGpu for NoneGpu {
 }
 
 struct NvidiaGpu {
-    nvml: Nvml,
+    device: Device<'static>,
     name: String,
     temperature: String,
     core_clock: String,
@@ -60,14 +64,14 @@ struct NvidiaGpu {
 }
 impl NvidiaGpu {
     pub fn new() -> Result<Self, NvmlError> {
+        let nvml = NVML.get_or_try_init(|| Nvml::init())?;
+        if nvml.device_count()? == 0 {
+            return Err(NvmlError::NotFound);
+        }
+        let device = nvml.device_by_index(0).unwrap();
+
         Ok(NvidiaGpu {
-            nvml: {
-                let nvml = Nvml::init()?;
-                if nvml.device_count()? == 0 {
-                    return Err(NvmlError::NotFound);
-                }
-                nvml
-            },
+            device: device,
             name: String::new(),
             temperature: String::new(),
             core_clock: String::new(),
@@ -79,16 +83,16 @@ impl NvidiaGpu {
 }
 impl SysGpu for NvidiaGpu {
     fn update(&mut self) {
-        let device = self.nvml.device_by_index(0).unwrap();
-        self.name = device.name().unwrap();
-        self.temperature = device
+        self.name = self.device.name().unwrap();
+        self.temperature = self
+            .device
             .temperature(TemperatureSensor::Gpu)
             .unwrap()
             .to_string();
-        let utils = device.utilization_rates().unwrap();
-        self.core_clock = device.clock_info(Clock::Graphics).unwrap().to_string();
+        let utils = self.device.utilization_rates().unwrap();
+        self.core_clock = self.device.clock_info(Clock::Graphics).unwrap().to_string();
         self.core_load = utils.gpu.to_string();
-        self.vram_clock = device.clock_info(Clock::Memory).unwrap().to_string();
+        self.vram_clock = self.device.clock_info(Clock::Memory).unwrap().to_string();
         self.vram_load = utils.memory.to_string();
     }
 
@@ -144,7 +148,7 @@ impl PCSystem {
         self.gpu.update();
         // self.sys.refresh_all();
 
-        // self.sys.refresh_cpu(); // This does not actually refresh everything on all platforms.
+        // self.sys.refresh_cpu(); // <- This doesn't refresh everything on all platforms.
         self.sys.refresh_cpu_specifics(CpuRefreshKind::everything());
 
         self.sys.refresh_memory();
