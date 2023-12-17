@@ -5,16 +5,16 @@ use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
 use std::ops::Add;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant};
 
 // Utility
 
 fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
-    let timeout = SystemTime::now().add(Duration::from_secs(3));
+    let timeout = Instant::now().add(Duration::from_secs(3));
     let mut buf = Vec::new();
 
     loop {
-        if SystemTime::now() >= timeout {
+        if Instant::now() >= timeout {
             return Err(ExitMsg::new(
                 ExitCode::SerialReadTimeout,
                 "Serial read timeout.".to_owned(),
@@ -45,7 +45,7 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
                     "Serial read bad data.".to_owned(),
                 ));
             }
-            log::trace!("Serial got string {:?}.", s.clone().unwrap().as_bytes());
+            log::debug!("Serial got string {:?}.", s.clone().unwrap().as_bytes());
             return Ok(s.unwrap());
         }
     }
@@ -185,7 +185,7 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<bo
         ));
     }
 
-    pcs.probe_report();
+    // pcs.probe_report();
 
     let m = format!(
         "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
@@ -243,13 +243,13 @@ pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 
     transmit_tasks_init(f, &pcs)?;
 
-    let mut timer = SystemTime::now();
+    let mut timer = Instant::now();
 
     loop {
-        if SystemTime::now() < timer {
+        if Instant::now() < timer {
             continue;
         }
-        timer = SystemTime::now().add(Duration::from_millis(1000));
+        timer = Instant::now().add(Duration::from_millis(1000));
 
         pcs.update();
 

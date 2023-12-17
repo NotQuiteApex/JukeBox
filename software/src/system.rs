@@ -10,7 +10,7 @@ use nvml_wrapper::{
 use sysinfo::{Component, CpuExt, CpuRefreshKind, System, SystemExt};
 // use sysinfo::{Component, System};
 
-use crate::util::{ExitCode, ExitMsg};
+use crate::util::ExitMsg;
 
 static NVML: OnceCell<Nvml> = OnceCell::new();
 
@@ -56,11 +56,11 @@ impl SysGpu for NoneGpu {
 struct NvidiaGpu {
     device: Device<'static>,
     name: String,
-    temperature: String,
-    core_clock: String,
-    core_load: String,
-    vram_clock: String,
-    vram_load: String,
+    temperature: u32,
+    core_clock: u32,
+    core_load: u32,
+    vram_clock: u32,
+    vram_load: u32,
 }
 impl NvidiaGpu {
     pub fn new() -> Result<Self, NvmlError> {
@@ -68,32 +68,29 @@ impl NvidiaGpu {
         if nvml.device_count()? == 0 {
             return Err(NvmlError::NotFound);
         }
+        // TODO: handle GPU's being hot pluggable
         let device = nvml.device_by_index(0).unwrap();
 
         Ok(NvidiaGpu {
             device: device,
             name: String::new(),
-            temperature: String::new(),
-            core_clock: String::new(),
-            core_load: String::new(),
-            vram_clock: String::new(),
-            vram_load: String::new(),
+            temperature: 0,
+            core_clock: 0,
+            core_load: 0,
+            vram_clock: 0,
+            vram_load: 0,
         })
     }
 }
 impl SysGpu for NvidiaGpu {
     fn update(&mut self) {
         self.name = self.device.name().unwrap();
-        self.temperature = self
-            .device
-            .temperature(TemperatureSensor::Gpu)
-            .unwrap()
-            .to_string();
+        self.temperature = self.device.temperature(TemperatureSensor::Gpu).unwrap();
         let utils = self.device.utilization_rates().unwrap();
-        self.core_clock = self.device.clock_info(Clock::Graphics).unwrap().to_string();
-        self.core_load = utils.gpu.to_string();
-        self.vram_clock = self.device.clock_info(Clock::Memory).unwrap().to_string();
-        self.vram_load = utils.memory.to_string();
+        self.core_clock = self.device.clock_info(Clock::Graphics).unwrap();
+        self.core_load = utils.gpu;
+        self.vram_clock = self.device.clock_info(Clock::Memory).unwrap();
+        self.vram_load = utils.memory;
     }
 
     fn name(&self) -> String {
@@ -101,23 +98,23 @@ impl SysGpu for NvidiaGpu {
     }
 
     fn temperature(&self) -> String {
-        self.temperature.clone()
+        self.temperature.to_string()
     }
 
     fn core_clock(&self) -> String {
-        self.core_clock.clone()
+        self.core_clock.to_string()
     }
 
     fn core_load(&self) -> String {
-        self.core_load.clone()
+        self.core_load.to_string()
     }
 
     fn vram_clock(&self) -> String {
-        self.vram_clock.clone()
+        self.vram_clock.to_string()
     }
 
     fn vram_load(&self) -> String {
-        self.vram_load.clone()
+        self.vram_load.to_string()
     }
 }
 
@@ -150,9 +147,8 @@ impl PCSystem {
 
         // self.sys.refresh_cpu(); // <- This doesn't refresh everything on all platforms.
         self.sys.refresh_cpu_specifics(CpuRefreshKind::everything());
-
-        self.sys.refresh_memory();
-        self.sys.refresh_components();
+        self.sys.refresh_memory(); // <- (Windows) Method takes a long while because reading swap takes a while.
+                                   // self.sys.refresh_components();
     }
 
     pub fn cpu_name(&self) -> String {
@@ -241,10 +237,10 @@ impl PCSystem {
         log::info!("GPU VRAM Load: -- {} %", self.gpu_memory_load());
         // log::info!("");
 
-        // log::info!("Sensors:");
-        // for (i, c) in self.sensors().iter().enumerate() {
-        //     log::info!("\t{}. {:?}", i + 1, c)
-        // }
+        log::info!("Sensors:");
+        for (i, c) in self.sensors().iter().enumerate() {
+            log::info!("\t{}. {:?}", i + 1, c)
+        }
 
         // log::info!("");
         log::info!("PROBE ENDED!!!");
