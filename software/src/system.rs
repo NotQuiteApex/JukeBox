@@ -85,7 +85,10 @@ impl NvidiaGpu {
 impl SysGpu for NvidiaGpu {
     fn update(&mut self) {
         self.name = self.device.name().unwrap();
-        self.temperature = self.device.temperature(TemperatureSensor::Gpu).unwrap();
+        self.temperature = self
+            .device
+            .temperature(TemperatureSensor::Gpu)
+            .unwrap();
         let utils = self.device.utilization_rates().unwrap();
         self.core_clock = self.device.clock_info(Clock::Graphics).unwrap();
         self.core_load = utils.gpu;
@@ -148,7 +151,7 @@ impl PCSystem {
         // self.sys.refresh_cpu(); // <- This doesn't refresh everything on all platforms.
         self.sys.refresh_cpu_specifics(CpuRefreshKind::everything());
         self.sys.refresh_memory(); // <- (Windows) Method takes a long while because reading swap takes a while.
-                                   // self.sys.refresh_components();
+        // self.sys.refresh_components();
     }
 
     pub fn cpu_name(&self) -> String {
@@ -179,7 +182,7 @@ impl PCSystem {
     }
 
     pub fn cpu_temp(&self) -> String {
-        "(N/A)".to_owned()
+        "N/A".to_owned()
     }
 
     pub fn cpu_load(&self) -> String {

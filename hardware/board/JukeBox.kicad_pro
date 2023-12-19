@@ -407,7 +407,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../../../JukeBoxCAD/JukeBox.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
