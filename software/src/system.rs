@@ -7,8 +7,7 @@ use nvml_wrapper::{
     error::NvmlError,
     Device, Nvml,
 };
-use sysinfo::{Component, CpuExt, CpuRefreshKind, System, SystemExt};
-// use sysinfo::{Component, System};
+use sysinfo::{Components, CpuRefreshKind, System, MemoryRefreshKind};
 
 use crate::util::ExitMsg;
 
@@ -150,7 +149,7 @@ impl PCSystem {
 
         // self.sys.refresh_cpu(); // <- This doesn't refresh everything on all platforms.
         self.sys.refresh_cpu_specifics(CpuRefreshKind::everything());
-        self.sys.refresh_memory(); // <- (Windows) Method takes a long while because reading swap takes a while.
+        self.sys.refresh_memory_specifics(MemoryRefreshKind::new().without_swap());
         // self.sys.refresh_components();
     }
 
@@ -216,8 +215,8 @@ impl PCSystem {
         self.gpu.vram_load()
     }
 
-    pub fn sensors(&self) -> &[Component] {
-        self.sys.components()
+    pub fn sensors(&self) -> Components {
+        Components::new_with_refreshed_list()
     }
 
     pub fn probe_report(&self) {
