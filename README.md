@@ -46,6 +46,9 @@ The desktop app that connects to the JukeBox to control its RGB and display, wri
 
 TODO: add gpu support to Rust version through nvml-wrapper crate, AMD Display Library through Rust wrappers, and Intel Graphics Control Library through Rust wrappers.
 
+# Assets
+Logo and text logo were made with [Sodalite](https://github.com/illteteka/Sodalite).
+
 # License
 Copyright (c) 2020-2024 Logan "NotQuiteApex" Hickok-Dickson
 
