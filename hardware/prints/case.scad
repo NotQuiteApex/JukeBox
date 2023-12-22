@@ -1,4 +1,4 @@
-$fn=32;
+$fn=12;
 
 // https://www.youtube.com/watch?v=gKOkJWiTgAY
 module roundedsquare(xdim, ydim, zdim, rdim){
@@ -29,7 +29,7 @@ clS = 3; // case lip size
 cpR = 3; // case pcb radius
 cpH = 3; // case pcb height
 cpW = 3; // case pcb wall
-cpM = 9; // case pcb mounting pole size
+cpM = 9; // case pcb mounting plate size
 
 module case_bottom() {
     difference() {
@@ -71,16 +71,73 @@ module case_bottom() {
     }
 }
 
-ctH = 7; // case top height
-ctW = 3; // case top wall
-
-module case_top() {
-    translate([0, 0, ctH]) chamferedsquare(cS, cS, 1, 3, 2);
-    difference() {
-        roundedsquare(cS, cS, ctH, cR);
-        translate([ctW, ctW, 0]) roundedsquare(cS - ctW * 2, cS - ctW * 2, ctH, cR);
+module speaker_icon() {
+    scale([5/6, 5/6, 1]) {
+        difference() {
+            cylinder(r=7, h=1, center=true);
+            cylinder(r=6, h=1, center=true);
+        }
+        cube([1, 13, 1], center=true);
+        translate([ 4, 0, 0]) cube([1, 9, 1], center=true);
+        translate([-4, 0, 0]) cube([1, 9, 1], center=true);
+        translate([0, -2.25, 0]) cube([11, 1, 1], center=true);
+        translate([0,  2.25, 0]) cube([11, 1, 1], center=true);
     }
 }
 
-// case_top();
+ctH = 8; // case top height
+ctW = 3; // case top wall
+ctM = 8; // case top mounting plate size
+ctMH = 3; // case top mountin plate height
+cKBS = 17; // keyboard key size
+
+kbX = cS / 2;   // keyboard key origin
+kbY = 37 + ctW; // keyboard key origin
+
+module case_top() {
+    difference() {
+        union() {
+            difference() {
+                union() {
+                    // top shell
+                    translate([0, 0, ctH]) chamferedsquare(cS, cS, 1, 3, 2);
+                    roundedsquare(cS, cS, ctH, cR);
+                }
+                union() {
+                    // USB-C hole
+                    translate([-1, 70.5, -1]) cube([ctW+2, 10.5, ctH+1]);
+                    // Interior
+                    translate([ctW, ctW, -1]) roundedsquare(cS - ctW * 2, cS - ctW * 2, ctH+1, cR);
+                }
+            }
+            translate([             0,              0, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
+            translate([cS - ctM - ctW,              0, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
+            translate([             0, cS - ctM - ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
+            translate([cS - ctM - ctW, cS - ctM - ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
+        }
+
+        union() {
+            // keyboard key holes
+            for (w=[0:4-1]) {
+                for (h=[0:3-1]) {
+                    translate([kbX-30+w*20, kbY-20+h*20, ctH+0.5]) cube([cKBS, cKBS, 2], center=true);
+                }
+            }
+
+            // mounting hardware holes
+            translate([     7,      7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
+            translate([cS - 7,      7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
+            translate([     7, cS - 7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
+            translate([cS - 7, cS - 7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
+            
+            // Jukebox logo
+            translate([cS/2, cS-15, ctH+1]) linear_extrude(height=1, center=true) scale([0.035, 0.035, 1]) import(file="../../assets/textlogo.svg", center=true);
+            // translate([cS/2-40, cS-20, ctH+1]) speaker_icon();
+            // translate([cS/2+40, cS-20, ctH+1]) speaker_icon();
+            // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
+        }
+    }
+}
+
+translate([0, 0, clH]) case_top();
 case_bottom();
