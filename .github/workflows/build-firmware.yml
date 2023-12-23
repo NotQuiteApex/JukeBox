@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get dependencies
-        run: sudo apt -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+        run: sudo apt-get update && sudo apt-get -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
@@ -17,4 +17,8 @@ jobs:
         run: cd firmware/ && mkdir build/ && cd build/ && cmake ..
       - name: Build with make
         run: cd firmware/build/ && make -j2
-      - run: ls firmware/build/
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: jukebox-firmware
+          path: firmware/build/jukebox_firmware.uf2
