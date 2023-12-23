@@ -1,7 +1,5 @@
-# JukeBox V5
-A board that exposes the keys F13-F24 for use with macros, or hotkeys for streaming (or anything, really)!
-
-TODO: Pictures and badges here.
+# ![JukeBox!](./assets/textlogo.svg)
+An affordable, adorable, powerful hotkey device to run macros, play funny sounds, mute your microphone, change paint brush settings, or manage items in OBS! It can even have RGB or show PC stats!
 
 ### Compatible programs
 Sadly, not every program is compatible with these additional function keys, and some do not allow the use of these keys. There is a running list [here](docs/program-compatibility.md) of what programs do and do not work with the keys provided by JukeBox.
