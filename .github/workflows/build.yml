@@ -1,4 +1,4 @@
-name: "Build JukeBox firmware."
+name: "Build JukeBox."
 
 on:
   push:
@@ -22,3 +22,15 @@ jobs:
         with:
           name: jukebox-firmware
           path: firmware/build/jukebox_firmware.uf2
+  build_software:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get dependencies
+        run: sudo apt-get update && sudo apt-get -y install libudev-dev
+      - name: Rust setup
+        run: rustup update stable && rustup default stable
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Build software
+        run: cd software/ && cargo build --release
+      - run: ls -R software/build/
