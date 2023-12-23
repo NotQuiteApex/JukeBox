@@ -7,6 +7,8 @@ jobs:
   build_firmware:
     runs-on: ubuntu-latest
     steps:
+      - name: Get dependencies
+        run: sudo apt -y install libudev-dev
       - name: Rust setup
         run: rustup update stable && rustup default stable
       - name: Checkout repo
