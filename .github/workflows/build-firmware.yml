@@ -15,4 +15,4 @@ jobs:
           submodules: recursive
       - name: CMake setup and build
         run: cd firmware/ && mkdir build/ && cd build/ && cmake ..
-      - run: ls firmware/
+      - run: ls firmware/build/**
