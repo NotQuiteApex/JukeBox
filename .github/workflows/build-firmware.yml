@@ -1,0 +1,23 @@
+name: "Build JukeBox firmware."
+
+on:
+  push:
+
+jobs:
+  build_firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get dependencies
+        run: sudo apt -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: cd firmware/
+      - run: mkdir build/
+      - run: cd build/
+      - name: CMake setup
+        run:  cmake ..
+      - name: Run make
+        run: make -j2
+      - run: ls
