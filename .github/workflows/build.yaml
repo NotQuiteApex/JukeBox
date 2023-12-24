@@ -50,7 +50,7 @@ jobs:
           retention-days: 1
       # TODO: check to see if windows build actually works
       - name: "Build software (Windows)"
-        run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu && mv target/release/jukeboxcli target/release/jukeboxcli.exe
+        run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu && cd target/release/ && mv jukeboxcli jukeboxcli.exe
       - name: "Upload artifact (Windows)"
         uses: actions/upload-artifact@v4
         with:
@@ -107,6 +107,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jb-${{ github.sha }}-${{ github.run_id }}
-          path: *
+          path: "*"
           retention-days: 1
       
