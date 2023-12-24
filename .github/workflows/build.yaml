@@ -80,7 +80,7 @@ jobs:
         run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
   
   merge-artifacts:
-    needs: [build-firmware, build-software, build-hardware-case, build-firmware-pcb]
+    needs: [build-firmware, build-software, build-hardware-case, build-hardware-pcb]
     runs-on: ubuntu-latest
     steps:
       - name: "Get artifacts"
