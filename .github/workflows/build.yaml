@@ -7,6 +7,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Get dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: "Get dependencies"
         run: sudo apt-get update && sudo apt-get -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Checkout repo"
         uses: actions/checkout@v4
@@ -27,7 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Get dependencies"
-        run: sudo apt-get update && sudo apt-get -y install libudev-dev gcc-mingw-w64
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Rust setup"
         run: rustup target add x86_64-pc-windows-gnu && rustup update stable && rustup default stable
       - name: "Checkout repo"
@@ -54,7 +62,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Get dependencies"
-        run: sudo apt-get update && sudo apt-get -y install openscad
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "OpenSCAD build"
@@ -68,19 +79,24 @@ jobs:
 
   # TODO: use when kicad 7 is releases
   # https://docs.kicad.org/7.0/en/cli/cli.html
+  # ALSO TODO: add kicad to dependencies cache
   build-hardware-pcb:
     if: false # disable for now
     runs-on: ubuntu-latest
     steps:
       - name: "Get dependencies"
-        run: sudo apt-get update && sudo apt-get -y install kicad
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "Plot gerbers"
         run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
   
+  # TODO: add build-hardware-pcb when its ready for use
   merge-artifacts:
-    needs: [build-firmware, build-software, build-hardware-case, build-hardware-pcb]
+    needs: [build-firmware, build-software, build-hardware-case]
     runs-on: ubuntu-latest
     steps:
       - name: "Get artifacts"
