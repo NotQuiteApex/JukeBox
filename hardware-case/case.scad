@@ -131,7 +131,7 @@ module case_top() {
             translate([cS - 7, cS - 7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
             
             // Jukebox logo
-            translate([cS/2, cS-15, ctH+1]) linear_extrude(height=1, center=true) scale([0.035, 0.035, 1]) import(file="../../assets/textlogo.svg", center=true);
+            translate([cS/2, cS-15, ctH+1]) linear_extrude(height=1, center=true) scale([0.035, 0.035, 1]) import(file="../assets/textlogo.svg", center=true);
             // translate([cS/2-40, cS-20, ctH+1]) speaker_icon();
             // translate([cS/2+40, cS-20, ctH+1]) speaker_icon();
             // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
