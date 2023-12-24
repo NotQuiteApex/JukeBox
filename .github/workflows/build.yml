@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Get artifacts"
-      - uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4
         merge-multiple: true
       - run: ls -R .
       
