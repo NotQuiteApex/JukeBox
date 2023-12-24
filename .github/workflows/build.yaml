@@ -85,6 +85,7 @@ jobs:
     steps:
       - name: "Get artifacts"
         uses: actions/download-artifact@v4
-        merge-multiple: true
+        with:
+          merge-multiple: true
       - run: ls -R .
       
