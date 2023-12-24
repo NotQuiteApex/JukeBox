@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get dependencies
-        run: sudo apt-get update && sudo apt-get -y install libudev-dev
+        run: sudo apt-get update && sudo apt-get -y install libudev-dev gcc-mingw-w64
       - name: Rust setup
         run: rustup target add x86_64-pc-windows-gnu && rustup update stable && rustup default stable
       - name: Checkout repo
@@ -55,7 +55,7 @@ jobs:
       - name: Get dependencies
         run: sudo apt-get update && sudo apt-get -y install openscad
       - name: OpenSCAD build
-        run: openscad -o case.stl case.scad
+        run: openscad -o case.stl hardware-case/case.scad
         # TODO: build top and bottom, screen and no-screen parts with parameters
         # https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Using_OpenSCAD_in_a_command_line_environment
 
