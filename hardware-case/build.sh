@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -v
+#!/usr/bin/env bash
 ORIGINALWD=$(pwd)
 cd "$(dirname "$0")"
 mkdir build/
