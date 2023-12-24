@@ -39,7 +39,7 @@ jobs:
           execute_install_scripts: true
           packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Rust setup"
-        run: rustup target add x86_64-pc-windows-gnu && rustup update stable && rustup default stable && rustup toolchain list
+        run: rustup target add x86_64-pc-windows-gnu && rustup update stable && rustup default stable && rustup toolchain list && rustup target list
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "Build software (Linux)"
@@ -51,14 +51,14 @@ jobs:
           path: software/target/release/jukeboxcli
           retention-days: 1
       # TODO: check to see if windows build actually works
-      - name: "Build software (Windows)"
-        run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu && cd target/release/ && mv jukeboxcli jukeboxcli.exe
-      - name: "Upload artifact (Windows)"
-        uses: actions/upload-artifact@v4
-        with:
-          name: jb-software-windows
-          path: software/target/release/jukeboxcli.exe
-          retention-days: 1
+      # - name: "Build software (Windows)"
+      #   run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu && cd target/release/ && mv jukeboxcli jukeboxcli.exe
+      # - name: "Upload artifact (Windows)"
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: jb-software-windows
+      #     path: software/target/release/jukeboxcli.exe
+      #     retention-days: 1
 
   build-hardware-case:
     runs-on: ubuntu-latest
