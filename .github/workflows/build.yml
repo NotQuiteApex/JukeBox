@@ -55,14 +55,12 @@ jobs:
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "OpenSCAD build"
-        run: openscad -o hardware-case/case.stl hardware-case/case.scad
+        run: ./hardware-case/build.sh
       - name: "Upload artifact"
         uses: actions/upload-artifact@v3
         with:
           name: jb-hardware-case
-          path: hardware-case/case.stl
-      # TODO: build top and bottom, screen and no-screen parts with parameters
-      # https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Using_OpenSCAD_in_a_command_line_environment
+          path: hardware-case/build/case-*.stl
 
   # TODO: use when kicad 7 is releases
   # https://docs.kicad.org/7.0/en/cli/cli.html
