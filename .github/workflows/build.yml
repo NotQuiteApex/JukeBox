@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  build_firmware:
+  build-firmware:
     runs-on: ubuntu-latest
     steps:
       - name: Get dependencies
@@ -22,7 +22,8 @@ jobs:
         with:
           name: jukebox-firmware
           path: firmware/build/jukebox_firmware.uf2
-  build_software:
+
+  build-software:
     runs-on: ubuntu-latest
     steps:
       - name: Get dependencies
@@ -33,4 +34,26 @@ jobs:
         uses: actions/checkout@v4
       - name: Build software
         run: cd software/ && cargo build --release
-      - run: ls -R software/build/
+      - run: ls -R software/
+
+  build-hardware-case:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get dependencies
+        run: sudo apt-get update && sudo apt-get -y install openscad
+      - name: OpenSCAD build
+        run: openscad -o case.stl case.scad
+        # TODO: build top and bottom, screen and no-screen parts with parameters
+        # https://en.wikibooks.org/wiki/OpenSCAD_User_Manual/Using_OpenSCAD_in_a_command_line_environment
+
+  # TODO: use when kicad 7 is releases
+  # https://docs.kicad.org/7.0/en/cli/cli.html
+  build-hardware-pcb:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get dependencies
+        run: sudo apt-get update && sudo apt-get -y install kicad
+      - name: Plot gerbers
+        run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
+      
