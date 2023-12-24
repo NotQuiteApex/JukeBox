@@ -11,8 +11,10 @@ gen_scr = false;
 cS = 98;
 // Case corner radius (rounded corners)
 cR = 3;
+// Case mounting hardware offset
+cM = 7;
 // Face count on rounded objects
-$fn=12;
+$fn=32;
 
 /* [Case bottom settings] */
 // Case bottom lip height
@@ -111,16 +113,16 @@ module case_bottom() {
 
         union() {
             // Bolt holes
-            translate([   7,    7, 6]) cylinder(d=3, h=14, center=true);
-            translate([cS-7,    7, 6]) cylinder(d=3, h=14, center=true);
-            translate([   7, cS-7, 6]) cylinder(d=3, h=14, center=true);
-            translate([cS-7, cS-7, 6]) cylinder(d=3, h=14, center=true);
+            translate([   cM,    cM, 6]) cylinder(d=3, h=14, center=true);
+            translate([cS-cM,    cM, 6]) cylinder(d=3, h=14, center=true);
+            translate([   cM, cS-cM, 6]) cylinder(d=3, h=14, center=true);
+            translate([cS-cM, cS-cM, 6]) cylinder(d=3, h=14, center=true);
 
             // Nut holes
-            translate([   7,    7, 1]) cylinder($fn=6, r=3, h=2, center=true);
-            translate([cS-7,    7, 1]) cylinder($fn=6, r=3, h=2, center=true);
-            translate([   7, cS-7, 1]) cylinder($fn=6, r=3, h=2, center=true);
-            translate([cS-7, cS-7, 1]) cylinder($fn=6, r=3, h=2, center=true);
+            translate([   cM,    cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
+            translate([cS-cM,    cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
+            translate([   cM, cS-cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
+            translate([cS-cM, cS-cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
 
             // Hole for screen cable
             translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);

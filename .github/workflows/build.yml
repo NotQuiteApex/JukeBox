@@ -1,7 +1,6 @@
 name: "Build JukeBox"
 
-on:
-  push:
+on: [push]
 
 jobs:
   build-firmware:
@@ -18,10 +17,11 @@ jobs:
       - name: "Build with make"
         run: cd firmware/build/ && make -j2
       - name: "Upload artifact"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jb-firmware
           path: firmware/build/jukebox_firmware.uf2
+          retention-days: 1
 
   build-software:
     runs-on: ubuntu-latest
@@ -35,17 +35,20 @@ jobs:
       - name: "Build software (Linux)"
         run: cd software/ && cargo build --release
       - name: "Upload artifact (Linux)"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jb-software-linux
           path: software/target/release/jukeboxcli
+          retention-days: 1
+      # TODO: check to see if windows build actually works
       - name: "Build software (Windows)"
         run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu && mv target/release/jukeboxcli target/release/jukeboxcli.exe
       - name: "Upload artifact (Windows)"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jb-software-windows
           path: software/target/release/jukeboxcli.exe
+          retention-days: 1
 
   build-hardware-case:
     runs-on: ubuntu-latest
@@ -57,10 +60,11 @@ jobs:
       - name: "OpenSCAD build"
         run: ./hardware-case/build.sh
       - name: "Upload artifact"
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jb-hardware-case
           path: hardware-case/build/case-*.stl
+          retention-days: 1
 
   # TODO: use when kicad 7 is releases
   # https://docs.kicad.org/7.0/en/cli/cli.html
@@ -74,4 +78,13 @@ jobs:
         uses: actions/checkout@v4
       - name: "Plot gerbers"
         run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
+  
+  merge-artifacts:
+    needs: [build-firmware, build-software, build-hardware-case, build-firmware-pcb]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Get artifacts"
+      - uses: actions/download-artifact@v4
+        merge-multiple: true
+      - run: ls -R .
       
