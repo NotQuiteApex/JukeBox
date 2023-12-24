@@ -34,26 +34,26 @@ jobs:
         uses: actions/checkout@v4
       - name: Build software (Linux)
         run: cd software/ && cargo build --release
-      - run: ls -R software/target/release/
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: jukebox-software-linux
           path: software/target/release/jukeboxcli
       - name: Build software (Windows)
-        run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu
+        run: cd software/ && cargo build --release --target x86_64-pc-windows-gnu && mv target/release/jukeboxcli target/release/jukeboxcli.exe
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: jukebox-software-windows
           path: software/target/release/jukeboxcli.exe
-      - run: ls -R software/target/release/
 
   build-hardware-case:
     runs-on: ubuntu-latest
     steps:
       - name: Get dependencies
         run: sudo apt-get update && sudo apt-get -y install openscad
+      - name: Checkout repo
+        uses: actions/checkout@v4
       - name: OpenSCAD build
         run: openscad -o case.stl hardware-case/case.scad
         # TODO: build top and bottom, screen and no-screen parts with parameters
@@ -67,6 +67,8 @@ jobs:
     steps:
       - name: Get dependencies
         run: sudo apt-get update && sudo apt-get -y install kicad
+      - name: Checkout repo
+        uses: actions/checkout@v4
       - name: Plot gerbers
         run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
       
