@@ -10,6 +10,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           version: 1
+          execute_install_scripts: true
           packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Get dependencies"
         run: sudo apt-get update && sudo apt-get -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
@@ -35,6 +36,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           version: 1
+          execute_install_scripts: true
           packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Rust setup"
         run: rustup target add x86_64-pc-windows-gnu && rustup update stable && rustup default stable
@@ -65,6 +67,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           version: 1
+          execute_install_scripts: true
           packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Checkout repo"
         uses: actions/checkout@v4
@@ -88,6 +91,7 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           version: 1
+          execute_install_scripts: true
           packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
       - name: "Checkout repo"
         uses: actions/checkout@v4
