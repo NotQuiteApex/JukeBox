@@ -9,6 +9,8 @@ jobs:
   build-hardware-pcb:
     runs-on: ubuntu-latest
     steps:
+      - name: "Add KiCAD 7 PPA"
+        run: sudo add-apt-repository ppa:kicad/kicad-7.0-releases && sudo apt update
       - name: "Get dependencies"
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
@@ -18,14 +20,14 @@ jobs:
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "Plot gerbers"
-        run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
+        run: mkdir hardware-pcb/gerbers/ && kicad-cli pcb export gerbers -o hardware-pcb/gerbers/ hardware-pcb/JukeBox.kicad_pcb
       - name: "Upload artifact"
         uses: actions/upload-artifact@v4
         with:
           name: jb-hardware-pcb
           path: hardware-pcb/gerbers/*
           retention-days: 90
-    if: false # disable for now
+    # if: false # disable for now
   
   # TODO: use when kicad 7 is releases
   # https://docs.kicad.org/7.0/en/cli/cli.html
