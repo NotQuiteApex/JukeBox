@@ -1,6 +1,8 @@
 # Program Compatibility
 This file is to document what programs work with the JukeBox's F13-F24 keys, sorted alphabetically. These programs were tested on Windows.
 
+If another program is confirmed to work without issue, or has problems with the JukeBox, consider opening an issue or submitting a PR.
+
 ## Full Compatibility
 - Binding of Isaac: Rebirth
 - Discord [^discord]
