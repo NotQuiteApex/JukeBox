@@ -5,6 +5,8 @@
 gen_top = false;
 // Generates bottom case piece
 gen_bot = false;
+// Generates leg case piece
+gen_leg = false;
 // Generates screen case piece
 gen_scr = false;
 // Case size (width & height)
@@ -70,6 +72,12 @@ kbH = 3;
 kbSW = 20;
 // Keyboard key matrix spacing height
 kbSH = 20;
+
+/* [Case leg settings] */
+// Leg width
+clipW = 10;
+// Leg rounding radius
+clipR = 4;
 
 // https://www.youtube.com/watch?v=gKOkJWiTgAY
 module roundedsquare(xdim, ydim, zdim, rdim){
@@ -191,5 +199,32 @@ module case_top() {
     }
 }
 
+module case_leg() {
+    difference() {
+        union() {
+            translate([ -clipR, 0, 0]) cube([clipR, clH+ctH, clipW]);
+            translate([     cS, 0, 0]) cube([clipR, clH+ctH, clipW]);
+            translate([0, clH+ctH, 0]) cube([cS, clipR, clipW]);
+
+            translate([ 0,       0, 0]) cylinder(h=clipW, r=clipR);
+            translate([cS,       0, 0]) cylinder(h=clipW, r=clipR);
+            translate([ 0, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
+            translate([cS, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
+
+            hull() {
+                translate([ 0, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
+                translate([cS, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
+                translate([cS/3, clH+ctH+cS/2, 0]) cylinder(h=clipW, r=clipR);
+            }
+        }
+        union() {
+            translate([0,0,-1]) cube([cS, clH+ctH, clipW+2]);
+            translate([0,0,-1]) linear_extrude(height=clipW+2) polygon(points=[[0,clH+ctH],[cS,clH+ctH],[cS/3, clH+ctH+cS/2]]);
+        }
+    }
+    translate([0, clH+ctH, 0]) cube([cS, clipR, clipW]);
+}
+
 if (gen_top) translate([0, 0, clH]) case_top();
 if (gen_bot) case_bottom();
+if (gen_leg) case_leg();
