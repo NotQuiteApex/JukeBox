@@ -22,7 +22,7 @@ jobs:
       - name: "Upload artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: jb-hardware-case
+          name: jb-hardware-pcb
           path: hardware-pcb/gerbers/*
           retention-days: 90
     if: false # disable for now
