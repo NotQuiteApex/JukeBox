@@ -11,7 +11,7 @@ Sadly, not every program is compatible with these additional function keys, and 
 # Nightly builds
 Each component of the project is built as it is updated. You can grab the latest version of each below.
 
-| [Software, Windows (Not supported yet)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-windows.zip) | [Software, Linux](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-linux.zip) | [Firmware](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-firmware.yaml/main/jb-firmware.zip) | [Hardware, Case](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-case.yaml/main/jb-hardware-case.zip) | [Hardware, PCB (Not supported yet)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-pcb.yaml/main/jb-hardware-pcb.zip) |
+| [Software, Windows (N/A)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-windows.zip) | [Software, Linux](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-linux.zip) | [Firmware](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-firmware.yaml/main/jb-firmware.zip) | [Hardware, Case](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-case.yaml/main/jb-hardware-case.zip) | [Hardware, PCB (N/A)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-pcb.yaml/main/jb-hardware-pcb.zip) |
 | - | - | - | - | - |
 
 # License
