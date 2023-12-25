@@ -9,9 +9,9 @@ If you are the proud owner of a new JukeBox, or are building your own, take a lo
 Sadly, not every program is compatible with these additional function keys, and some do not allow the use of these keys. There is a running list [here](docs/program-compatibility.md) of what programs do and do not work with the keys provided by JukeBox.
 
 # Nightly builds
-Each component of the project is built as it is updated. You can grab the latest version of each below.
+Each component of the project is built as it is updated. You can grab the latest version of each below. Nightly links provided by [nightly.link](https://nightly.link/).
 
-| [Software, Windows (N/A)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-windows.zip) | [Software, Linux](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-linux.zip) | [Firmware](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-firmware.yaml/main/jb-firmware.zip) | [Hardware, Case](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-case.yaml/main/jb-hardware-case.zip) | [Hardware, PCB (N/A)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-pcb.yaml/main/jb-hardware-pcb.zip) |
+| [Software, Windows (N/A)](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-windows.zip) | [Software, Linux](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-software.yaml/main/jb-software-linux.zip) | [Firmware](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-firmware.yaml/main/jb-firmware.zip) | [Hardware, Case](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-case.yaml/main/jb-hardware-case.zip) | [Hardware, PCB](https://nightly.link/FriendTeamInc/JukeBox/workflows/build-hardware-pcb.yaml/main/jb-hardware-pcb.zip) |
 | - | - | - | - | - |
 
 # License
