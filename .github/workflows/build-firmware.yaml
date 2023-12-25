@@ -1,0 +1,30 @@
+name: "Build JukeBox firmware"
+on:
+  push:
+    paths:
+      - "firmware/**"
+
+jobs:
+  build-firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Get dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          execute_install_scripts: true
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: "CMake setup"
+        run: cd firmware/ && mkdir build/ && cd build/ && cmake ..
+      - name: "Build with make"
+        run: cd firmware/build/ && make -j2
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: jb-firmware
+          path: firmware/build/jukebox_firmware.uf2
+          retention-days: 90

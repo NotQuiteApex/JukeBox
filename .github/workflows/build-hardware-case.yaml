@@ -1,0 +1,26 @@
+name: "Build JukeBox case"
+on:
+  push:
+    paths:
+      - "hardware-case/**"
+
+jobs:
+  build-hardware-case:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Get dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          execute_install_scripts: true
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "OpenSCAD build"
+        run: ./hardware-case/build.sh
+      - name: "Upload artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: jb-hardware-case
+          path: hardware-case/build/case-*.stl
+          retention-days: 90

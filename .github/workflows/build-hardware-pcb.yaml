@@ -1,0 +1,25 @@
+name: "Build JukeBox case"
+on:
+  push:
+    paths:
+      - "hardware-pcb/**"
+
+jobs:
+  build-hardware-pcb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Get dependencies"
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          version: 1
+          execute_install_scripts: true
+          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Plot gerbers"
+        run: kicad-cli pcb export gerbers hardware-pcb/JukeBox.kicad_pcb
+    if: false # disable for now
+  
+  # TODO: use when kicad 7 is releases
+  # https://docs.kicad.org/7.0/en/cli/cli.html
+  # ALSO TODO: add kicad to dependencies cache
