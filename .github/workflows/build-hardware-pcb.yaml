@@ -14,7 +14,7 @@ jobs:
         with:
           version: 1
           execute_install_scripts: true
-          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+          packages: kicad
       - name: "Checkout repo"
         uses: actions/checkout@v4
       - name: "Plot gerbers"

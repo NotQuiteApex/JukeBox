@@ -14,7 +14,7 @@ jobs:
         with:
           version: 1
           execute_install_scripts: true
-          packages: libudev-dev cmake openscad gcc-mingw-w64 gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+          packages: libudev-dev gcc-mingw-w64
       - name: "Rust setup"
         run: rustup target add x86_64-pc-windows-gnu && rustup update stable && rustup default stable && rustup toolchain list && rustup target list
       - name: "Checkout repo"
