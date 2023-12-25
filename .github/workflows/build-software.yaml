@@ -1,8 +1,9 @@
-name: "Build JukeBox desktop app"
+name: "Build desktop app"
 on:
   push:
     paths:
       - "software/**"
+      - ".github/workflows/build-software.yaml"
 
 jobs:
   build-software:

@@ -1,8 +1,9 @@
-name: "Build JukeBox firmware"
+name: "Build firmware"
 on:
   push:
     paths:
       - "firmware/**"
+      - ".github/workflows/build-firmware.yaml"
 
 jobs:
   build-firmware:

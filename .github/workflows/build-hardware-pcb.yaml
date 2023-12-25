@@ -1,8 +1,9 @@
-name: "Build JukeBox case"
+name: "Build PCB gerbers"
 on:
   push:
     paths:
       - "hardware-pcb/**"
+      - ".github/workflows/build-hardware-pcb.yaml"
 
 jobs:
   build-hardware-pcb:

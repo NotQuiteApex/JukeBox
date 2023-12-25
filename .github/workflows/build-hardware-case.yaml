@@ -1,8 +1,9 @@
-name: "Build JukeBox case"
+name: "Build case models"
 on:
   push:
     paths:
       - "hardware-case/**"
+      - ".github/workflows/build-hardware-case.yaml"
 
 jobs:
   build-hardware-case:
