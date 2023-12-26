@@ -33,6 +33,8 @@ cpH = 3;
 cpW = 3;
 // Case bottom PCB mounting plate size
 cpM = 9;
+// Case bottom rubber feet spot offset
+cpF = 20;
 
 /* [Case top settings] */
 // Case top height
@@ -121,19 +123,24 @@ module case_bottom() {
 
         union() {
             // Bolt holes
-            translate([   cM,    cM, 6]) cylinder(d=3, h=14, center=true);
-            translate([cS-cM,    cM, 6]) cylinder(d=3, h=14, center=true);
-            translate([   cM, cS-cM, 6]) cylinder(d=3, h=14, center=true);
-            translate([cS-cM, cS-cM, 6]) cylinder(d=3, h=14, center=true);
+            translate([   cM,    cM, 0]) cylinder(d=3.5, h=7);
+            translate([cS-cM,    cM, 0]) cylinder(d=3.5, h=7);
+            translate([   cM, cS-cM, 0]) cylinder(d=3.5, h=7);
+            translate([cS-cM, cS-cM, 0]) cylinder(d=3.5, h=7);
 
             // Nut holes
-            translate([   cM,    cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
-            translate([cS-cM,    cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
-            translate([   cM, cS-cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
-            translate([cS-cM, cS-cM, 1]) cylinder($fn=6, r=3, h=2, center=true);
+            translate([   cM,    cM, 0]) cylinder($fn=6, r=3.25, h=2);
+            translate([cS-cM,    cM, 0]) cylinder($fn=6, r=3.25, h=2);
+            translate([   cM, cS-cM, 0]) cylinder($fn=6, r=3.25, h=2);
+            translate([cS-cM, cS-cM, 0]) cylinder($fn=6, r=3.25, h=2);
 
             // Hole for screen cable
             translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
+
+            translate([   cpF,    cpF, 0]) cylinder(d=10, h=2);
+            translate([cS-cpF,    cpF, 0]) cylinder(d=10, h=2);
+            translate([   cpF, cS-cpF, 0]) cylinder(d=10, h=2);
+            translate([cS-cpF, cS-cpF, 0]) cylinder(d=10, h=2);
         }
     }
 }
@@ -185,10 +192,10 @@ module case_top() {
             }
 
             // mounting hardware holes
-            translate([   7,    7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
-            translate([cS-7,    7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
-            translate([   7, cS-7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
-            translate([cS-7, cS-7, ctH-1]) { cylinder(d=3, h=5, center=true); translate([0, 0, 1]) cylinder(d2=7, d1=2, h=2, center=true); }
+            translate([   7,    7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
+            translate([cS-7,    7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
+            translate([   7, cS-7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
+            translate([cS-7, cS-7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
             
             // Jukebox logo
             translate([logoX, logoY, ctH+1]) linear_extrude(height=1, center=true) scale([logoS, logoS, 1]) import(file="../assets/textlogo.svg", center=true);

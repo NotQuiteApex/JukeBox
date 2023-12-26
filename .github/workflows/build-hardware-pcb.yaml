@@ -27,8 +27,4 @@ jobs:
           name: jb-hardware-pcb
           path: hardware-pcb/gerbers/*
           retention-days: 90
-    # if: false # disable for now
-  
-  # TODO: use when kicad 7 is releases
-  # https://docs.kicad.org/7.0/en/cli/cli.html
-  # ALSO TODO: add kicad to dependencies cache
+    # TODO: check that these gerbers are good
