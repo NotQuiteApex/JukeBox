@@ -22,9 +22,9 @@
 #define JB_HID_REFRESH_INTERVAL 10
 #define JB_HID_REFRESH_OFFSET 0
 
-#define JB_HID_KB_COL     19
+#define JB_HID_KB_COL     12
 #define JB_HID_KB_COL_NUM 4
-#define JB_HID_KB_ROW     16
+#define JB_HID_KB_ROW     9
 #define JB_HID_KB_ROW_NUM 3
 
 // Serial (for screen)
@@ -36,12 +36,12 @@
 	#define JB_SCREEN_REFRESH_INTERVAL 100
 	#define JB_SCREEN_REFRESH_OFFSET 0
 
-	#define JB_SCREEN_PIN_DIN 8
-	#define JB_SCREEN_PIN_CLK 9
-	#define JB_SCREEN_PIN_CS  10
-	#define JB_SCREEN_PIN_DC  11
-	#define JB_SCREEN_PIN_RST 12
-	#define JB_SCREEN_PIN_BL  13
+	#define JB_SCREEN_PIN_DIN 21
+	#define JB_SCREEN_PIN_CLK 20
+	#define JB_SCREEN_PIN_CS  19
+	#define JB_SCREEN_PIN_DC  18
+	#define JB_SCREEN_PIN_RST 17
+	#define JB_SCREEN_PIN_BL  16
 
 	#define JB_SCREEN_CLK_DIV 1.f
 
@@ -57,7 +57,7 @@
 	#define JB_RGBLEDS_REFRESH_INTERVAL 250
 	#define JB_RGBLEDS_REFRESH_OFFSET 100
 
-	#define JB_RGBLEDS_PIN 15
+	#define JB_RGBLEDS_PIN 2
 	#define JB_RGBLEDS_FREQ 800000.f
 	// #define JB_RGBLEDS_IS_RGBW
 // #endif

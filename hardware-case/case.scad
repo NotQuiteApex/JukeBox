@@ -192,8 +192,8 @@ module case_screen() {
             // Mounting hole cutout
             translate([csSW/2-53/2, csSH/2-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
             translate([csSW/2+53/2, csSH/2-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2-53/2, csSH/2+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+53/2, csSH/2+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2-53/2, csSH/2+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+53/2, csSH/2+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
         }
     }
 }
