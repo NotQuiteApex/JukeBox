@@ -14,11 +14,11 @@ cS = 98;
 // Case corner radius (rounded corners)
 cR = 3;
 // Case mounting hardware offset
-cmO = 7;
+cmO = 6;
 // Case mounting hardware bolt size
 cmB = 3.5;
 // Case mounting hardware nut size (corner to corner)
-cmN = 3.5;
+cmN = 3.25;
 // Face count on rounded objects
 $fn=32;
 
@@ -48,9 +48,9 @@ cpFH = 2;
 // Case top height
 ctH = 8;
 // Case top wall size
-ctW = 2;
+ctW = 2.5;
 // Case top mounting plate size
-ctM = 9.5;
+ctM = 9;
 // Case top mounting plate height
 ctMH = 3;
 
@@ -69,7 +69,7 @@ kbS = 17;
 // Keyboard key matrix position (X)
 kbX = 49;
 // Keyboard key matrix position (Y)
-kbY = 40;
+kbY = 39;
 // Keyboard key matrix offset (X)
 kbOX = 30;
 // Keyboard key matrix offset (Y)
@@ -179,7 +179,7 @@ module case_top() {
                 }
                 union() {
                     // USB-C hole
-                    translate([-1, 70.5-1, -1]) cube([ctW+2, 10.5+2, ctH+1]);
+                    translate([-1, 70.5-0.5, -1]) cube([ctW+2, 10.5+1, ctH+1]);
                     // Interior
                     translate([ctW, ctW, -1]) roundedsquare(cS-ctW*2, cS-ctW*2, ctH+1, cR);
                 }
@@ -211,9 +211,9 @@ module case_top() {
             
             // Jukebox logo
             translate([logoX, logoY, ctH+1]) linear_extrude(height=1, center=true) scale([logoS, logoS, 1]) import(file="../assets/textlogo.svg", center=true);
-            translate([cS/2-36, cS-18, ctH+1]) speaker_icon();
-            translate([cS/2+36, cS-18, ctH+1]) speaker_icon();
-            translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
+            translate([cS/2-37, cS-18, ctH+1]) scale([1.1, 1.1, 1]) speaker_icon();
+            translate([cS/2+37, cS-18, ctH+1]) scale([1.1, 1.1, 1]) speaker_icon();
+            // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
         }
     }
 }
