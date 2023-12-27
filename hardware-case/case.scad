@@ -14,7 +14,7 @@ cS = 98;
 // Case corner radius (rounded corners)
 cR = 3;
 // Case mounting hardware offset
-cmO = 6;
+cmO = 7;
 // Case mounting hardware bolt size
 cmB = 3.5;
 // Case mounting hardware nut size (corner to corner)
@@ -92,7 +92,7 @@ clipR = 4;
 /* [Case screen settings] */
 csSW = 66;
 csSH = 41;
-csSCRW = 50;
+csSCRW = 49;
 csSCRH = 35;
 csSCRM = 2;
 
@@ -190,10 +190,10 @@ module case_screen() {
             translate([csSW/2, csSH/2+0.5, 0]) cube([csSCRW, csSCRH, 3*ctH], center=true);
 
             // Mounting hole cutout
-            translate([csSW/2-55/2, csSH/2+0.5-30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+55/2, csSH/2+0.5-30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2-55/2, csSH/2+0.5+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+55/2, csSH/2+0.5+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2-53/2, csSH/2+0.5-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+53/2, csSH/2+0.5-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2-53/2, csSH/2+0.5+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+53/2, csSH/2+0.5+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
         }
     }
 }
@@ -224,8 +224,9 @@ module case_top() {
             translate([cS-ctM-ctW, cS-ctM-ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
 
             // Support poles (keyboard)
-            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2-kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
         }
 
         union() {
@@ -237,10 +238,10 @@ module case_top() {
             }
 
             // mounting hardware holes
-            translate([   7,    7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([cS-7,    7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([   7, cS-7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([cS-7, cS-7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([   cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([cS-cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([   cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
             
             // Jukebox logo
             translate([logoX, logoY, ctH+1]) linear_extrude(height=1, center=true) scale([logoS, logoS, 1]) import(file="../assets/textlogo.svg", center=true);
@@ -252,30 +253,31 @@ module case_top() {
 }
 
 module case_leg() {
-    lH = clH+ctH+1;
+    lH = clH+ctH+1.5;
+    lS = cS+1;
     difference() {
         union() {
             translate([ -clipR,  0, 0]) cube([clipR, lH, clipW]);
-            translate([     cS,  0, 0]) cube([clipR, lH, clipW]);
-            translate([      0, lH, 0]) cube([cS, clipR, clipW]);
+            translate([     lS,  0, 0]) cube([clipR, lH, clipW]);
+            translate([      0, lH, 0]) cube([lS, clipR, clipW]);
 
             translate([ 0,  0, 0]) cylinder(h=clipW, r=clipR);
-            translate([cS,  0, 0]) cylinder(h=clipW, r=clipR);
+            translate([lS,  0, 0]) cylinder(h=clipW, r=clipR);
             translate([ 0, lH, 0]) cylinder(h=clipW, r=clipR);
-            translate([cS, lH, 0]) cylinder(h=clipW, r=clipR);
+            translate([lS, lH, 0]) cylinder(h=clipW, r=clipR);
 
             hull() {
                 translate([   0,      lH, 0]) cylinder(h=clipW, r=clipR);
-                translate([  cS,      lH, 0]) cylinder(h=clipW, r=clipR);
-                translate([cS/3, lH+cS/2, 0]) cylinder(h=clipW, r=clipR);
+                translate([  lS,      lH, 0]) cylinder(h=clipW, r=clipR);
+                translate([lS/3, lH+lS/2, 0]) cylinder(h=clipW, r=clipR);
             }
         }
         union() {
-            translate([0,0,-1]) cube([cS, lH, clipW+2]);
-            translate([0,0,-1]) linear_extrude(height=clipW+2) polygon(points=[[0,lH],[cS,lH],[cS/3, lH+cS/2]]);
+            translate([0,0,-1]) cube([lS, lH, clipW+2]);
+            translate([0,0,-1]) linear_extrude(height=clipW+2) polygon(points=[[0,lH],[lS,lH],[lS/3, lH+lS/2]]);
         }
     }
-    translate([0, lH, 0]) cube([cS, clipR, clipW]);
+    translate([0, lH, 0]) cube([lS, clipR, clipW]);
 }
 
 if (gen_top) translate([0, 0, clH]) case_top();
