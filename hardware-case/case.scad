@@ -144,10 +144,10 @@ module case_bottom() {
             translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
 
             // Nut holes
-            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2);
-            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2);
-            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2);
-            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2);
+            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
+            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
+            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
+            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
 
             // Hole for screen cable
             translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
