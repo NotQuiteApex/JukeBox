@@ -89,6 +89,13 @@ clipW = 10;
 // Leg rounding radius
 clipR = 4;
 
+/* [Case screen settings] */
+csSW = 66;
+csSH = 41;
+csSCRW = 50;
+csSCRH = 35;
+csSCRM = 2;
+
 // https://www.youtube.com/watch?v=gKOkJWiTgAY
 module roundedsquare(xdim, ydim, zdim, rdim){
     hull() {
@@ -168,6 +175,29 @@ module speaker_icon() {
     }
 }
 
+module case_screen() {
+    difference() {
+        union() {
+            translate([0, 0, ctH]) chamferedsquare(csSW, csSH, 1, 3, 2);
+            roundedsquare(csSW, csSH, ctH, 3);
+        }
+        union() {
+            // Cutout interior
+            translate([ctW, ctW, -1]) cube([csSW-ctW*2, csSH-ctW*2, ctH+1]);
+            translate([ctW, -cR, -1]) cube([csSW-ctW*2, cR*3, ctH+1]);
+
+            // Screen cutout
+            translate([csSW/2, csSH/2+0.5, 0]) cube([csSCRW, csSCRH, 3*ctH], center=true);
+
+            // Mounting hole cutout
+            translate([csSW/2-55/2, csSH/2+0.5-30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+55/2, csSH/2+0.5-30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2-55/2, csSH/2+0.5+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+55/2, csSH/2+0.5+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+        }
+    }
+}
+
 module case_top() {
     difference() {
         union() {
@@ -176,12 +206,15 @@ module case_top() {
                     // top shell
                     translate([0, 0, ctH]) chamferedsquare(cS, cS, 1, 3, 2);
                     roundedsquare(cS, cS, ctH, cR);
+                    if (gen_scr) translate([cS/2-csSW/2, cS-3.5, 0]) case_screen();
                 }
                 union() {
                     // USB-C hole
                     translate([-1, 70.5-0.5, -1]) cube([ctW+2, 10.5+1, ctH+1]);
                     // Interior
                     translate([ctW, ctW, -1]) roundedsquare(cS-ctW*2, cS-ctW*2, ctH+1, cR);
+                    // Screen cutout
+                    if (gen_scr) translate([cS/2-csSW/2+ctW, cS-4, 0]) cube([csSW-2*ctW, 2*ctW, ctH]);
                 }
             }
             // Mounting plates
