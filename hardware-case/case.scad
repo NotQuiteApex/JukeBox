@@ -93,7 +93,7 @@ clipR = 4;
 csSW = 66;
 csSH = 41;
 csSCRW = 49;
-csSCRH = 35;
+csSCRH = 36;
 csSCRM = 2;
 
 // https://www.youtube.com/watch?v=gKOkJWiTgAY
@@ -187,13 +187,13 @@ module case_screen() {
             translate([ctW, -cR, -1]) cube([csSW-ctW*2, cR*3, ctH+1]);
 
             // Screen cutout
-            translate([csSW/2, csSH/2+0.5, 0]) cube([csSCRW, csSCRH, 3*ctH], center=true);
+            translate([csSW/2, csSH/2, 0]) cube([csSCRW, csSCRH, 3*ctH], center=true);
 
             // Mounting hole cutout
-            translate([csSW/2-53/2, csSH/2+0.5-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+53/2, csSH/2+0.5-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2-53/2, csSH/2+0.5+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+53/2, csSH/2+0.5+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2-53/2, csSH/2-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+53/2, csSH/2-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2-53/2, csSH/2+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
+            translate([csSW/2+53/2, csSH/2+29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
         }
     }
 }
