@@ -16,9 +16,9 @@ cR = 3;
 // Case mounting hardware offset
 cmO = 7;
 // Case mounting hardware bolt size
-cmB = 3.75;
+cmB = 3.5;
 // Case mounting hardware nut size (corner to corner)
-cmN = 4;
+cmN = 3.5;
 // Face count on rounded objects
 $fn=32;
 
