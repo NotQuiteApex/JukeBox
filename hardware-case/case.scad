@@ -14,7 +14,11 @@ cS = 98;
 // Case corner radius (rounded corners)
 cR = 3;
 // Case mounting hardware offset
-cM = 7;
+cmO = 7;
+// Case mounting hardware bolt size
+cmB = 3.75;
+// Case mounting hardware nut size (corner to corner)
+cmN = 4;
 // Face count on rounded objects
 $fn=32;
 
@@ -35,12 +39,16 @@ cpW = 3;
 cpM = 9;
 // Case bottom rubber feet spot offset
 cpF = 20;
+// Case bottom rubber feet spot diameter
+cpFD = 10;
+// Case bottom rubber feet spot depth
+cpFH = 2;
 
 /* [Case top settings] */
 // Case top height
 ctH = 8;
 // Case top wall size
-ctW = 3;
+ctW = 2;
 // Case top mounting plate size
 ctM = 8;
 // Case top mounting plate height
@@ -123,24 +131,25 @@ module case_bottom() {
 
         union() {
             // Bolt holes
-            translate([   cM,    cM, 0]) cylinder(d=3.5, h=7);
-            translate([cS-cM,    cM, 0]) cylinder(d=3.5, h=7);
-            translate([   cM, cS-cM, 0]) cylinder(d=3.5, h=7);
-            translate([cS-cM, cS-cM, 0]) cylinder(d=3.5, h=7);
+            translate([   cmO,    cmO, 0]) cylinder(d=cmB, h=7);
+            translate([cS-cmO,    cmO, 0]) cylinder(d=cmB, h=7);
+            translate([   cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
+            translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
 
             // Nut holes
-            translate([   cM,    cM, 0]) cylinder($fn=6, r=3.25, h=2);
-            translate([cS-cM,    cM, 0]) cylinder($fn=6, r=3.25, h=2);
-            translate([   cM, cS-cM, 0]) cylinder($fn=6, r=3.25, h=2);
-            translate([cS-cM, cS-cM, 0]) cylinder($fn=6, r=3.25, h=2);
+            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2);
+            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2);
+            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2);
+            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2);
 
             // Hole for screen cable
             translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
 
-            translate([   cpF,    cpF, 0]) cylinder(d=10, h=2);
-            translate([cS-cpF,    cpF, 0]) cylinder(d=10, h=2);
-            translate([   cpF, cS-cpF, 0]) cylinder(d=10, h=2);
-            translate([cS-cpF, cS-cpF, 0]) cylinder(d=10, h=2);
+            // Indents for rubber feet
+            translate([   cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            translate([cS-cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            translate([   cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            translate([cS-cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
         }
     }
 }
@@ -159,7 +168,6 @@ module speaker_icon() {
     }
 }
 
-
 module case_top() {
     difference() {
         union() {
@@ -171,7 +179,7 @@ module case_top() {
                 }
                 union() {
                     // USB-C hole
-                    translate([-1, 70.5, -1]) cube([ctW+2, 10.5, ctH+1]);
+                    translate([-1, 70.5-1, -1]) cube([ctW+2, 10.5+2, ctH+1]);
                     // Interior
                     translate([ctW, ctW, -1]) roundedsquare(cS-ctW*2, cS-ctW*2, ctH+1, cR);
                 }
@@ -192,16 +200,16 @@ module case_top() {
             }
 
             // mounting hardware holes
-            translate([   7,    7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
-            translate([cS-7,    7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
-            translate([   7, cS-7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
-            translate([cS-7, cS-7, ctH-4]) { cylinder(d=3.5, h=5); translate([0,0,3]) cylinder(d2=7, d1=2, h=2); }
+            translate([   7,    7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([cS-7,    7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([   7, cS-7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([cS-7, cS-7, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
             
             // Jukebox logo
             translate([logoX, logoY, ctH+1]) linear_extrude(height=1, center=true) scale([logoS, logoS, 1]) import(file="../assets/textlogo.svg", center=true);
-            // translate([cS/2-40, cS-20, ctH+1]) speaker_icon();
-            // translate([cS/2+40, cS-20, ctH+1]) speaker_icon();
-            // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
+            translate([cS/2-36, cS-18, ctH+1]) speaker_icon();
+            translate([cS/2+36, cS-18, ctH+1]) speaker_icon();
+            translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
         }
     }
 }
