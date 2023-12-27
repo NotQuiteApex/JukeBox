@@ -18,7 +18,7 @@ cmO = 6;
 // Case mounting hardware bolt size
 cmB = 3.5;
 // Case mounting hardware nut size (corner to corner)
-cmN = 3.25;
+cmN = 3.5;
 // Face count on rounded objects
 $fn=32;
 
@@ -252,29 +252,30 @@ module case_top() {
 }
 
 module case_leg() {
+    lH = clH+ctH+1;
     difference() {
         union() {
-            translate([ -clipR, 0, 0]) cube([clipR, clH+ctH, clipW]);
-            translate([     cS, 0, 0]) cube([clipR, clH+ctH, clipW]);
-            translate([0, clH+ctH, 0]) cube([cS, clipR, clipW]);
+            translate([ -clipR,  0, 0]) cube([clipR, lH, clipW]);
+            translate([     cS,  0, 0]) cube([clipR, lH, clipW]);
+            translate([      0, lH, 0]) cube([cS, clipR, clipW]);
 
-            translate([ 0,       0, 0]) cylinder(h=clipW, r=clipR);
-            translate([cS,       0, 0]) cylinder(h=clipW, r=clipR);
-            translate([ 0, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
-            translate([cS, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
+            translate([ 0,  0, 0]) cylinder(h=clipW, r=clipR);
+            translate([cS,  0, 0]) cylinder(h=clipW, r=clipR);
+            translate([ 0, lH, 0]) cylinder(h=clipW, r=clipR);
+            translate([cS, lH, 0]) cylinder(h=clipW, r=clipR);
 
             hull() {
-                translate([ 0, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
-                translate([cS, clH+ctH, 0]) cylinder(h=clipW, r=clipR);
-                translate([cS/3, clH+ctH+cS/2, 0]) cylinder(h=clipW, r=clipR);
+                translate([   0,      lH, 0]) cylinder(h=clipW, r=clipR);
+                translate([  cS,      lH, 0]) cylinder(h=clipW, r=clipR);
+                translate([cS/3, lH+cS/2, 0]) cylinder(h=clipW, r=clipR);
             }
         }
         union() {
-            translate([0,0,-1]) cube([cS, clH+ctH, clipW+2]);
-            translate([0,0,-1]) linear_extrude(height=clipW+2) polygon(points=[[0,clH+ctH],[cS,clH+ctH],[cS/3, clH+ctH+cS/2]]);
+            translate([0,0,-1]) cube([cS, lH, clipW+2]);
+            translate([0,0,-1]) linear_extrude(height=clipW+2) polygon(points=[[0,lH],[cS,lH],[cS/3, lH+cS/2]]);
         }
     }
-    translate([0, clH+ctH, 0]) cube([cS, clipR, clipW]);
+    translate([0, lH, 0]) cube([cS, clipR, clipW]);
 }
 
 if (gen_top) translate([0, 0, clH]) case_top();
