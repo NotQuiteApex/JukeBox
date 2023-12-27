@@ -50,7 +50,7 @@ ctH = 8;
 // Case top wall size
 ctW = 2;
 // Case top mounting plate size
-ctM = 8;
+ctM = 9.5;
 // Case top mounting plate height
 ctMH = 3;
 
@@ -189,6 +189,10 @@ module case_top() {
             translate([cS-ctM-ctW,          0, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
             translate([         0, cS-ctM-ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
             translate([cS-ctM-ctW, cS-ctM-ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
+
+            // Support poles (keyboard)
+            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2-kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
         }
 
         union() {
