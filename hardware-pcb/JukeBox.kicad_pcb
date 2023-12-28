@@ -665,15 +665,15 @@
       (net 11 "/GPIO13") (pinfunction "B") (pintype "passive") (tstamp 98706cde-45bf-4671-8648-c980ba47c1f1))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 11 "/GPIO13") (pinfunction "B") (pintype "passive") (tstamp d55e9e61-e86c-4690-bec9-50823fa8d6d3))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -1152,15 +1152,15 @@
       (net 10 "/GPIO14") (pinfunction "B") (pintype "passive") (tstamp a2990e09-32e7-41d1-8c49-1defe6f6f6c9))
     (pad "2" thru_hole circle (at -3.69 -2.54) (size 2.2 2.2) (drill 1.5) (layers *.Cu *.Mask)
       (net 10 "/GPIO14") (pinfunction "B") (pintype "passive") (tstamp d4aafb9c-9341-4f97-af18-df57b166ffec))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -2693,15 +2693,15 @@
       (net 12 "/GPIO12") (pinfunction "B") (pintype "passive") (tstamp 3f065b84-1688-49fe-adb2-bd6047a0aa55))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 12 "/GPIO12") (pinfunction "B") (pintype "passive") (tstamp b233da6e-9ddd-4b2d-ad94-55513e7863cd))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -2821,15 +2821,15 @@
       (net 12 "/GPIO12") (pinfunction "B") (pintype "passive") (tstamp 800189a7-1380-4cc1-ad98-6233618c2bf6))
     (pad "2" thru_hole circle (at -3.69 -2.54) (size 2.2 2.2) (drill 1.5) (layers *.Cu *.Mask)
       (net 12 "/GPIO12") (pinfunction "B") (pintype "passive") (tstamp be354d52-aff4-4888-92d8-c145a5369940))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -3001,15 +3001,15 @@
       (net 12 "/GPIO12") (pinfunction "B") (pintype "passive") (tstamp 119cba5f-b156-4b35-b020-b669e8dd507a))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 12 "/GPIO12") (pinfunction "B") (pintype "passive") (tstamp 6cac7787-22f6-4852-bf3a-7a0b090e7900))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -3171,15 +3171,15 @@
       (net 11 "/GPIO13") (pinfunction "B") (pintype "passive") (tstamp 3e8b39e9-d384-42c5-a9c2-51f471990ada))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 11 "/GPIO13") (pinfunction "B") (pintype "passive") (tstamp e854b896-437a-4c0b-beb9-044d33514264))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -3257,15 +3257,15 @@
       (net 11 "/GPIO13") (pinfunction "B") (pintype "passive") (tstamp 5a34e299-cdd5-4c3d-a4b2-9d16ba0dce3c))
     (pad "2" thru_hole circle (at -3.69 -2.54) (size 2.2 2.2) (drill 1.5) (layers *.Cu *.Mask)
       (net 11 "/GPIO13") (pinfunction "B") (pintype "passive") (tstamp b955667a-4811-43df-9501-cd438d7ca6a6))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -3937,15 +3937,15 @@
       (net 9 "/GPIO15") (pinfunction "B") (pintype "passive") (tstamp 4b7cd996-157f-4ba1-8b74-78ece332e243))
     (pad "2" thru_hole circle (at -3.69 -2.54) (size 2.2 2.2) (drill 1.5) (layers *.Cu *.Mask)
       (net 9 "/GPIO15") (pinfunction "B") (pintype "passive") (tstamp 50692722-f6e7-4dee-bd7c-fdccf7d7fbd6))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -4211,15 +4211,15 @@
       (net 9 "/GPIO15") (pinfunction "B") (pintype "passive") (tstamp 17e84319-e313-4fc6-a522-9b04413548f3))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 9 "/GPIO15") (pinfunction "B") (pintype "passive") (tstamp 340da9b0-c704-404b-8a21-42a722d4a424))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -4478,15 +4478,15 @@
       (net 10 "/GPIO14") (pinfunction "B") (pintype "passive") (tstamp ddef384c-c983-4609-9ffd-5d95566cc6f8))
     (pad "2" thru_hole circle (at -3.69 -2.54) (size 2.2 2.2) (drill 1.5) (layers *.Cu *.Mask)
       (net 10 "/GPIO14") (pinfunction "B") (pintype "passive") (tstamp f80dae02-7f47-4cea-a029-904260c3306c))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -4980,15 +4980,15 @@
       (net 10 "/GPIO14") (pinfunction "B") (pintype "passive") (tstamp 4a34e245-b9d9-4a08-9c32-5eda890e18df))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 10 "/GPIO14") (pinfunction "B") (pintype "passive") (tstamp c687e046-eed5-4e6d-aab1-327ce9478b00))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -5160,15 +5160,15 @@
       (net 9 "/GPIO15") (pinfunction "B") (pintype "passive") (tstamp 4846f19f-4324-451a-8514-10f6595ac386))
     (pad "2" thru_hole circle (at -4.88 3.8) (size 2.032 2.032) (drill 1.27) (layers *.Cu *.Mask)
       (net 9 "/GPIO15") (pinfunction "B") (pintype "passive") (tstamp e8e52d53-fb4f-46a2-99fb-9c519f791601))
-    (model "${KIPRJMOD}/footprints/cherry-mx-switch.step"
-      (offset (xyz 0 -1 5))
+    (model "${KIPRJMOD}/footprints/SW_Cherry_MX_PCB.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 0))
+      (rotate (xyz 0 0 0))
     )
-    (model "${KIPRJMOD}/footprints/kailh-choc-switch.step"
-      (offset (xyz 0 0 3))
+    (model "${KIPRJMOD}/footprints/SW_Kailh_Choc_V1.wrl"
+      (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz -90 0 90))
+      (rotate (xyz 0 0 180))
     )
   )
 
