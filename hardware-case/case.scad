@@ -275,6 +275,12 @@ module case_leg() {
         union() {
             translate([0,0,-1]) cube([lS, lH, clipW+2]);
             translate([0,0,-1]) linear_extrude(height=clipW+2) polygon(points=[[0,lH],[lS,lH],[lS/3, lH+lS/2]]);
+
+            // rubber feet spots (angling is estimated, TOFIX?)
+            stop1=0.1;
+            stop2=0.9;
+            translate([lS/3+stop1*(2*lS/3), lH+lS/2-stop1*(lS/2), 0]) rotate([0,90,53.125]) translate([-clipW/2,0,cpFH]) cylinder(d=cpFD, h=cpFH);
+            translate([lS/3+stop2*(2*lS/3), lH+lS/2-stop2*(lS/2), 0]) rotate([0,90,53.125]) translate([-clipW/2,0,cpFH]) cylinder(d=cpFD, h=cpFH);
         }
     }
     translate([0, lH, 0]) cube([lS, clipR, clipW]);
