@@ -10,13 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Get dependencies"
-        run: sudo apt-get -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
-        # This doesn't appear to work due to issues with 'nosys.specs'
+        # TOFIX: This doesn't appear to work due to issues with 'nosys.specs'
         # uses: awalsh128/cache-apt-pkgs-action@v1
         # with:
         #   version: 1
         #   execute_install_scripts: true
         #   packages: cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+        run: sudo apt-get -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+        # TOFIX: cache the submodules?
       - name: "Checkout repo"
         uses: actions/checkout@v4
         with:

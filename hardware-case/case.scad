@@ -253,8 +253,8 @@ module case_top() {
 }
 
 module case_leg() {
-    lH = clH+ctH+1.5;
-    lS = cS+1;
+    lH = clH+ctH;
+    lS = cS;
     difference() {
         union() {
             translate([ -clipR,  0, 0]) cube([clipR, lH, clipW]);
