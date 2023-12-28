@@ -253,7 +253,7 @@ module case_top() {
 }
 
 module case_leg() {
-    lH = clH+ctH;
+    lH = clH+ctH+1;
     lS = cS;
     difference() {
         union() {
