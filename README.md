@@ -1,4 +1,5 @@
-# ![JukeBox!](./assets/textlogo.svg)
+# <img src="assets/textlogo.svg" alt="JukeBox!" width="200"/>
+
 An affordable, adorable, powerful hotkey device to run macros, play funny sounds, mute your microphone, change paint brush settings, or manage items in OBS! It can even have RGB or show PC stats!
 
 (TODO: image here)

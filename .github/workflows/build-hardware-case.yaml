@@ -4,6 +4,7 @@ on:
     paths:
       - "hardware-case/**"
       - ".github/workflows/build-hardware-case.yaml"
+      - "assets/textlogo.svg"
 
 jobs:
   build-hardware-case:
