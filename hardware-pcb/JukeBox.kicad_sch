@@ -3221,7 +3221,7 @@
     (uuid 00000000-0000-0000-0000-00005eda5f2c)
     (property "Reference" "U2" (id 0) (at 40.64 99.06 0))
     (property "Value" "W25Q128JVS" (id 1) (at 54.61 119.38 0))
-    (property "Footprint" "Package_SO:SOIC-8_5.23x5.23mm_P1.27mm" (id 2) (at 46.99 109.22 0)
+    (property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (id 2) (at 46.99 109.22 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "http://www.winbond.com/resource-files/w25q128jv_dtr%20revc%2003272018%20plus.pdf" (id 3) (at 46.99 109.22 0)
@@ -5191,7 +5191,7 @@
       (reference "U1") (unit 1) (value "NCP1117-3.3_SOT223") (footprint "Package_TO_SOT_SMD:SOT-223-3_TabPin2")
     )
     (path "/00000000-0000-0000-0000-00005eda5f2c"
-      (reference "U2") (unit 1) (value "W25Q128JVS") (footprint "Package_SO:SOIC-8_5.23x5.23mm_P1.27mm")
+      (reference "U2") (unit 1) (value "W25Q128JVS") (footprint "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm")
     )
     (path "/00000000-0000-0000-0000-00005ed8f5d6"
       (reference "U3") (unit 1) (value "RP2040") (footprint "RP2040_minimal:RP2040-QFN-56")

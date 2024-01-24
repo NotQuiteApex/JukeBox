@@ -17,7 +17,7 @@ cR = 3;
 cmO = 7;
 // Case mounting hardware bolt size
 cmB = 3.5;
-// Case mounting hardware nut size (corner to corner)
+// Case mounting hardware nut size (center to corner)
 cmN = 3.5;
 // Face count on rounded objects
 $fn=32;
@@ -224,9 +224,18 @@ module case_top() {
             translate([cS-ctM-ctW, cS-ctM-ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
 
             // Support poles (keyboard)
+            // Left
+            translate([kbX-(kbSW-kbS)/2-kbSH, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2-kbSH, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2-kbSH, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            // Mid
             translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
             translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
             translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            // Right
+            translate([kbX-(kbSW-kbS)/2+kbSH, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2+kbSH, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            translate([kbX-(kbSW-kbS)/2+kbSH, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
         }
 
         union() {
