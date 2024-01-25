@@ -1,5 +1,7 @@
 #include "serial.h"
 
+#include <pico/bootrom.h>
+
 #include <string.h>
 #include <tusb.h>
 
@@ -281,6 +283,11 @@ void serial_task(void) {
 			tud_cdc_write_flush();
 			heartbeat_ms = time_us_64() + offset_heartbeat;
 			reset_input_string();
+		} else if (inputString[0] == 'U' && inputString[1] == '\x30') {
+			// Update
+			// TODO: deconstruct all the stuff on this core (screen, rgb, etc) and send signal to reset usb on main core
+			bootsel_reset_jukebox = 1;
+			// TODO: send a response to the desktop app before reset?
 		}
 	}
 }

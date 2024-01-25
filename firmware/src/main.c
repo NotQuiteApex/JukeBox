@@ -1,7 +1,9 @@
 // JukeBox V5 Firmware
 
 #include "common.h"
+
 #include <pico/multicore.h>
+#include <pico/bootrom.h>
 
 #include "keyboard.h"
 #include "lcd.h"
@@ -10,9 +12,12 @@
 #include "serial.h"
 
 void task_updates(void) {
-	while (true) {
+	while (!bootsel_reset_jukebox) {
 		keyboard_task();
 		serial_task();
+		if (bootsel_reset_jukebox) {
+			break;
+		}
 
 		#ifdef JB_MOD_SCREEN
 			lcd_task();
@@ -47,6 +52,11 @@ int main(void) {
 		if (!started_tasks && tud_mounted()) {
 			started_tasks = true;
 			multicore_launch_core1(task_updates);
+		}
+
+		if (bootsel_reset_jukebox) {
+			// TODO: set activity led? wait for second core to finish?
+			reset_usb_boot(0, 0);
 		}
 
 		led_blinking_task();
