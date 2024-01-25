@@ -15,6 +15,8 @@ void lcd_init(void);
 
 void lcd_set_color(uint8_t r, uint8_t g, uint8_t b);
 
+void lcd_on(void);
+void lcd_off(void);
 void lcd_clear(void);
 void lcd_present(void);
 

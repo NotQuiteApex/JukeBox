@@ -73,8 +73,4 @@
 	#endif
 #endif
 
-// Globals
-// only set to 1 when going into update mode
-volatile uint8_t bootsel_reset_jukebox = 0; 
-
 #endif // JUKEBOX_COMMON_H

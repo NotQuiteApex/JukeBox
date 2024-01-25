@@ -27,6 +27,14 @@ inline void lcd_set_color(uint8_t r, uint8_t g, uint8_t b) {
 	lcd_color_full = lcd_rgb565(r, g, b);
 }
 
+inline void lcd_on(void) {
+	st7789_bl_on();
+}
+
+inline void lcd_off(void) {
+	st7789_bl_off();
+}
+
 inline void lcd_clear(void) {
 	st7789_fb_clear();
 }

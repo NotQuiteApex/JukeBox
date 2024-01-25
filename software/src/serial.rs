@@ -200,7 +200,7 @@ fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<bo
         pcs.gpu_memory_load(),
     );
     let m = m.as_bytes();
-    let m = "U\x30\r\n".as_bytes(); // TESTING UPDATE COMMAND
+    // let m = "U\x30\r\n".as_bytes(); // TESTING UPDATE COMMAND
 
     f.write_all(m).map_err(|why| {
         ExitMsg::new(

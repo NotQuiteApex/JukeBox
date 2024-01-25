@@ -15,4 +15,7 @@ void st7789_lcd_push_fb(void);
 uint16_t st7789_get_width(void);
 uint16_t st7789_get_height(void);
 
+void st7789_bl_on(void);
+void st7789_bl_off(void);
+
 #endif // JUKEBOX_ST7789_LCD_H

@@ -5,6 +5,8 @@
 #include <string.h>
 #include <tusb.h>
 
+extern volatile uint8_t bootsel_reset_jukebox;
+
 extern ScreenState screenstate;
 SerialStage commstage = GreetHost;
 

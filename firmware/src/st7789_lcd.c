@@ -156,3 +156,11 @@ inline uint16_t st7789_get_width(void) {
 inline uint16_t st7789_get_height(void) {
 	return SCREEN_HEIGHT;
 }
+
+inline void st7789_bl_on(void) {
+	gpio_put(PIN_BL, 1);
+}
+
+inline void st7789_bl_off(void) {
+	gpio_put(PIN_BL, 0);
+}
