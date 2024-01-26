@@ -12,12 +12,15 @@ pub fn basic_gui() {
 
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.label(
-                RichText::new("JukeBox Desktop")
-                    .heading()
-                    .strong()
-                    .color(Color32::from_rgb(255, 200, 100)),
-            );
+            ui.horizontal(|ui| {
+                ui.label(
+                    RichText::new("JukeBox Desktop")
+                        .heading()
+                        .strong()
+                        .color(Color32::from_rgb(255, 200, 100)),
+                );
+                ui.label(format!(" - v{}", env!("CARGO_PKG_VERSION")));
+            });
 
             ui.separator();
 
@@ -37,7 +40,8 @@ pub fn basic_gui() {
                         c[0].label("GPU VRAM Load: ");
                         c[0].label("GPU Temp: ");
                         c[0].separator();
-                        c[0].label("Memory: ");
+                        c[0].label("Memory Used: ");
+                        c[0].label("Memory Total: ");
                         c[0].separator();
                         
                         c[1].separator();
@@ -54,15 +58,18 @@ pub fn basic_gui() {
                         c[1].label("(N/A)");
                         c[1].separator();
                         c[1].label("(N/A)");
+                        c[1].label("(N/A)");
                         c[1].separator();
                     });
-                    
-                    if c[1].button("Set RGB to red").clicked() {
-                        println!("you shouldnt have done that");
-                    }
-                    if c[1].button("Update JukeBox").clicked() {
-                        println!("Updating JukeBox...");
-                    }
+
+                    c[1].vertical_centered(|ui| {
+                        if ui.button("Set RGB to red").clicked() {
+                            println!("you shouldnt have done that");
+                        }
+                        if ui.button("Update JukeBox").clicked() {
+                            println!("Updating JukeBox...");
+                        }
+                    });
                 });
             });
 
