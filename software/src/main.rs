@@ -1,6 +1,7 @@
 // A lightweight program to simulate JukeBox serial communication.
 
 mod cli;
+mod gui;
 mod serial;
 mod system;
 mod util;
@@ -97,6 +98,10 @@ fn deffered_main() -> Result<(), ExitMsg> {
                 })?;
 
             serial::serial_task(&mut f)
+        }
+        Commands::Gui => {
+            gui::basic_gui();
+            Ok(())
         }
     }
 }

@@ -7,7 +7,7 @@ use nvml_wrapper::{
     error::NvmlError,
     Device, Nvml,
 };
-use sysinfo::{Components, CpuRefreshKind, System, MemoryRefreshKind};
+use sysinfo::{Components, CpuRefreshKind, MemoryRefreshKind, System};
 
 use crate::util::ExitMsg;
 
@@ -84,10 +84,7 @@ impl NvidiaGpu {
 impl SysGpu for NvidiaGpu {
     fn update(&mut self) {
         self.name = self.device.name().unwrap();
-        self.temperature = self
-            .device
-            .temperature(TemperatureSensor::Gpu)
-            .unwrap();
+        self.temperature = self.device.temperature(TemperatureSensor::Gpu).unwrap();
         let utils = self.device.utilization_rates().unwrap();
         self.core_clock = self.device.clock_info(Clock::Graphics).unwrap();
         self.core_load = utils.gpu;
@@ -149,7 +146,8 @@ impl PCSystem {
 
         // self.sys.refresh_cpu(); // <- This doesn't refresh everything on all platforms.
         self.sys.refresh_cpu_specifics(CpuRefreshKind::everything());
-        self.sys.refresh_memory_specifics(MemoryRefreshKind::new().without_swap());
+        self.sys
+            .refresh_memory_specifics(MemoryRefreshKind::new().without_swap());
         // self.sys.refresh_components();
     }
 

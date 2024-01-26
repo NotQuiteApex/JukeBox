@@ -19,4 +19,6 @@ pub enum Commands {
     Probe,
     #[command(about = "Communicate with a JukeBox device")]
     Commune,
+    #[command(about = "Test desktop GUI")]
+    Gui,
 }
