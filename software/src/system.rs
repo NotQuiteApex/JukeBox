@@ -7,7 +7,7 @@ use nvml_wrapper::{
     error::NvmlError,
     Device, Nvml,
 };
-use sysinfo::{Components, CpuRefreshKind, MemoryRefreshKind, System};
+use sysinfo::{/*Components, */ CpuRefreshKind, MemoryRefreshKind, System};
 
 use crate::util::ExitMsg;
 
@@ -179,7 +179,7 @@ impl PCSystem {
     pub fn memory_total(&self) -> String {
         // FIXME: the postfix should be removed later
         format!(
-            "{:.1}GiB",
+            "{:.1}",
             (self.sys.total_memory() as f64) / ((1 << 30) as f64)
         )
     }
@@ -230,12 +230,11 @@ impl PCSystem {
         self.gpu.vram_load()
     }
 
-    pub fn sensors(&self) -> Components {
-        Components::new_with_refreshed_list()
-    }
+    // pub fn sensors(&self) -> Components {
+    //     Components::new_with_refreshed_list()
+    // }
 }
 
-#[derive(Default)]
 pub struct SystemReport {
     pub cpu_name: String,
     pub gpu_name: String,
@@ -278,5 +277,23 @@ impl SystemReport {
 
         // log::info!("");
         log::info!("PROBE ENDED!!!");
+    }
+}
+impl Default for SystemReport {
+    fn default() -> Self {
+        Self {
+            cpu_name: "(N/A)".to_owned(),
+            gpu_name: "(N/A)".to_owned(),
+            memory_total: "(N/A)".to_owned(),
+            cpu_freq: "(N/A)".to_owned(),
+            cpu_temp: "(N/A)".to_owned(),
+            cpu_load: "(N/A)".to_owned(),
+            memory_used: "(N/A)".to_owned(),
+            gpu_temp: "(N/A)".to_owned(),
+            gpu_core_clock: "(N/A)".to_owned(),
+            gpu_core_load: "(N/A)".to_owned(),
+            gpu_memory_clock: "(N/A)".to_owned(),
+            gpu_memory_load: "(N/A)".to_owned()
+        }
     }
 }

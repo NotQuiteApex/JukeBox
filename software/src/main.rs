@@ -7,8 +7,6 @@ mod system;
 mod util;
 
 use clap::Parser;
-use serialport::SerialPortType;
-// use sysinfo::{System, SystemExt};
 
 use crate::{
     cli::{Cli, Commands},
