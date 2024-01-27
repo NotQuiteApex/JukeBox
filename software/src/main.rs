@@ -55,48 +55,11 @@ fn deffered_main() -> Result<(), ExitMsg> {
 
     match cli.command {
         Commands::Probe => {
-            PCSystem::new()?.probe_report();
+            PCSystem::new()?.get_report().log_report();
             Ok(())
         }
         Commands::Commune => {
-            let ports = serialport::available_ports().map_err(|why| {
-                ExitMsg::new(
-                    ExitCode::GenericError,
-                    format!("Failed to enumerate serial ports, reason: \"{}\".", why),
-                )
-            })?;
-            let ports: Vec<_> = ports
-                .iter()
-                .filter(|p| match &p.port_type {
-                    SerialPortType::UsbPort(p) => p.pid == 0xF20A && p.vid == 0x1209,
-                    _ => false,
-                })
-                .collect();
-            log::info!(
-                "Found ports: {:?}",
-                ports
-                    .iter()
-                    .map(|f| f.port_name.clone())
-                    .collect::<Vec<_>>()
-            );
-            if ports.len() == 0 {
-                return Err(ExitMsg::new(
-                    ExitCode::GenericError,
-                    format!("Failed to find JukeBox serial port."),
-                ));
-            }
-            let port = ports.get(0).unwrap(); // TODO: provide an argument to choose from this vector
-
-            let mut f = serialport::new(port.port_name.clone(), 115200)
-                .timeout(std::time::Duration::from_millis(10))
-                .open()
-                .map_err(|why| {
-                    ExitMsg::new(
-                        ExitCode::GenericError,
-                        format!("Failed to open serial port, reason: \"{}\".", why),
-                    )
-                })?;
-
+            let mut f = serial::serial_get_device()?;
             serial::serial_task(&mut f)
         }
         Commands::Gui => {

@@ -1,5 +1,14 @@
+use std::{sync::mpsc::channel, time::Duration};
+use std::thread::{self, sleep};
+
 use eframe::egui;
-use egui::{Color32, RichText, Separator};
+use egui::{Align, Color32, Rect, RichText};
+
+use crate::system::{PCSystem, SystemReport};
+
+pub enum G2SCommands {
+    UpdateDevice,
+}
 
 pub fn basic_gui() {
     let options = eframe::NativeOptions {
@@ -10,7 +19,27 @@ pub fn basic_gui() {
         ..Default::default()
     };
 
+    let (tx1, rx1) = channel::<G2SCommands>();
+    let (tx2, rx2) = channel::<SystemReport>();
+
+    thread::spawn(move || {
+        let mut pcs = PCSystem::new().expect("COULD NOT MAKE PC REPORTER");
+
+        loop {
+            sleep(Duration::from_secs(1));
+            pcs.update();
+            tx2.send(pcs.get_report()).expect("COULD NOT SEND PC REPORT");
+        }
+    });
+
+    let mut sr = SystemReport::default();
+
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
+        let nsr = rx2.recv_timeout(Duration::from_secs(0));
+        if let Ok(snsr) = nsr {
+            sr = snsr;
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
@@ -24,57 +53,61 @@ pub fn basic_gui() {
 
             ui.separator();
 
-            ui.horizontal_top(|ui| {
-                ui.columns(2, |c| {
-                    c[0].columns(2, |c| {
-                        c[0].separator();
-                        c[0].label("CPU: ");
-                        c[0].label("CPU Freq: ");
-                        c[0].label("CPU Load: ");
-                        c[0].label("CPU Temp: ");
-                        c[0].separator();
-                        c[0].label("GPU: ");
-                        c[0].label("GPU Core Freq: ");
-                        c[0].label("GPU Core Load: ");
-                        c[0].label("GPU VRAM Freq: ");
-                        c[0].label("GPU VRAM Load: ");
-                        c[0].label("GPU Temp: ");
-                        c[0].separator();
-                        c[0].label("Memory Used: ");
-                        c[0].label("Memory Total: ");
-                        c[0].separator();
-                        
-                        c[1].separator();
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].separator();
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].separator();
-                        c[1].label("(N/A)");
-                        c[1].label("(N/A)");
-                        c[1].separator();
-                    });
-
-                    c[1].vertical_centered(|ui| {
-                        if ui.button("Set RGB to red").clicked() {
-                            println!("you shouldnt have done that");
-                        }
-                        if ui.button("Update JukeBox").clicked() {
-                            println!("Updating JukeBox...");
-                        }
-                    });
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    // ui.separator();
+                    ui.label("CPU: ");
+                    ui.label("CPU Freq: ");
+                    ui.label("CPU Load: ");
+                    ui.label("CPU Temp: ");
+                    // ui.separator();
+                    ui.label("GPU: ");
+                    ui.label("GPU Core Freq: ");
+                    ui.label("GPU Core Load: ");
+                    ui.label("GPU VRAM Freq: ");
+                    ui.label("GPU VRAM Load: ");
+                    ui.label("GPU Temp: ");
+                    // ui.separator();
+                    ui.label("Memory Used: ");
+                    ui.label("Memory Total: ");
+                    // ui.separator();
+                });
+                ui.with_layout(egui::Layout::top_down(egui::Align::LEFT), |ui| {
+                    // ui.separator();
+                    ui.label(format!("{}", sr.cpu_name));
+                    ui.label(format!("{}", sr.cpu_freq));
+                    ui.label(format!("{}", sr.cpu_load));
+                    ui.label(format!("{}", sr.cpu_temp));
+                    // ui.separator();
+                    ui.label(format!("{}", sr.gpu_name));
+                    ui.label(format!("{}", sr.gpu_core_clock));
+                    ui.label(format!("{}", sr.gpu_core_load));
+                    ui.label(format!("{}", sr.gpu_memory_clock));
+                    ui.label(format!("{}", sr.gpu_memory_load));
+                    ui.label(format!("{}", sr.gpu_temp));
+                    // ui.separator();
+                    ui.label(format!("{}", sr.memory_used));
+                    ui.label(format!("{}", sr.memory_total));
+                    // ui.separator();
                 });
             });
 
             ui.separator();
+
+            if ui.button("Set RGB to red").clicked() {
+                println!("you shouldnt have done that");
+            }
+            if ui.button("Update JukeBox").clicked() {
+                println!("Updating JukeBox...");
+            }
+
+            ui.separator();
+
         });
+
+        // Call a new frame every frame, bypassing the limited updates.
+        // NOTE: This is a bad idea, we should probably change this later.
+        ctx.request_repaint();
     })
     .expect("eframe error");
 }

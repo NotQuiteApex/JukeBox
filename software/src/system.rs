@@ -151,6 +151,23 @@ impl PCSystem {
         // self.sys.refresh_components();
     }
 
+    pub fn get_report(&self) -> SystemReport {
+        SystemReport {
+            cpu_name: self.cpu_name(),
+            gpu_name: self.gpu_name(),
+            memory_total: self.memory_total(),
+            cpu_freq: self.cpu_freq(),
+            cpu_temp: self.cpu_temp(),
+            cpu_load: self.cpu_load(),
+            memory_used: self.memory_used(),
+            gpu_temp: self.gpu_temp(),
+            gpu_core_clock: self.gpu_core_clock(),
+            gpu_core_load: self.gpu_core_load(),
+            gpu_memory_clock: self.gpu_memory_clock(),
+            gpu_memory_load: self.gpu_memory_load(),
+        }
+    }
+
     pub fn cpu_name(&self) -> String {
         self.sys.cpus().get(0).unwrap().brand().trim().to_owned()
     }
@@ -216,31 +233,48 @@ impl PCSystem {
     pub fn sensors(&self) -> Components {
         Components::new_with_refreshed_list()
     }
+}
 
-    pub fn probe_report(&self) {
+#[derive(Default)]
+pub struct SystemReport {
+    pub cpu_name: String,
+    pub gpu_name: String,
+    pub memory_total: String,
+    pub cpu_freq: String,
+    pub cpu_temp: String,
+    pub cpu_load: String,
+    pub memory_used: String,
+    pub gpu_temp: String,
+    pub gpu_core_clock: String,
+    pub gpu_core_load: String,
+    pub gpu_memory_clock: String,
+    pub gpu_memory_load: String,
+}
+impl SystemReport {
+    pub fn log_report(&self) {
         log::info!("PROBE START...");
         // log::info!("");
 
-        log::info!("CPU Name: ---- '{}'", self.cpu_name());
-        log::info!("GPU Name: ---- '{}'", self.gpu_name());
-        log::info!("Total Memory: - {} GiB", self.memory_total());
+        log::info!("CPU Name: ---- '{}'", self.cpu_name);
+        log::info!("GPU Name: ---- '{}'", self.gpu_name);
+        log::info!("Total Memory: - {} GiB", self.memory_total);
         // log::info!("CPU Vendor: -- '{}'", self.sys.global_cpu_info().vendor_id());
         // log::info!("");
-        log::info!("CPU Freq: ------- {} GHz", self.cpu_freq());
-        log::info!("CPU Temp: ------- {} * C", self.cpu_temp());
-        log::info!("CPU Load: ------- {} %", self.cpu_load());
-        log::info!("Memory Used: ---- {} GiB", self.memory_used());
-        log::info!("GPU Temp: ------- {} * C", self.gpu_temp());
-        log::info!("GPU Core Clock: - {} MHz", self.gpu_core_clock());
-        log::info!("GPU Core Load: -- {} %", self.gpu_core_load());
-        log::info!("GPU VRAM Clock: - {} MHz", self.gpu_memory_clock());
-        log::info!("GPU VRAM Load: -- {} %", self.gpu_memory_load());
+        log::info!("CPU Freq: ------- {} GHz", self.cpu_freq);
+        log::info!("CPU Temp: ------- {} * C", self.cpu_temp);
+        log::info!("CPU Load: ------- {} %", self.cpu_load);
+        log::info!("Memory Used: ---- {} GiB", self.memory_used);
+        log::info!("GPU Temp: ------- {} * C", self.gpu_temp);
+        log::info!("GPU Core Clock: - {} MHz", self.gpu_core_clock);
+        log::info!("GPU Core Load: -- {} %", self.gpu_core_load);
+        log::info!("GPU VRAM Clock: - {} MHz", self.gpu_memory_clock);
+        log::info!("GPU VRAM Load: -- {} %", self.gpu_memory_load);
         // log::info!("");
 
-        log::info!("Sensors:");
-        for (i, c) in self.sensors().iter().enumerate() {
-            log::info!("\t{}. {:?}", i + 1, c)
-        }
+        // log::info!("Sensors:");
+        // for (i, c) in self.sensors().iter().enumerate() {
+        //     log::info!("\t{}. {:?}", i + 1, c)
+        // }
 
         // log::info!("");
         log::info!("PROBE ENDED!!!");
