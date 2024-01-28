@@ -1,14 +1,13 @@
-use std::thread::{self, sleep};
+use std::ops::Add;
+use std::thread;
+use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui;
 use egui::{Align, Color32, RichText};
 
+use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
 use crate::system::{PCSystem, SystemReport};
-
-// pub enum G2SCommands {
-//     UpdateDevice,
-// }
 
 pub fn basic_gui() {
     let options = eframe::NativeOptions {
@@ -19,17 +18,58 @@ pub fn basic_gui() {
         ..Default::default()
     };
 
-    // let (tx1, rx1) = channel::<G2SCommands>();
-    let (tx2, rx2) = channel::<SystemReport>();
+    let (serialevent_tx, serialevent_rx) = channel::<SerialEvent>();
+    let (serialcommand_tx, serialcommand_rx) = channel::<SerialCommand>();
+    let (sysreport_tx1, sysreport_rx1) = channel::<SystemReport>();
+    let (sysreport_tx2, sysreport_rx2) = channel::<SystemReport>();
 
-    thread::spawn(move || {
+    let (breaker_tx1, breaker_rx1) = channel::<bool>();
+    let (breaker_tx2, breaker_rx2) = channel::<bool>();
+
+    // system stats thread
+    let systemstats = thread::spawn(move || {
+        // TODO: handle removable PC hardware (such as external GPUs)
         let mut pcs = PCSystem::new().expect("COULD NOT MAKE PC REPORTER");
+        let mut timer = Instant::now();
 
         loop {
-            tx2.send(pcs.get_report())
-                .expect("COULD NOT SEND PC REPORT");
-            sleep(Duration::from_secs(1));
+            if let Ok(_) = breaker_rx1.try_recv() {
+                break;
+            }
+            if Instant::now() < timer {
+                continue;
+            }
+            timer = Instant::now().add(Duration::from_secs(1));
+
+            sysreport_tx1
+                .send(pcs.get_report())
+                .expect("COULD NOT SEND PC REPORT 1"); // send to gui
+            sysreport_tx2
+                .send(pcs.get_report())
+                .expect("COULD NOT SEND PC REPORT 2"); // send to serial
             pcs.update();
+        }
+    });
+
+    // serial comms thread
+    let serialcomms = thread::spawn(move || {
+        loop {
+            if let Ok(_) = breaker_rx2.try_recv() {
+                break;
+            }
+
+            let f = serial_get_device();
+            if let Err(_) = f {
+                // log::error!("Failed to get serial device. Error: `{}`.", e);
+                continue;
+            }
+            let mut f = f.unwrap();
+
+            // TODO: figure out how to force serial_task to fail
+            match serial_task(&mut f, &sysreport_rx1, &serialcommand_rx, &serialevent_tx) {
+                Err(e) => log::error!("Serial device error: `{}`", e),
+                Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
+            };
         }
     });
 
@@ -37,9 +77,17 @@ pub fn basic_gui() {
     let mut sr = SystemReport::default();
 
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
-        let nsr = rx2.try_recv();
-        if let Ok(snsr) = nsr {
+        while let Ok(snsr) = sysreport_rx2.try_recv() {
             sr = snsr;
+        }
+        while let Ok(event) = serialevent_rx.try_recv() {
+            match event {
+                SerialEvent::Connected => jb_connected = true,
+                SerialEvent::LostConnection => jb_connected = false,
+                SerialEvent::Disconnected => jb_connected = false,
+                SerialEvent::HeartbeatSuccess => todo!(),
+                SerialEvent::SystemStatsSuccess => todo!(),
+            }
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -100,9 +148,15 @@ pub fn basic_gui() {
             ui.separator();
             ui.horizontal(|ui| {
                 if ui.button("Set RGB to red").clicked() {
+                    serialcommand_tx
+                        .send(SerialCommand::TestCommand)
+                        .expect("failed to send command");
                     println!("you shouldnt have done that");
                 }
                 if ui.button("Update JukeBox").clicked() {
+                    serialcommand_tx
+                        .send(SerialCommand::UpdateDevice)
+                        .expect("failed to send command");
                     println!("Updating JukeBox...");
                 }
             });
@@ -115,4 +169,18 @@ pub fn basic_gui() {
         ctx.request_repaint();
     })
     .expect("eframe error");
+
+    breaker_tx1
+        .send(true)
+        .expect("could not send breaker 1 signal");
+    breaker_tx2
+        .send(true)
+        .expect("could not send breaker 2 signal");
+
+    serialcomms
+        .join()
+        .expect("could not rejoin serialcomms thread");
+    systemstats
+        .join()
+        .expect("could not rejoin systemstats thread");
 }

@@ -1,13 +1,28 @@
 // Serial communication
 
-use crate::system::PCSystem;
+use crate::system::SystemReport;
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
 use std::ops::Add;
+use std::sync::mpsc::{Receiver, Sender};
+use std::thread::yield_now;
 use std::time::{Duration, Instant};
 
 // Utility
+
+pub enum SerialCommand {
+    TestCommand,
+    UpdateDevice,
+}
+
+pub enum SerialEvent {
+    Connected,
+    LostConnection,
+    Disconnected,
+    HeartbeatSuccess,
+    SystemStatsSuccess,
+}
 
 fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
     let timeout = Instant::now().add(Duration::from_secs(3));
@@ -24,15 +39,11 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
         let mut b: [u8; 1] = [0; 1];
         let res = f.read(&mut b);
         if res.is_err() {
-            // println!("Failed to read byte from serial.");
-            // println!("{:?}", res);
-            // return Err(());
             continue;
         }
         buf.push(b[0]);
 
         let len = buf.len();
-        // println!("{:?}", buf);
         if len >= 2
             && buf.get(len - 2).map_or(false, |v| v == &b'\r')
             && buf.get(len - 1).map_or(false, |v| v == &b'\n')
@@ -51,59 +62,30 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
     }
 }
 
-// Stages
-
-fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    // Send enquire message to JukeBox
-    log::debug!("SerialStage: Greeting");
-
-    if f.write_all(b"JB\x05\r\n").is_err() {
-        return Err(ExitMsg::new(
-            ExitCode::SerialStageGreetHost,
-            "Failed to send host greeting.".to_owned(),
-        ));
-    }
+fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result<(), ExitMsg> {
+    f.write_all(send).map_err(|why| {
+        ExitMsg::new(
+            ExitCode::SerialSendMessageError,
+            format!("Failed to send message '{:?}', reason: '{}'.", send, why),
+        )
+    })?;
     f.flush().map_err(|why| {
         ExitMsg::new(
-            ExitCode::SerialStageGreetHost,
-            format!("Failed to flush string, reason: '{}'.", why),
+            ExitCode::SerialSendFlushError,
+            format!("Failed to flush message '{:?}', reason: '{}'.", send, why),
         )
     })?;
 
-    let s = get_serial_string(f);
-    if s.is_err() || s.unwrap() != String::from("P001\r\n") {
-        return Err(ExitMsg::new(
-            ExitCode::SerialStageGreetDevice,
-            "Failed to confirm protocol.".to_owned(),
-        ));
-        // TODO: send nack in response to bad protocol
-    }
-
-    Ok(())
-}
-
-fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    log::debug!("SerialStage: LinkConfirmation");
-
-    if f.write_all(b"P\x06\r\n").is_err() {
-        return Err(ExitMsg::new(
-            ExitCode::SerialStageLinkConfirmHost,
-            "Failed to send protocol ack.".to_owned(),
-        ));
-    }
-    f.flush().map_err(|why| {
+    let s = get_serial_string(f).map_err(|why| {
         ExitMsg::new(
-            ExitCode::SerialStageLinkConfirmHost,
-            format!("Failed to flush string, reason: '{}'.", why),
+            ExitCode::SerialExpectRecieveError,
+            format!("Failed to get message '{:?}', reason: '{}'.", expect, why),
         )
     })?;
-
-    let s = get_serial_string(f);
-    if s.is_err() || s.unwrap() != String::from("L\x06\r\n") {
-        // response was bad, go to error state.
+    if s != String::from(expect) {
         return Err(ExitMsg::new(
-            ExitCode::SerialStageLinkConfirmDevice,
-            "Failed to send link confirmation.".to_owned(),
+            ExitCode::SerialExpectMatchError,
+            format!("Failed to match message '{:?}', got '{}'.", expect, s),
         ));
     }
 
@@ -112,128 +94,57 @@ fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
 
 // Tasks
 
-fn transmit_tasks_init(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<(), ExitMsg> {
+fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, b"JB\x05\r\n", "P001\r\n")
+    // TODO: send nack in response to bad protocol
+}
+
+fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, b"P\x06\r\n", "L\x06\r\n")
+}
+
+fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, b"H\x30\r\n", "H\x31\r\n")
+}
+
+fn transmit_system_info(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Result<(), ExitMsg> {
     let m = format!(
         "D\x11\x30{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_name(),
-        pcs.gpu_name(),
-        pcs.memory_total(),
+        pcs.cpu_name, pcs.gpu_name, pcs.memory_total,
     );
     let m = m.as_bytes();
     if m.len() > 128 {
         log::warn!("TInit string longer than 64 bytes!");
-        log::warn!("TInit CPU Brand: '{}'.", pcs.cpu_name());
-        log::warn!("TInit GPU Brand: '{}'.", pcs.gpu_name());
-        log::warn!("TInit Memory: '{}'.", pcs.memory_total());
+        log::warn!("TInit CPU Brand: '{}'.", pcs.cpu_name);
+        log::warn!("TInit GPU Brand: '{}'.", pcs.gpu_name);
+        log::warn!("TInit Memory: '{}'.", pcs.memory_total);
         log::warn!("TInit string len: {} bytes.", m.len());
         // log::warn!("TInit string: {:?}", m);
     }
 
-    f.write_all(m).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartInitSend,
-            format!("Failed to send computer part info, reason '{}'.", why),
-        )
-    })?;
-    f.flush().map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartInitSend,
-            format!("Failed to flush string, reason: '{}'.", why),
-        )
-    })?;
-
-    let s = get_serial_string(f).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartInitAck,
-            format!("Failed to get computer part info ack'd, reason '{}'.", why),
-        )
-    })?;
-    if s != String::from("D\x11\x06\r\n") {
-        return Err(ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartInitAck,
-            format!("Computer part info ack incorrect, got '{}'.", s),
-        ));
-    }
-
-    Ok(())
+    send_expect(f, m, "D\x11\x06\r\n")
 }
 
-fn transmit_tasks_loop(f: &mut Box<dyn SerialPort>, pcs: &PCSystem) -> Result<bool, ExitMsg> {
-    f.write_all(b"H\x30\r\n").map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitHeartbeatSend,
-            format!("Failed to send heartbeat, reason: '{}'.", why),
-        )
-    })?;
-    f.flush().map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitHeartbeatSend,
-            format!("Failed to flush string, reason: '{}'.", why),
-        )
-    })?;
-
-    let s = get_serial_string(f).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitHeartbeatAck,
-            format!("Failed to get heartbeat ack'd, reason: '{}'.", why),
-        )
-    })?;
-    if s != String::from("H\x31\r\n") {
-        return Err(ExitMsg::new(
-            ExitCode::SerialTransmitHeartbeatAck,
-            format!("Heartbeat ack incorrect, got '{}'.", s),
-        ));
-    }
-
-    // pcs.probe_report();
-
+fn transmit_system_stats(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Result<(), ExitMsg> {
     let m = format!(
         "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_freq(),
-        pcs.cpu_temp(),
-        pcs.cpu_load(),
-        pcs.memory_used(),
-        pcs.gpu_temp(),
-        pcs.gpu_core_clock(),
-        pcs.gpu_core_load(),
-        pcs.gpu_memory_clock(),
-        pcs.gpu_memory_load(),
+        pcs.cpu_freq,
+        pcs.cpu_temp,
+        pcs.cpu_load,
+        pcs.memory_used,
+        pcs.gpu_temp,
+        pcs.gpu_core_clock,
+        pcs.gpu_core_load,
+        pcs.gpu_memory_clock,
+        pcs.gpu_memory_load,
     );
     let m = m.as_bytes();
-    // let m = "U\x30\r\n".as_bytes(); // TESTING UPDATE COMMAND
 
-    f.write_all(m).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartStatSend,
-            format!("Failed to send computer part stats, reason: '{}'.", why),
-        )
-    })?;
-    f.flush().map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartStatSend,
-            format!("Failed to flush string, reason: '{}'.", why),
-        )
-    })?;
+    send_expect(f, m, "D\x11\x06\r\n")
+}
 
-    let s = get_serial_string(f).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartStatAck,
-            format!(
-                "Failed to get computer part stats ack'd, reason: '{}'.",
-                why
-            ),
-        )
-    })?;
-    if s != String::from("D\x11\x06\r\n") {
-        return Err(ExitMsg::new(
-            ExitCode::SerialTransmitComputerPartStatAck,
-            format!("Computer part stats ack incorrect, got: '{}'.", s),
-        ));
-    }
-
-    // TODO: include a clause for closing the connection and returning true.
-
-    Ok(false)
+fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, b"U\x30\r\n", todo!()) // TODO: standardized disconnect message
 }
 
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
@@ -276,27 +187,56 @@ pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
         })?)
 }
 
-pub fn serial_task(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    let mut pcs = PCSystem::new()?;
+pub fn serial_task(
+    f: &mut Box<dyn SerialPort>,
+    sysreport_rx: &Receiver<SystemReport>,
+    serialcommands_rx: &Receiver<SerialCommand>,
+    serialevents_tx: &Sender<SerialEvent>,
+) -> Result<(), ExitMsg> {
+    // let mut pcs = PCSystem::new()?;
+    let mut sysreport = sysreport_rx
+        .recv()
+        .expect("did not recieve sysreport for serial");
 
     greet_host(f)?;
     link_confirm_host(f)?;
 
-    transmit_tasks_init(f, &pcs)?;
+    serialevents_tx
+        .send(SerialEvent::Connected)
+        .expect("failed to send command");
+
+    transmit_system_info(f, &sysreport)?;
 
     let mut timer = Instant::now();
 
-    loop {
+    'forv: loop {
         if Instant::now() < timer {
+            yield_now();
             continue;
         }
-        timer = Instant::now().add(Duration::from_millis(1000));
+        timer = Instant::now().add(Duration::from_millis(500));
 
-        pcs.update();
+        transmit_heartbeat(f)?;
 
-        if transmit_tasks_loop(f, &pcs)? {
-            break;
+        if let Ok(newreport) = sysreport_rx.try_recv() {
+            sysreport = newreport;
+            transmit_system_stats(f, &sysreport)?;
         }
+
+        while let Ok(cmd) = serialcommands_rx.try_recv() {
+            match cmd {
+                SerialCommand::TestCommand => todo!(),
+                SerialCommand::UpdateDevice => {
+                    transmit_update_signal(f)?;
+                    serialevents_tx
+                        .send(SerialEvent::Disconnected)
+                        .expect("failed to send command");
+                    break 'forv; // The device has disconnected, we should too.
+                }
+            }
+        }
+
+        // TODO: implement recieving command check
     }
 
     Ok(())

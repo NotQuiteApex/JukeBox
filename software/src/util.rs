@@ -17,20 +17,13 @@ pub enum ExitCode {
 
     GenericError,
 
+    SerialSendMessageError,
+    SerialSendFlushError,
+    SerialExpectRecieveError,
+    SerialExpectMatchError,
+
     SerialReadBadData,
     SerialReadTimeout,
-
-    SerialStageGreetHost,
-    SerialStageGreetDevice,
-    SerialStageLinkConfirmHost,
-    SerialStageLinkConfirmDevice,
-
-    SerialTransmitComputerPartInitSend,
-    SerialTransmitComputerPartInitAck,
-    SerialTransmitHeartbeatSend,
-    SerialTransmitHeartbeatAck,
-    SerialTransmitComputerPartStatSend,
-    SerialTransmitComputerPartStatAck,
 }
 
 #[derive(Debug, Clone)]

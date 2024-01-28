@@ -293,7 +293,7 @@ impl Default for SystemReport {
             gpu_core_clock: "(N/A)".to_owned(),
             gpu_core_load: "(N/A)".to_owned(),
             gpu_memory_clock: "(N/A)".to_owned(),
-            gpu_memory_load: "(N/A)".to_owned()
+            gpu_memory_load: "(N/A)".to_owned(),
         }
     }
 }

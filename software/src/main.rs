@@ -57,8 +57,9 @@ fn deffered_main() -> Result<(), ExitMsg> {
             Ok(())
         }
         Commands::Commune => {
-            let mut f = serial::serial_get_device()?;
-            serial::serial_task(&mut f)
+            todo!()
+            // let mut f = serial::serial_get_device()?;
+            // serial::serial_task(&mut f)
         }
         Commands::Gui => {
             gui::basic_gui();
