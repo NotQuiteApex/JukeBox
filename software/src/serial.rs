@@ -11,17 +11,18 @@ use std::time::{Duration, Instant};
 
 // Utility
 
+const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
+
 pub enum SerialCommand {
     TestCommand,
     UpdateDevice,
+    DisconnectDevice,
 }
 
 pub enum SerialEvent {
     Connected,
     LostConnection,
     Disconnected,
-    HeartbeatSuccess,
-    SystemStatsSuccess,
 }
 
 fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
@@ -143,8 +144,12 @@ fn transmit_system_stats(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Res
     send_expect(f, m, "D\x11\x06\r\n")
 }
 
+fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, b"U\x30\r\n", RSP_DISCONNECTED)
+}
+
 fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x30\r\n", todo!()) // TODO: standardized disconnect message
+    send_expect(f, b"U\x31\r\n", RSP_DISCONNECTED)
 }
 
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
@@ -228,6 +233,13 @@ pub fn serial_task(
                 SerialCommand::TestCommand => todo!(),
                 SerialCommand::UpdateDevice => {
                     transmit_update_signal(f)?;
+                    serialevents_tx
+                        .send(SerialEvent::Disconnected)
+                        .expect("failed to send command");
+                    break 'forv; // The device has disconnected, we should too.
+                }
+                SerialCommand::DisconnectDevice => {
+                    transmit_disconnect_signal(f)?;
                     serialevents_tx
                         .send(SerialEvent::Disconnected)
                         .expect("failed to send command");

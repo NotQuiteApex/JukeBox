@@ -75,6 +75,7 @@ pub fn basic_gui() {
 
     let mut jb_connected = false;
     let mut sr = SystemReport::default();
+    let serialcommand_tx1 = serialcommand_tx.clone();
 
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
         while let Ok(snsr) = sysreport_rx2.try_recv() {
@@ -85,8 +86,6 @@ pub fn basic_gui() {
                 SerialEvent::Connected => jb_connected = true,
                 SerialEvent::LostConnection => jb_connected = false,
                 SerialEvent::Disconnected => jb_connected = false,
-                SerialEvent::HeartbeatSuccess => todo!(),
-                SerialEvent::SystemStatsSuccess => todo!(),
             }
         }
 
@@ -148,13 +147,13 @@ pub fn basic_gui() {
             ui.separator();
             ui.horizontal(|ui| {
                 if ui.button("Set RGB to red").clicked() {
-                    serialcommand_tx
+                    serialcommand_tx1
                         .send(SerialCommand::TestCommand)
                         .expect("failed to send command");
                     println!("you shouldnt have done that");
                 }
                 if ui.button("Update JukeBox").clicked() {
-                    serialcommand_tx
+                    serialcommand_tx1
                         .send(SerialCommand::UpdateDevice)
                         .expect("failed to send command");
                     println!("Updating JukeBox...");
@@ -176,6 +175,10 @@ pub fn basic_gui() {
     breaker_tx2
         .send(true)
         .expect("could not send breaker 2 signal");
+
+    serialcommand_tx
+        .send(SerialCommand::DisconnectDevice)
+        .expect("could not send disconnect signal");
 
     serialcomms
         .join()

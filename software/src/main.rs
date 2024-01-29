@@ -51,7 +51,7 @@ fn deffered_main() -> Result<(), ExitMsg> {
         )
     })?;
 
-    match cli.command {
+    match cli.command.unwrap_or(Commands::Gui) {
         Commands::Probe => {
             PCSystem::new()?.get_report().log_report();
             Ok(())

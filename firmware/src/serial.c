@@ -286,10 +286,22 @@ void serial_task(void) {
 			heartbeat_ms = time_us_64() + offset_heartbeat;
 			reset_input_string();
 		} else if (inputString[0] == 'U' && inputString[1] == '\x30') {
-			// Update
-			// TODO: deconstruct all the stuff on this core (screen, rgb, etc) and send signal to reset usb on main core
-			bootsel_reset_jukebox = 1;
-			// TODO: send a response to the desktop app before reset?
+			if (inputString[1] == '\x30') {
+				// Disconnect
+				tud_cdc_write("\x04\x04\r\n", 4);
+				tud_cdc_write_flush();
+				reset_input_string();
+				commstage = ErrorWait; // TODO: better handle serial disconnects
+			} else if (inputString[1] == '\x31') {
+				// Update
+				tud_cdc_write("\x04\x04\r\n", 4);
+				tud_cdc_write_flush();
+				reset_input_string();
+				sleep_ms(250);
+				bootsel_reset_jukebox = 1;
+				// TODO: deconstruct all the stuff on this core (screen, rgb, etc) and send signal to reset usb on main core
+				// TODO: send a response to the desktop app before reset?
+			}
 		}
 	}
 }
