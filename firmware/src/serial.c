@@ -285,7 +285,7 @@ void serial_task(void) {
 			tud_cdc_write_flush();
 			heartbeat_ms = time_us_64() + offset_heartbeat;
 			reset_input_string();
-		} else if (inputString[0] == 'U' && inputString[1] == '\x30') {
+		} else if (inputString[0] == 'U') {
 			if (inputString[1] == '\x30') {
 				// Disconnect
 				tud_cdc_write("\x04\x04\r\n", 4);
@@ -297,7 +297,7 @@ void serial_task(void) {
 				tud_cdc_write("\x04\x04\r\n", 4);
 				tud_cdc_write_flush();
 				reset_input_string();
-				sleep_ms(250);
+				sleep_ms(1000); // sleep to allow tinyusb to write cdc buffer (TODO: find better value)
 				bootsel_reset_jukebox = 1;
 				// TODO: deconstruct all the stuff on this core (screen, rgb, etc) and send signal to reset usb on main core
 				// TODO: send a response to the desktop app before reset?

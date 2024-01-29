@@ -9,6 +9,12 @@ use egui::{Align, Color32, RichText};
 use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
 use crate::system::{PCSystem, SystemReport};
 
+enum ConnectionStatus {
+    Connected,
+    NotConnected,
+    LostConnection,
+}
+
 pub fn basic_gui() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -77,7 +83,7 @@ pub fn basic_gui() {
         }
     });
 
-    let mut jb_connected = false;
+    let mut connection_status = ConnectionStatus::NotConnected;
     let mut sr = SystemReport::default();
     let serialcommand_tx1 = serialcommand_tx.clone();
 
@@ -87,9 +93,9 @@ pub fn basic_gui() {
         }
         while let Ok(event) = serialevent_rx.try_recv() {
             match event {
-                SerialEvent::Connected => jb_connected = true,
-                SerialEvent::LostConnection => jb_connected = false,
-                SerialEvent::Disconnected => jb_connected = false,
+                SerialEvent::Connected => connection_status = ConnectionStatus::Connected,
+                SerialEvent::LostConnection => connection_status = ConnectionStatus::LostConnection,
+                SerialEvent::Disconnected => connection_status = ConnectionStatus::NotConnected,
             }
         }
 
@@ -103,13 +109,11 @@ pub fn basic_gui() {
                 );
                 ui.label(format!(" - v{}", env!("CARGO_PKG_VERSION")));
                 ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                    if jb_connected {
-                        ui.label(RichText::new("Connected").color(Color32::from_rgb(50, 200, 50)));
-                    } else {
-                        ui.label(
-                            RichText::new("Not connected").color(Color32::from_rgb(200, 50, 50)),
-                        );
-                    }
+                    match connection_status {
+                        ConnectionStatus::Connected => ui.label(RichText::new("Connected.").color(Color32::from_rgb(50, 200, 50))),
+                        ConnectionStatus::NotConnected => ui.label(RichText::new("Not connected.").color(Color32::from_rgb(200, 200, 50))),
+                        ConnectionStatus::LostConnection => ui.label(RichText::new("Lost connection!").color(Color32::from_rgb(200, 50, 50))),
+                    };
                 });
             });
 
