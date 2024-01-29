@@ -65,9 +65,13 @@ pub fn basic_gui() {
             }
             let mut f = f.unwrap();
 
-            // TODO: figure out how to force serial_task to fail
             match serial_task(&mut f, &sysreport_rx1, &serialcommand_rx, &serialevent_tx) {
-                Err(e) => log::error!("Serial device error: `{}`", e),
+                Err(e) => {
+                    log::warn!("Serial device error: `{}`", e);
+                    if let Err(e) = serialevent_tx.send(SerialEvent::LostConnection) {
+                        log::warn!("LostConnection event signal failed, reason: `{}`", e);
+                    }
+                }
                 Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
             };
         }

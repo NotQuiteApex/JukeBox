@@ -195,8 +195,8 @@ pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
 pub fn serial_task(
     f: &mut Box<dyn SerialPort>,
     sysreport_rx: &Receiver<SystemReport>,
-    serialcommands_rx: &Receiver<SerialCommand>,
-    serialevents_tx: &Sender<SerialEvent>,
+    serialcommand_rx: &Receiver<SerialCommand>,
+    serialevent_tx: &Sender<SerialEvent>,
 ) -> Result<(), ExitMsg> {
     // let mut pcs = PCSystem::new()?;
     let mut sysreport = sysreport_rx
@@ -206,7 +206,7 @@ pub fn serial_task(
     greet_host(f)?;
     link_confirm_host(f)?;
 
-    serialevents_tx
+    serialevent_tx
         .send(SerialEvent::Connected)
         .expect("failed to send command");
 
@@ -228,21 +228,21 @@ pub fn serial_task(
             transmit_system_stats(f, &sysreport)?;
         }
 
-        while let Ok(cmd) = serialcommands_rx.try_recv() {
+        while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
                 SerialCommand::TestCommand => todo!(),
                 SerialCommand::UpdateDevice => {
                     transmit_update_signal(f)?;
-                    serialevents_tx
-                        .send(SerialEvent::Disconnected)
-                        .expect("failed to send command");
+                    if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
+                        log::warn!("Disconnect event signal failed, reason: `{}`", e);
+                    }
                     break 'forv; // The device has disconnected, we should too.
                 }
                 SerialCommand::DisconnectDevice => {
                     transmit_disconnect_signal(f)?;
-                    serialevents_tx
-                        .send(SerialEvent::Disconnected)
-                        .expect("failed to send command");
+                    if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
+                        log::warn!("Disconnect event signal failed, reason: `{}`", e);
+                    }
                     break 'forv; // The device has disconnected, we should too.
                 }
             }
