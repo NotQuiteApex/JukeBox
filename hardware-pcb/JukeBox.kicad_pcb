@@ -5785,7 +5785,7 @@
   (gr_arc (start 88.49 196.85) (mid 86.36868 195.97132) (end 85.49 193.85) (layer "Edge.Cuts") (width 0.05) (tstamp 64c03120-acb6-413a-b39c-e2677099e116))
   (gr_line (start 172.49 196.85) (end 88.49 196.85) (layer "Edge.Cuts") (width 0.05) (tstamp becab5fc-1df5-43a3-b1a0-c92760d2c76d))
   (gr_line (start 175.49 109.85) (end 175.49 193.85) (layer "Edge.Cuts") (width 0.05) (tstamp cc6b5587-d009-4799-af8e-ace1b763be3e))
-  (gr_text "v5.0 - F.T.I. <3 (c) 2020-2024\nhttps://jukebox.friendteam.biz" (at 88.39 170.6 90) (layer "F.SilkS") (tstamp eaf5751a-8554-4166-8b9d-8fa57812ec2b)
+  (gr_text "v5.1 - F.T.I. <3 (c) 2020-2024\nhttps://jukebox.friendteam.biz" (at 88.39 171.5 90) (layer "F.SilkS") (tstamp eaf5751a-8554-4166-8b9d-8fa57812ec2b)
     (effects (font (size 1.5 1.5) (thickness 0.3)))
   )
 
