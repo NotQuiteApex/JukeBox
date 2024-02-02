@@ -5,4 +5,4 @@ Footprint and model for USB4105-GF-A can be found [here](https://www.digikey.com
 
 Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 
-TOFIX for V5.1: clock crystal is too tall (use one like on pico?), USB port does not extend far enough, and add community art.
+TOFIX for V5.1: add community art.
