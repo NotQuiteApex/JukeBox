@@ -57,3 +57,47 @@ impl std::fmt::Display for ExitMsg {
     }
 }
 impl std::error::Error for ExitMsg {}
+
+pub fn is_version_string_newer(new: &str) -> bool {
+    let old = env!("CARGO_PKG_VERSION");
+    let new = if new.starts_with('v') { &new[1..] } else { new };
+
+    let old: Vec<_> = old.split('.').collect();
+    let new: Vec<_> = new.split('.').collect();
+
+    if old.len() != 3 {
+        panic!("version not 3 strings!");
+    }
+
+    if new.len() != 3 {
+        log::warn!("new version `{:?}` not 3 strings", new)
+    }
+
+    for (old, new) in std::iter::zip(old, new) {
+        let o = old.parse::<usize>();
+        let n = new.parse::<usize>();
+
+        if o.is_err() {
+            panic!("failed to parse old `{}` as number!", old);
+            // return false;
+        }
+
+        if n.is_err() {
+            log::warn!("failed to parse new `{:?}` as a number", new);
+            return false;
+        }
+
+        let o = o.unwrap();
+        let n = n.unwrap();
+
+        if o > n {
+            return false;
+        } else if o == n {
+            continue;
+        } else if o < n {
+            return true;
+        }
+    }
+
+    false
+}

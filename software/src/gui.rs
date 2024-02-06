@@ -9,6 +9,7 @@ use egui::{Align, Color32, RichText};
 use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
 use crate::system::{PCSystem, SystemReport};
 
+#[derive(PartialEq)]
 enum ConnectionStatus {
     Connected,
     NotConnected,
@@ -154,21 +155,30 @@ pub fn basic_gui() {
 
             ui.separator();
             ui.horizontal(|ui| {
+                ui.set_enabled(connection_status == ConnectionStatus::Connected);
                 if ui.button("Set RGB to red").clicked() {
                     serialcommand_tx1
                         .send(SerialCommand::TestCommand)
-                        .expect("failed to send command");
-                    println!("you shouldnt have done that");
+                        .expect("failed to send test command");
+                    // println!("you shouldnt have done that");
                 }
                 if ui.button("Update JukeBox").clicked() {
                     serialcommand_tx1
                         .send(SerialCommand::UpdateDevice)
-                        .expect("failed to send command");
+                        .expect("failed to send update command");
                     println!("Updating JukeBox...");
                 }
             });
 
             ui.separator();
+
+            if ui.input(|i| i.key_pressed(egui::Key::F1)) {
+                println!("todo: open wiki for help")
+            }
+
+            if ui.input(|i| i.key_pressed(egui::Key::F20)) {
+
+            }
         });
 
         // Call a new frame every frame, bypassing the limited updates.
