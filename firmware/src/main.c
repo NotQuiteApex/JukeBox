@@ -69,6 +69,8 @@ int main(void) {
 			lcd_off();
 			lcd_clear();
 			lcd_present();
+			rgb_clear();
+			rgb_present();
 			reset_usb_boot(0, 0);
 		}
 
