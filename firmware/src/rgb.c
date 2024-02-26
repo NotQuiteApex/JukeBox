@@ -93,10 +93,17 @@ void rgb_present(void) {
 
 void rgb_task(void) {
 	REFRESH_CHECK(JB_RGBLEDS_REFRESH_INTERVAL, JB_RGBLEDS_REFRESH_OFFSET);
+
+	if (tud_suspended()) {
+		rgb_clear();
+		rgb_present();
+		return;
+	}
+
 	rgb_clear();
 
 	for (uint8_t i = 0; i < JB_RGBLEDS_NUM; i++) {
-		rgb_put(i, hsv_to_grbw((time_us_32()>>8) - 512*i, 255, 25));
+		rgb_put(i, hsv_to_grbw((time_us_32()>>8) - 512*i, 255, 3));
 	}
 
 	rgb_present();
