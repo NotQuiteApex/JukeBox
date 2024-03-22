@@ -103,7 +103,7 @@ void rgb_task(void) {
 	rgb_clear();
 
 	for (uint8_t i = 0; i < JB_RGBLEDS_NUM; i++) {
-		rgb_put(i, hsv_to_grbw((time_us_32()>>8) - 512*i, 255, 3));
+		rgb_put(i, hsv_to_grbw((time_us_32()>>8) - 512*i, 255, 75));
 	}
 
 	rgb_present();

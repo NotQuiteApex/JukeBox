@@ -14,9 +14,9 @@ use std::time::{Duration, Instant};
 const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
 
 pub enum SerialCommand {
-    TestCommand,
     UpdateDevice,
     DisconnectDevice,
+    TestFunction0,
 }
 
 pub enum SerialEvent {
@@ -152,6 +152,11 @@ fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     send_expect(f, b"U\x31\r\n", RSP_DISCONNECTED)
 }
 
+fn transmit_test_function_0_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, b"U\x32\x30\r\n", "U\x12\x06\r\n")
+}
+
+
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
     let ports = serialport::available_ports().map_err(|why| {
         ExitMsg::new(
@@ -230,16 +235,18 @@ pub fn serial_task(
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
-                SerialCommand::TestCommand => todo!(),
-                SerialCommand::UpdateDevice => {
-                    transmit_update_signal(f)?;
+                SerialCommand::TestFunction0 => {
+                    transmit_test_function_0_signal(f)?;
+                },
+                SerialCommand::DisconnectDevice => {
+                    transmit_disconnect_signal(f)?;
                     if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
                         log::warn!("Disconnect event signal failed, reason: `{}`", e);
                     }
                     break 'forv; // The device has disconnected, we should too.
                 }
-                SerialCommand::DisconnectDevice => {
-                    transmit_disconnect_signal(f)?;
+                SerialCommand::UpdateDevice => {
+                    transmit_update_signal(f)?;
                     if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
                         log::warn!("Disconnect event signal failed, reason: `{}`", e);
                     }

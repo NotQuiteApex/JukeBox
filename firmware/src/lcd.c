@@ -111,10 +111,13 @@ void lcd_task(void) {
 	REFRESH_CHECK(JB_SCREEN_REFRESH_INTERVAL, JB_SCREEN_REFRESH_OFFSET);
 
 	if (tud_suspended()) {
+		lcd_off();
 		lcd_clear();
 		lcd_present();
 		return;
 	}
+
+	lcd_on();
 	
 	lcd_clear();
 

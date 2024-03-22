@@ -22,11 +22,10 @@
 #define JB_HID_REFRESH_INTERVAL 10
 #define JB_HID_REFRESH_OFFSET 0
 
-// diodes are reversed, TOFIX
-#define JB_HID_KB_COL     9 // 12
-#define JB_HID_KB_COL_NUM 3 // 4
-#define JB_HID_KB_ROW     12 // 9
-#define JB_HID_KB_ROW_NUM 4 // 3
+#define JB_HID_KB_COL     12
+#define JB_HID_KB_COL_NUM 4
+#define JB_HID_KB_ROW     9
+#define JB_HID_KB_ROW_NUM 3
 
 // Serial (for screen)
 #define JB_SERIAL_REFRESH_INTERVAL 250

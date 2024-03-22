@@ -156,9 +156,9 @@ pub fn basic_gui() {
             ui.separator();
             ui.horizontal(|ui| {
                 ui.set_enabled(connection_status == ConnectionStatus::Connected);
-                if ui.button("Set RGB to red").clicked() {
+                if ui.button("Test Function 0").clicked() {
                     serialcommand_tx1
-                        .send(SerialCommand::TestCommand)
+                        .send(SerialCommand::TestFunction0)
                         .expect("failed to send test command");
                     // println!("you shouldnt have done that");
                 }

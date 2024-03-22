@@ -297,10 +297,28 @@ void serial_task(void) {
 				tud_cdc_write("\x04\x04\r\n", 4);
 				tud_cdc_write_flush();
 				reset_input_string();
-				sleep_ms(1000); // sleep to allow tinyusb to write cdc buffer (TODO: find better value)
+
+				lcd_off();
+				lcd_clear();
+				lcd_present();
+				rgb_clear();
+				rgb_present();
+
+				sleep_ms(500); // sleep to allow tinyusb to write cdc buffer (TODO: find better value)
 				bootsel_reset_jukebox = 1;
-				// TODO: deconstruct all the stuff on this core (screen, rgb, etc) and send signal to reset usb on main core
-				// TODO: send a response to the desktop app before reset?
+			} else if (inputString[1] == '\x32') {
+				// Test Function
+				tud_cdc_write("U\x12\x06\r\n", 5);
+				tud_cdc_write_flush();
+				reset_input_string();
+
+				static bool t = true;
+				t = !t;
+				if (t) {
+					lcd_on();
+				} else {
+					lcd_off();
+				}
 			}
 		}
 	}
