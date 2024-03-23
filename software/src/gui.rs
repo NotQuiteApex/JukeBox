@@ -4,7 +4,7 @@ use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui;
-use egui::{Align, Color32, RichText};
+use egui::{Align, Color32, RichText, Vec2};
 
 use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
 use crate::system::{PCSystem, SystemReport};
@@ -14,6 +14,13 @@ enum ConnectionStatus {
     Connected,
     NotConnected,
     LostConnection,
+}
+
+#[derive(PartialEq)]
+enum GuiTab {
+    Keyboard,
+    System,
+    Miscellaneous,
 }
 
 pub fn basic_gui() {
@@ -88,6 +95,8 @@ pub fn basic_gui() {
     let mut sr = SystemReport::default();
     let serialcommand_tx1 = serialcommand_tx.clone();
 
+    let mut gui_tab = GuiTab::Keyboard;
+
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
         while let Ok(snsr) = sysreport_rx2.try_recv() {
             sr = snsr;
@@ -121,64 +130,83 @@ pub fn basic_gui() {
             ui.separator();
 
             ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label("CPU: ");
-                    ui.label("CPU Freq: ");
-                    ui.label("CPU Load: ");
-                    ui.label("CPU Temp: ");
-                    ui.label("GPU: ");
-                    ui.label("GPU Core Freq: ");
-                    ui.label("GPU Core Load: ");
-                    ui.label("GPU VRAM Freq: ");
-                    ui.label("GPU VRAM Load: ");
-                    ui.label("GPU Temp: ");
-                    ui.label("Memory Used: ");
-                    ui.label("Memory Total: ");
-                });
-                ui.separator();
-                ui.vertical(|ui| {
-                    ui.label(format!("'{}'", sr.cpu_name));
-                    ui.label(format!("{} GHz", sr.cpu_freq));
-                    ui.label(format!("{} %", sr.cpu_load));
-                    ui.label(format!("{} ° C", sr.cpu_temp));
-                    ui.label(format!("'{}'", sr.gpu_name));
-                    ui.label(format!("{} MHz", sr.gpu_core_clock));
-                    ui.label(format!("{} %", sr.gpu_core_load));
-                    ui.label(format!("{} MHz", sr.gpu_memory_clock));
-                    ui.label(format!("{} %", sr.gpu_memory_load));
-                    ui.label(format!("{} ° C", sr.gpu_temp));
-                    ui.label(format!("{} GiB", sr.memory_used));
-                    ui.label(format!("{} GiB", sr.memory_total));
-                });
-                ui.separator();
-            });
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.set_enabled(connection_status == ConnectionStatus::Connected);
-                if ui.button("Test Function 0").clicked() {
-                    serialcommand_tx1
-                        .send(SerialCommand::TestFunction0)
-                        .expect("failed to send test command");
-                    // println!("you shouldnt have done that");
-                }
-                if ui.button("Update JukeBox").clicked() {
-                    serialcommand_tx1
-                        .send(SerialCommand::UpdateDevice)
-                        .expect("failed to send update command");
-                    println!("Updating JukeBox...");
-                }
+                ui.selectable_value(&mut gui_tab, GuiTab::Keyboard, "Keyboard");
+                ui.selectable_value(&mut gui_tab, GuiTab::System, "System");
+                ui.selectable_value(&mut gui_tab, GuiTab::Miscellaneous, "Miscellaneous");
             });
 
             ui.separator();
 
-            if ui.input(|i| i.key_pressed(egui::Key::F1)) {
-                println!("todo: open wiki for help")
+            // TODO: put this into a frame with the same size as used in GuiTab::System
+            let mh = 208.0;
+            let r = ui.allocate_ui(
+                Vec2::new(1000.0, mh), 
+                |ui| {
+                    match gui_tab {
+                        GuiTab::Keyboard => {
+                            ui.label("TODO!");
+                        },
+                        GuiTab::System => {
+                            ui.horizontal(|ui| {
+                                ui.vertical(|ui| {
+                                    ui.label("CPU: ");
+                                    ui.label("CPU Freq: ");
+                                    ui.label("CPU Load: ");
+                                    ui.label("CPU Temp: ");
+                                    ui.label("GPU: ");
+                                    ui.label("GPU Core Freq: ");
+                                    ui.label("GPU Core Load: ");
+                                    ui.label("GPU VRAM Freq: ");
+                                    ui.label("GPU VRAM Load: ");
+                                    ui.label("GPU Temp: ");
+                                    ui.label("Memory Used: ");
+                                    ui.label("Memory Total: ");
+                                });
+                                ui.separator();
+                                ui.vertical(|ui| {
+                                    ui.label(format!("'{}'", sr.cpu_name));
+                                    ui.label(format!("{} GHz", sr.cpu_freq));
+                                    ui.label(format!("{} %", sr.cpu_load));
+                                    ui.label(format!("{} ° C", sr.cpu_temp));
+                                    ui.label(format!("'{}'", sr.gpu_name));
+                                    ui.label(format!("{} MHz", sr.gpu_core_clock));
+                                    ui.label(format!("{} %", sr.gpu_core_load));
+                                    ui.label(format!("{} MHz", sr.gpu_memory_clock));
+                                    ui.label(format!("{} %", sr.gpu_memory_load));
+                                    ui.label(format!("{} ° C", sr.gpu_temp));
+                                    ui.label(format!("{} GiB", sr.memory_used));
+                                    ui.label(format!("{} GiB", sr.memory_total));
+                                });
+                                ui.separator();
+                            });
+                        },
+                        GuiTab::Miscellaneous => {
+                            ui.label("TODO!");
+                            ui.set_enabled(connection_status == ConnectionStatus::Connected);
+                            if ui.button("Update JukeBox").clicked() {
+                                serialcommand_tx1
+                                    .send(SerialCommand::UpdateDevice)
+                                    .expect("failed to send update command");
+                            }
+                            if ui.button("Test Function 0").clicked() {
+                                serialcommand_tx1
+                                    .send(SerialCommand::TestFunction0)
+                                    .expect("failed to send test command");
+                            }
+                        },
+                    }
+                }
+            );
+            let h = r.response.rect.height();
+            if h < mh {
+                ui.allocate_space(Vec2::new(0.0, mh-h));
             }
 
-            if ui.input(|i| i.key_pressed(egui::Key::F20)) {
+            ui.separator();
 
-            }
+            ui.label(format!("Friend Team Inc. (c) 2024"));
+
+            ui.separator();
         });
 
         // Call a new frame every frame, bypassing the limited updates.
