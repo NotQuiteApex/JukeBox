@@ -26,9 +26,14 @@ enum GuiTab {
 pub fn basic_gui() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_title("JukeBox Desktop")
             .with_inner_size([480.0, 320.0])
             .with_maximize_button(false)
-            .with_resizable(false),
+            .with_resizable(false)
+            .with_icon(
+                eframe::icon_data::from_png_bytes(&include_bytes!("../../assets/applogo.png")[..])
+                    .unwrap(),
+            ),
         ..Default::default()
     };
 
@@ -109,6 +114,8 @@ pub fn basic_gui() {
             }
         }
 
+        ctx.send_viewport_cmd(egui::ViewportCommand::Title("JUKEBOX 3000".to_owned()));
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
@@ -117,13 +124,27 @@ pub fn basic_gui() {
                         .strong()
                         .color(Color32::from_rgb(255, 200, 100)),
                 );
-                ui.label(format!(" - v{}", env!("CARGO_PKG_VERSION")));
+                let version = env!("CARGO_PKG_VERSION");
+                ui.label(format!(" - v{}", version));
                 ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                    match connection_status {
-                        ConnectionStatus::Connected => ui.label(RichText::new("Connected.").color(Color32::from_rgb(50, 200, 50))),
-                        ConnectionStatus::NotConnected => ui.label(RichText::new("Not connected.").color(Color32::from_rgb(200, 200, 50))),
-                        ConnectionStatus::LostConnection => ui.label(RichText::new("Lost connection!").color(Color32::from_rgb(200, 50, 50))),
+                    let res = match connection_status {
+                        ConnectionStatus::Connected => {
+                            ("Connected.", Color32::from_rgb(50, 200, 50))
+                        }
+                        ConnectionStatus::NotConnected => {
+                            ("Not connected.", Color32::from_rgb(200, 200, 50))
+                        }
+                        ConnectionStatus::LostConnection => {
+                            ("Lost connection!", Color32::from_rgb(200, 50, 50))
+                        }
                     };
+
+                    ui.label(RichText::new(res.0).color(res.1));
+
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!(
+                        "JukeBox Desktop - v{} - {}",
+                        version, res.0
+                    )));
                 });
             });
 
@@ -137,69 +158,63 @@ pub fn basic_gui() {
 
             ui.separator();
 
-            // TODO: put this into a frame with the same size as used in GuiTab::System
             let mh = 208.0;
-            let r = ui.allocate_ui(
-                Vec2::new(1000.0, mh), 
-                |ui| {
-                    match gui_tab {
-                        GuiTab::Keyboard => {
-                            ui.label("TODO!");
-                        },
-                        GuiTab::System => {
-                            ui.horizontal(|ui| {
-                                ui.vertical(|ui| {
-                                    ui.label("CPU: ");
-                                    ui.label("CPU Freq: ");
-                                    ui.label("CPU Load: ");
-                                    ui.label("CPU Temp: ");
-                                    ui.label("GPU: ");
-                                    ui.label("GPU Core Freq: ");
-                                    ui.label("GPU Core Load: ");
-                                    ui.label("GPU VRAM Freq: ");
-                                    ui.label("GPU VRAM Load: ");
-                                    ui.label("GPU Temp: ");
-                                    ui.label("Memory Used: ");
-                                    ui.label("Memory Total: ");
-                                });
-                                ui.separator();
-                                ui.vertical(|ui| {
-                                    ui.label(format!("'{}'", sr.cpu_name));
-                                    ui.label(format!("{} GHz", sr.cpu_freq));
-                                    ui.label(format!("{} %", sr.cpu_load));
-                                    ui.label(format!("{} ° C", sr.cpu_temp));
-                                    ui.label(format!("'{}'", sr.gpu_name));
-                                    ui.label(format!("{} MHz", sr.gpu_core_clock));
-                                    ui.label(format!("{} %", sr.gpu_core_load));
-                                    ui.label(format!("{} MHz", sr.gpu_memory_clock));
-                                    ui.label(format!("{} %", sr.gpu_memory_load));
-                                    ui.label(format!("{} ° C", sr.gpu_temp));
-                                    ui.label(format!("{} GiB", sr.memory_used));
-                                    ui.label(format!("{} GiB", sr.memory_total));
-                                });
-                                ui.separator();
-                            });
-                        },
-                        GuiTab::Miscellaneous => {
-                            ui.label("TODO!");
-                            ui.set_enabled(connection_status == ConnectionStatus::Connected);
-                            if ui.button("Update JukeBox").clicked() {
-                                serialcommand_tx1
-                                    .send(SerialCommand::UpdateDevice)
-                                    .expect("failed to send update command");
-                            }
-                            if ui.button("Test Function 0").clicked() {
-                                serialcommand_tx1
-                                    .send(SerialCommand::TestFunction0)
-                                    .expect("failed to send test command");
-                            }
-                        },
+            let r = ui.allocate_ui(Vec2::new(1000.0, mh), |ui| match gui_tab {
+                GuiTab::Keyboard => {
+                    ui.label("TODO!");
+                }
+                GuiTab::System => {
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            ui.label("CPU: ");
+                            ui.label("CPU Freq: ");
+                            ui.label("CPU Load: ");
+                            ui.label("CPU Temp: ");
+                            ui.label("GPU: ");
+                            ui.label("GPU Core Freq: ");
+                            ui.label("GPU Core Load: ");
+                            ui.label("GPU VRAM Freq: ");
+                            ui.label("GPU VRAM Load: ");
+                            ui.label("GPU Temp: ");
+                            ui.label("Memory Used: ");
+                            ui.label("Memory Total: ");
+                        });
+                        ui.separator();
+                        ui.vertical(|ui| {
+                            ui.label(format!("'{}'", sr.cpu_name));
+                            ui.label(format!("{} GHz", sr.cpu_freq));
+                            ui.label(format!("{} %", sr.cpu_load));
+                            ui.label(format!("{} ° C", sr.cpu_temp));
+                            ui.label(format!("'{}'", sr.gpu_name));
+                            ui.label(format!("{} MHz", sr.gpu_core_clock));
+                            ui.label(format!("{} %", sr.gpu_core_load));
+                            ui.label(format!("{} MHz", sr.gpu_memory_clock));
+                            ui.label(format!("{} %", sr.gpu_memory_load));
+                            ui.label(format!("{} ° C", sr.gpu_temp));
+                            ui.label(format!("{} GiB", sr.memory_used));
+                            ui.label(format!("{} GiB", sr.memory_total));
+                        });
+                        ui.separator();
+                    });
+                }
+                GuiTab::Miscellaneous => {
+                    ui.label("TODO!");
+                    ui.set_enabled(connection_status == ConnectionStatus::Connected);
+                    if ui.button("Update JukeBox").clicked() {
+                        serialcommand_tx1
+                            .send(SerialCommand::UpdateDevice)
+                            .expect("failed to send update command");
+                    }
+                    if ui.button("Test Function 0").clicked() {
+                        serialcommand_tx1
+                            .send(SerialCommand::TestFunction0)
+                            .expect("failed to send test command");
                     }
                 }
-            );
+            });
             let h = r.response.rect.height();
             if h < mh {
-                ui.allocate_space(Vec2::new(0.0, mh-h));
+                ui.allocate_space(Vec2::new(0.0, mh - h));
             }
 
             ui.separator();
@@ -210,7 +225,8 @@ pub fn basic_gui() {
         });
 
         // Call a new frame every frame, bypassing the limited updates.
-        // NOTE: This is a bad idea, we should probably change this later and only update the window as necessary.
+        // NOTE: This is a bad idea, we should probably change this later
+        // and only update the window as necessary.
         ctx.request_repaint();
     })
     .expect("eframe error");

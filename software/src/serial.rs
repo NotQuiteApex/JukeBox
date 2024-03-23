@@ -156,7 +156,6 @@ fn transmit_test_function_0_signal(f: &mut Box<dyn SerialPort>) -> Result<(), Ex
     send_expect(f, b"U\x32\x30\r\n", "U\x12\x06\r\n")
 }
 
-
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
     let ports = serialport::available_ports().map_err(|why| {
         ExitMsg::new(
@@ -237,7 +236,7 @@ pub fn serial_task(
             match cmd {
                 SerialCommand::TestFunction0 => {
                     transmit_test_function_0_signal(f)?;
-                },
+                }
                 SerialCommand::DisconnectDevice => {
                     transmit_disconnect_signal(f)?;
                     if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
