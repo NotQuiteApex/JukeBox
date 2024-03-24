@@ -23,6 +23,8 @@ enum GuiTab {
     Miscellaneous,
 }
 
+const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 pub fn basic_gui() {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -114,8 +116,6 @@ pub fn basic_gui() {
             }
         }
 
-        ctx.send_viewport_cmd(egui::ViewportCommand::Title("JUKEBOX 3000".to_owned()));
-
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
@@ -124,8 +124,7 @@ pub fn basic_gui() {
                         .strong()
                         .color(Color32::from_rgb(255, 200, 100)),
                 );
-                let version = env!("CARGO_PKG_VERSION");
-                ui.label(format!(" - v{}", version));
+                ui.label(format!(" - v{}", APP_VERSION));
                 ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
                     let res = match connection_status {
                         ConnectionStatus::Connected => {
@@ -143,7 +142,7 @@ pub fn basic_gui() {
 
                     ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!(
                         "JukeBox Desktop - v{} - {}",
-                        version, res.0
+                        APP_VERSION, res.0
                     )));
                 });
             });
