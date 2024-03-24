@@ -4,6 +4,7 @@
 
 mod gui;
 mod serial;
+mod splash;
 mod system;
 mod util;
 

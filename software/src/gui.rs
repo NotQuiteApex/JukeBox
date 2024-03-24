@@ -6,7 +6,10 @@ use std::{sync::mpsc::channel, time::Duration};
 use eframe::egui;
 use egui::{Align, Color32, RichText, Vec2};
 
+use rand::prelude::*;
+
 use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
+use crate::splash::SPLASH_MESSAGES;
 use crate::system::{PCSystem, SystemReport};
 
 #[derive(PartialEq)]
@@ -71,6 +74,9 @@ pub fn basic_gui() {
             pcs.update();
         }
     });
+
+    let mut splash_message_timer = Instant::now();
+    let mut splash_message_index = 0usize;
 
     // serial comms thread
     let serialcomms = thread::spawn(move || {
@@ -158,7 +164,7 @@ pub fn basic_gui() {
             ui.separator();
 
             let mh = 208.0;
-            let r = ui.allocate_ui(Vec2::new(1000.0, mh), |ui| match gui_tab {
+            let r = ui.allocate_ui(Vec2::new(464.0, mh), |ui| match gui_tab {
                 GuiTab::Keyboard => {
                     ui.label("TODO!");
                 }
@@ -197,18 +203,54 @@ pub fn basic_gui() {
                     });
                 }
                 GuiTab::Miscellaneous => {
-                    ui.label("TODO!");
-                    ui.set_enabled(connection_status == ConnectionStatus::Connected);
-                    if ui.button("Update JukeBox").clicked() {
-                        serialcommand_tx1
-                            .send(SerialCommand::UpdateDevice)
-                            .expect("failed to send update command");
-                    }
-                    if ui.button("Test Function 0").clicked() {
-                        serialcommand_tx1
-                            .send(SerialCommand::TestFunction0)
-                            .expect("failed to send test command");
-                    }
+                    ui.label("");
+
+                    ui.horizontal(|ui| {
+                        ui.set_enabled(connection_status == ConnectionStatus::Connected);
+                        if ui.button("Update JukeBox").clicked() {
+                            serialcommand_tx1
+                                .send(SerialCommand::UpdateDevice)
+                                .expect("failed to send update command");
+                        }
+                        ui.label(" - ");
+                        ui.label("Reboots the connected JukeBox into Update Mode.")
+                    });
+
+                    ui.label("");
+
+                    ui.horizontal(|ui| {
+                        ui.set_enabled(connection_status == ConnectionStatus::Connected);
+                        if ui.button("Debug Signal").clicked() {
+                            serialcommand_tx1
+                                .send(SerialCommand::TestFunction0)
+                                .expect("failed to send test command");
+                        }
+                        ui.label(" - ");
+                        ui.label("Send debug signal to JukeBox.")
+                    });
+
+                    ui.label("");
+
+                    ui.columns(3, |c| {
+                        if c[0].button("Homepage").clicked() {
+                            open::that_detached("https://friendteam.biz")
+                                .expect("Failed to open homepage link!");
+                        }
+                        if c[1].button("Repository").clicked() {
+                            open::that_detached("https://github.com/FriendTeamInc/JukeBox")
+                                .expect("Failed to open repository link!");
+                        }
+                        if c[2].button("Donate").clicked() {
+                            open::that_detached("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+                                .expect("Failed to open donate link!");
+                        }
+                    });
+
+                    ui.label("");
+
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                        ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
+                    });
                 }
             });
             let h = r.response.rect.height();
@@ -218,7 +260,19 @@ pub fn basic_gui() {
 
             ui.separator();
 
-            ui.label(format!("Friend Team Inc. (c) 2024"));
+            if Instant::now() > splash_message_timer {
+                loop {
+                    let new_index = rand::thread_rng().gen_range(0..SPLASH_MESSAGES.len());
+                    if new_index != splash_message_index {
+                        splash_message_index = new_index;
+                        break;
+                    }
+                }
+                splash_message_timer = Instant::now().add(Duration::from_secs(10));
+            }
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                ui.monospace(SPLASH_MESSAGES[splash_message_index]);
+            });
 
             ui.separator();
         });
