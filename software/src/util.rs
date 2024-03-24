@@ -8,10 +8,7 @@
 pub enum ExitCode {
     // Special codes
     _CleanExit,
-    Interrupted,
-    _ReservedByClap,
-    StderrLogger,
-    CannotRegisterSignalHandler,
+    CannotInitStderrLogger,
 
     _CannotInitializeGpu,
 

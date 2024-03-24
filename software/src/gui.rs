@@ -39,13 +39,13 @@ pub fn basic_gui() {
         ..Default::default()
     };
 
-    let (serialevent_tx, serialevent_rx) = channel::<SerialEvent>();
-    let (serialcommand_tx, serialcommand_rx) = channel::<SerialCommand>();
-    let (sysreport_tx1, sysreport_rx1) = channel::<SystemReport>();
-    let (sysreport_tx2, sysreport_rx2) = channel::<SystemReport>();
+    let (serialevent_tx, serialevent_rx) = channel::<SerialEvent>(); // serialcomms thread sends events to gui thread
+    let (serialcommand_tx, serialcommand_rx) = channel::<SerialCommand>(); // gui thread sends commands to serialcomms thread
+    let (sysreport_tx1, sysreport_rx1) = channel::<SystemReport>(); // sends systemreports to gui thread
+    let (sysreport_tx2, sysreport_rx2) = channel::<SystemReport>(); // sends systemreports to serialcomms thread
 
-    let (breaker_tx1, breaker_rx1) = channel::<bool>();
-    let (breaker_tx2, breaker_rx2) = channel::<bool>();
+    let (breaker_tx1, breaker_rx1) = channel::<bool>(); // ends systemstats thread from gui
+    let (breaker_tx2, breaker_rx2) = channel::<bool>(); // ends serialcomms thread from gui
 
     // system stats thread
     let systemstats = thread::spawn(move || {
