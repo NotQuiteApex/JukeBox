@@ -1,4 +1,6 @@
-// A lightweight program to simulate JukeBox serial communication.
+// An application for interfacing with a JukeBox over serial.
+
+#![windows_subsystem = "windows"] // disables console spawning for release build
 
 mod cli;
 mod gui;

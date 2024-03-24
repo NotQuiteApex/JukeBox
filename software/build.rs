@@ -21,9 +21,8 @@ fn main() {
 
         // add icon
         res.set_icon("../assets/applogo.ico");
-        
-        // require admin perms
-        // necessary for CPU temp
+
+        // require admin perms (necessary for CPU temp)
         // res.set_manifest(
         //     r#"
         //         <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
