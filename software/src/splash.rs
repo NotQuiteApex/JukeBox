@@ -39,9 +39,22 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Good!",
     "Cool and normal!",
     "Little Bobby Tables approved!",
+    "Trans rights are human rights!",
+    "Trans wrongs are human wrongs!",
+    "You are valid!",
     // Thanks Percy!
     "What do you mean this isn't legal?",
     "Someone stole my wallet!",
+    // Thanks Prismatica!
+    "Also try Fate/Stay Night!",
+    "Also try Witch on the Holy Night!",
+    "People die when they are killed!",
+    "Featuring Dante from the Devil May Cry Series!",
+    "Show me your motivation!",
+    "Not TezCo approved!",
+    "Not legal in Commander!",
+    // Thanks Basil!
+    "Made from 100% recycled plastic!",
     // Thanks evets!
     "Updates monthly!",
     "Updates yearly!",
