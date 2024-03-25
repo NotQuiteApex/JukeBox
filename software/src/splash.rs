@@ -42,9 +42,13 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Trans rights are human rights!",
     "Trans wrongs are human wrongs!",
     "You are valid!",
+    "kd1unb4b3q4t58fwlpcbzcbnm76a8fp!",
+    "kimne78kx3ncx6brgo4mv6wki5h1ko!",
     // Thanks Percy!
     "What do you mean this isn't legal?",
     "Someone stole my wallet!",
+    "The voices made me do it!",
+    "they won't believe you!",
     // Thanks Prismatica!
     "Also try Fate/Stay Night!",
     "Also try Witch on the Holy Night!",
@@ -54,7 +58,7 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Not TezCo approved!",
     "Not legal in Commander!",
     // Thanks Basil!
-    "Made from 100% recycled plastic!",
+    "Made from 100% recycled plastic ♹!",
     // Thanks evets!
     "Updates monthly!",
     "Updates yearly!",
@@ -71,6 +75,7 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Vista-ready!",
     "More reliable than a 737 Max!",
     "Not permitted for use in nuclear reactors!",
+    // TODO: "they called em lunchables because you were able to lunch or so it was implied",
     // Thanks Evergreen!
     "Runs on 110V AC! (adapter not included)",
     "IPX7 certified!",
@@ -79,6 +84,38 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Puts the uke in Jukebox!",
     // Thanks aptmoo!
     "Lunch empowerment!",
+    "100% AI-free!",
+    "ChatGPT is M-x doctor!",
+    "Eight Megs And Constantly Swapping!",
+    "Memory-safe!",
+    "M-x butterfly!",
+    "Put your right hand into the box!",
+    "Fear is the mind-killer!",
+    "Walk without rhythm!",
+    "And on the pedestal these words appear!",
+    "A worm through time!",
+    "Watch the fridge!",
+    "Stretched!",
+    "Show me the Champion of Light!",
+    "I'll show you the Herald of Darkness!",
+    "Yötôn Yõ!",
+    "Knows 10,000 things!",
+    "Master the elements!",
+    // TODO: "Lives in a **house** on Ash Tree Lane!" (make house blue!)
+    "The enemy's gate is down!",
+    "Clean your room!",
+    "Rotate a cow in your mind!",
+    "Think big thoughts!",
+    "Blinkenlights!",
+    "Revealed to me in a dream!",
+    "Rinsing machine!",
+    "Filling machine!",
+    "Wide as it is tall!",
+    "The future rules!",
+    "You are likely to be eaten by a Grue!",
+    "Always remember how special you are!",
+    "Does the black moon howl?",
+    // TODO: "\"Almost Christmas\" means it wasn't Christmas!", (conditioned on the local date being 12-24)
     // (and xkcd 1774)
     "As seen on TV!",
     "Biodegradable!",
@@ -140,4 +177,14 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Look directly at implosions!",
     // Thanks lexikiq!
     "Made with blood!",
+    // Thanks Skysometric!
+    "Doesn't actually play music (unless you tell it to)!",
+    "Duck!",
+    "Goose!",
+    "GUARANTEED!!!",
+    "Knock knock...",
+    "Paper cranes!",
+    "Press F2 pay respects!",
+    "Super slurp!",
+    "Waking up\"; startStrings=null; bindings=null;",
 ];
