@@ -4,8 +4,7 @@ use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui;
-use egui::style::Spacing;
-use egui::{vec2, Align, Color32, Grid, RichText, Vec2};
+use egui::{vec2, Align, Button, Color32, Grid, RichText, Vec2, Widget};
 
 use rand::prelude::*;
 
@@ -70,6 +69,7 @@ pub fn basic_gui() {
             sysreport_tx1
                 .send(pcs.get_report())
                 .expect("COULD NOT SEND PC REPORT 1"); // send to gui
+
             // TODO: stop sending if there is no device connected
             sysreport_tx2
                 .send(pcs.get_report())
@@ -172,52 +172,75 @@ pub fn basic_gui() {
             let mh = 208.0;
             let r = ui.allocate_ui(Vec2::new(mw, mh), |ui| match gui_tab {
                 GuiTab::Keyboard => {
-                    Grid::new("kb_grid")
-                        .spacing(vec2(0.0, 0.0))
-                        .striped(true)
-                        .min_col_width(mw / 4.0)
-                        .min_row_height(mh / 3.0)
-                        .show(ui, |ui| {
-                            for y in 0..3 {
-                                for x in 0..4 {
-                                    ui.label(format!("({}, {})", x + 1, y + 1));
-                                }
-                                ui.end_row();
+                    let col = 4;
+                    let row = 3;
+                    for y in 0..row {
+                        ui.columns(col, |c| {
+                            for x in 0..col {
+                                let h = mh / 3.0;
+                                c[x].set_min_height(h);
+                                c[x].set_max_height(h);
+                                c[x].with_layout(
+                                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
+                                    |ui| {
+                                        let config_button =
+                                            Button::new(format!("({}, {})", x + 1, y + 1)).ui(ui);
+                                        if config_button.clicked() {
+                                            println!("({}, {}) clicked", x + 1, y + 1);
+                                            // TODO: add config menu when button is clicked
+                                            // TODO: highlight button when press signal is recieved
+                                            // TODO: display some better text in the buttons
+                                        }
+                                    },
+                                );
                             }
                         });
+                    }
                 }
                 GuiTab::System => {
-                    ui.horizontal(|ui| {
-                        ui.vertical(|ui| {
-                            ui.label("CPU: ");
-                            ui.label("CPU Freq: ");
-                            ui.label("CPU Load: ");
-                            ui.label("CPU Temp: ");
-                            ui.label("GPU: ");
-                            ui.label("GPU Core Freq: ");
-                            ui.label("GPU Core Load: ");
-                            ui.label("GPU VRAM Freq: ");
-                            ui.label("GPU VRAM Load: ");
-                            ui.label("GPU Temp: ");
-                            ui.label("Memory Used: ");
-                            ui.label("Memory Total: ");
-                        });
-                        ui.separator();
-                        ui.vertical(|ui| {
-                            ui.label(format!("'{}'", sr.cpu_name));
-                            ui.label(format!("{} GHz", sr.cpu_freq));
-                            ui.label(format!("{} %", sr.cpu_load));
-                            ui.label(format!("{} ° C", sr.cpu_temp));
-                            ui.label(format!("'{}'", sr.gpu_name));
-                            ui.label(format!("{} MHz", sr.gpu_core_clock));
-                            ui.label(format!("{} %", sr.gpu_core_load));
-                            ui.label(format!("{} MHz", sr.gpu_memory_clock));
-                            ui.label(format!("{} %", sr.gpu_memory_load));
-                            ui.label(format!("{} ° C", sr.gpu_temp));
-                            ui.label(format!("{} GiB", sr.memory_used));
-                            ui.label(format!("{} GiB", sr.memory_total));
-                        });
-                        ui.separator();
+                    egui::ScrollArea::vertical().max_height(mh).show(ui, |ui| {
+                        Grid::new("sys_stats")
+                            .spacing(vec2(0.0, 0.0))
+                            .striped(true)
+                            .min_col_width(mw / 4.0)
+                            .show(ui, |ui| {
+                                ui.label("CPU: ");
+                                ui.label(format!("'{}'", sr.cpu_name));
+                                ui.end_row();
+                                ui.label("CPU Freq: ");
+                                ui.label(format!("{} GHz", sr.cpu_freq));
+                                ui.end_row();
+                                ui.label("CPU Load: ");
+                                ui.label(format!("{} %", sr.cpu_load));
+                                ui.end_row();
+                                ui.label("CPU Temp: ");
+                                ui.label(format!("{} ° C", sr.cpu_temp));
+                                ui.end_row();
+                                ui.label("GPU: ");
+                                ui.label(format!("'{}'", sr.gpu_name));
+                                ui.end_row();
+                                ui.label("GPU Core Freq: ");
+                                ui.label(format!("{} MHz", sr.gpu_core_clock));
+                                ui.end_row();
+                                ui.label("GPU Core Load: ");
+                                ui.label(format!("{} %", sr.gpu_core_load));
+                                ui.end_row();
+                                ui.label("GPU VRAM Freq: ");
+                                ui.label(format!("{} MHz", sr.gpu_memory_clock));
+                                ui.end_row();
+                                ui.label("GPU VRAM Load: ");
+                                ui.label(format!("{} %", sr.gpu_memory_load));
+                                ui.end_row();
+                                ui.label("GPU Temp: ");
+                                ui.label(format!("{} ° C", sr.gpu_temp));
+                                ui.end_row();
+                                ui.label("Memory Used: ");
+                                ui.label(format!("{} GiB", sr.memory_used));
+                                ui.end_row();
+                                ui.label("Memory Total: ");
+                                ui.label(format!("{} GiB", sr.memory_total));
+                                ui.end_row();
+                            });
                     });
                 }
                 GuiTab::Miscellaneous => {
@@ -250,18 +273,9 @@ pub fn basic_gui() {
                     ui.label("");
 
                     ui.columns(3, |c| {
-                        if c[0].button("Homepage").clicked() {
-                            open::that_detached("https://friendteam.biz")
-                                .expect("Failed to open homepage link!");
-                        }
-                        if c[1].button("Repository").clicked() {
-                            open::that_detached("https://github.com/FriendTeamInc/JukeBox")
-                                .expect("Failed to open repository link!");
-                        }
-                        if c[2].button("Donate").clicked() {
-                            open::that_detached("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-                                .expect("Failed to open donate link!");
-                        }
+                        c[0].hyperlink_to("Homepage", "https://friendteam.biz");
+                        c[1].hyperlink_to("Repository", "https://github.com/FriendTeamInc/JukeBox");
+                        c[2].hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
                     });
 
                     ui.label("");
@@ -288,7 +302,7 @@ pub fn basic_gui() {
                 }
                 splash_message_timer = Instant::now().add(Duration::from_secs(10));
             }
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::BOTTOM), |ui| {
                 ui.monospace(SPLASH_MESSAGES[splash_message_index]);
             });
 
