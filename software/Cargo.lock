@@ -1559,7 +1559,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "jukeboxcli"
+name = "jukeboxdesktop"
 version = "0.1.0"
 dependencies = [
  "eframe",

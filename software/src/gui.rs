@@ -4,7 +4,8 @@ use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui;
-use egui::{Align, Color32, RichText, Vec2};
+use egui::style::Spacing;
+use egui::{vec2, Align, Color32, Grid, RichText, Vec2};
 
 use rand::prelude::*;
 
@@ -61,6 +62,7 @@ pub fn basic_gui() {
                 break;
             }
             if Instant::now() < timer {
+                thread::sleep(Duration::from_millis(250));
                 continue;
             }
             timer = Instant::now().add(Duration::from_secs(1));
@@ -68,6 +70,7 @@ pub fn basic_gui() {
             sysreport_tx1
                 .send(pcs.get_report())
                 .expect("COULD NOT SEND PC REPORT 1"); // send to gui
+            // TODO: stop sending if there is no device connected
             sysreport_tx2
                 .send(pcs.get_report())
                 .expect("COULD NOT SEND PC REPORT 2"); // send to serial
@@ -80,6 +83,7 @@ pub fn basic_gui() {
 
     // serial comms thread
     let serialcomms = thread::spawn(move || {
+        // TODO: check application cpu usage when device is connected
         loop {
             if let Ok(_) = breaker_rx2.try_recv() {
                 break;
@@ -88,6 +92,7 @@ pub fn basic_gui() {
             let f = serial_get_device();
             if let Err(_) = f {
                 // log::error!("Failed to get serial device. Error: `{}`.", e);
+                thread::sleep(Duration::from_secs(1));
                 continue;
             }
             let mut f = f.unwrap();
@@ -163,10 +168,23 @@ pub fn basic_gui() {
 
             ui.separator();
 
+            let mw = 464.0;
             let mh = 208.0;
-            let r = ui.allocate_ui(Vec2::new(464.0, mh), |ui| match gui_tab {
+            let r = ui.allocate_ui(Vec2::new(mw, mh), |ui| match gui_tab {
                 GuiTab::Keyboard => {
-                    ui.label("TODO!");
+                    Grid::new("kb_grid")
+                        .spacing(vec2(0.0, 0.0))
+                        .striped(true)
+                        .min_col_width(mw / 4.0)
+                        .min_row_height(mh / 3.0)
+                        .show(ui, |ui| {
+                            for y in 0..3 {
+                                for x in 0..4 {
+                                    ui.label(format!("({}, {})", x + 1, y + 1));
+                                }
+                                ui.end_row();
+                            }
+                        });
                 }
                 GuiTab::System => {
                     ui.horizontal(|ui| {
@@ -295,10 +313,10 @@ pub fn basic_gui() {
         .send(SerialCommand::DisconnectDevice)
         .expect("could not send disconnect signal");
 
-    serialcomms
-        .join()
-        .expect("could not rejoin serialcomms thread");
     systemstats
         .join()
         .expect("could not rejoin systemstats thread");
+    serialcomms
+        .join()
+        .expect("could not rejoin serialcomms thread");
 }
