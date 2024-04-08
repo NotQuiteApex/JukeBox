@@ -250,7 +250,7 @@ pub struct SystemReport {
     pub gpu_memory_load: String,
 }
 impl SystemReport {
-    pub fn log_report(&self) {
+    pub fn _log_report(&self) {
         log::info!("PROBE START...");
         // log::info!("");
 

@@ -3,8 +3,9 @@ use std::thread;
 use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
-use eframe::egui;
-use egui::{vec2, Align, Button, Color32, Grid, RichText, Vec2, Widget};
+use eframe::egui::{
+    vec2, Align, CentralPanel, Color32, Grid, Layout, RichText, ViewportBuilder, ViewportCommand,
+};
 
 use rand::prelude::*;
 
@@ -30,7 +31,7 @@ const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn basic_gui() {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
+        viewport: ViewportBuilder::default()
             .with_title("JukeBox Desktop")
             .with_inner_size([480.0, 320.0])
             .with_maximize_button(false)
@@ -127,16 +128,15 @@ pub fn basic_gui() {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(
                     RichText::new("JukeBox Desktop")
                         .heading()
-                        .strong()
                         .color(Color32::from_rgb(255, 200, 100)),
                 );
                 ui.label(format!(" - v{}", APP_VERSION));
-                ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     let res = match connection_status {
                         ConnectionStatus::Connected => {
                             ("Connected.", Color32::from_rgb(50, 200, 50))
@@ -151,7 +151,7 @@ pub fn basic_gui() {
 
                     ui.label(RichText::new(res.0).color(res.1));
 
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Title(format!(
+                    ctx.send_viewport_cmd(ViewportCommand::Title(format!(
                         "JukeBox Desktop - v{} - {}",
                         APP_VERSION, res.0
                     )));
@@ -170,77 +170,71 @@ pub fn basic_gui() {
 
             let mw = 464.0;
             let mh = 208.0;
-            let r = ui.allocate_ui(Vec2::new(mw, mh), |ui| match gui_tab {
+            let r = ui.allocate_ui(vec2(mw, mh), |ui| match gui_tab {
                 GuiTab::Keyboard => {
                     let col = 4;
                     let row = 3;
+                    let h = mh / 3.0 - 1.0;
                     for y in 0..row {
                         ui.columns(col, |c| {
                             for x in 0..col {
-                                let h = mh / 3.0;
                                 c[x].set_min_height(h);
                                 c[x].set_max_height(h);
-                                c[x].with_layout(
-                                    egui::Layout::centered_and_justified(egui::Direction::TopDown),
-                                    |ui| {
-                                        let config_button =
-                                            Button::new(format!("({}, {})", x + 1, y + 1)).ui(ui);
-                                        if config_button.clicked() {
-                                            println!("({}, {}) clicked", x + 1, y + 1);
-                                            // TODO: add config menu when button is clicked
-                                            // TODO: highlight button when press signal is recieved
-                                            // TODO: display some better text in the buttons
-                                        }
-                                    },
-                                );
+                                c[x].centered_and_justified(|ui| {
+                                    if ui.button(format!("F{}", 12 + x + y * col + 1)).clicked() {
+                                        println!("({}, {}) clicked", x + 1, y + 1);
+                                        // TODO: add config menu when button is clicked
+                                        // TODO: highlight button when press signal is recieved
+                                        // TODO: display some better text in the buttons
+                                    }
+                                });
                             }
                         });
                     }
                 }
                 GuiTab::System => {
-                    egui::ScrollArea::vertical().max_height(mh).show(ui, |ui| {
-                        Grid::new("sys_stats")
-                            .spacing(vec2(0.0, 0.0))
-                            .striped(true)
-                            .min_col_width(mw / 4.0)
-                            .show(ui, |ui| {
-                                ui.label("CPU: ");
-                                ui.label(format!("'{}'", sr.cpu_name));
-                                ui.end_row();
-                                ui.label("CPU Freq: ");
-                                ui.label(format!("{} GHz", sr.cpu_freq));
-                                ui.end_row();
-                                ui.label("CPU Load: ");
-                                ui.label(format!("{} %", sr.cpu_load));
-                                ui.end_row();
-                                ui.label("CPU Temp: ");
-                                ui.label(format!("{} ° C", sr.cpu_temp));
-                                ui.end_row();
-                                ui.label("GPU: ");
-                                ui.label(format!("'{}'", sr.gpu_name));
-                                ui.end_row();
-                                ui.label("GPU Core Freq: ");
-                                ui.label(format!("{} MHz", sr.gpu_core_clock));
-                                ui.end_row();
-                                ui.label("GPU Core Load: ");
-                                ui.label(format!("{} %", sr.gpu_core_load));
-                                ui.end_row();
-                                ui.label("GPU VRAM Freq: ");
-                                ui.label(format!("{} MHz", sr.gpu_memory_clock));
-                                ui.end_row();
-                                ui.label("GPU VRAM Load: ");
-                                ui.label(format!("{} %", sr.gpu_memory_load));
-                                ui.end_row();
-                                ui.label("GPU Temp: ");
-                                ui.label(format!("{} ° C", sr.gpu_temp));
-                                ui.end_row();
-                                ui.label("Memory Used: ");
-                                ui.label(format!("{} GiB", sr.memory_used));
-                                ui.end_row();
-                                ui.label("Memory Total: ");
-                                ui.label(format!("{} GiB", sr.memory_total));
-                                ui.end_row();
-                            });
+                    let g = Grid::new("sys_stats")
+                        .spacing(vec2(0.0, -0.5))
+                        .striped(true)
+                        .min_col_width(mw / 4.0);
+
+                    g.show(ui, |ui| {
+                        ui.label("CPU: ");
+                        ui.label(format!("'{}'", sr.cpu_name));
+                        ui.end_row();
+                        ui.label("CPU Freq: ");
+                        ui.label(format!("{} GHz", sr.cpu_freq));
+                        ui.end_row();
+                        ui.label("CPU Load: ");
+                        ui.label(format!("{} %", sr.cpu_load));
+                        ui.end_row();
+                        ui.label("CPU Temp: ");
+                        ui.label(format!("{} ° C", sr.cpu_temp));
+                        ui.end_row();
+                        ui.label("GPU: ");
+                        ui.label(format!("'{}'", sr.gpu_name));
+                        ui.end_row();
+                        ui.label("GPU Core Freq: ");
+                        ui.label(format!("{} MHz", sr.gpu_core_clock));
+                        ui.end_row();
+                        ui.label("GPU Core Load: ");
+                        ui.label(format!("{} %", sr.gpu_core_load));
+                        ui.end_row();
+                        ui.label("GPU VRAM Freq: ");
+                        ui.label(format!("{} MHz", sr.gpu_memory_clock));
+                        ui.end_row();
+                        ui.label("GPU VRAM Load: ");
+                        ui.label(format!("{} %", sr.gpu_memory_load));
+                        ui.end_row();
+                        ui.label("GPU Temp: ");
+                        ui.label(format!("{} ° C", sr.gpu_temp));
+                        ui.end_row();
+                        ui.label("Memory Used: ");
+                        ui.label(format!("{} GiB", sr.memory_used));
+                        ui.end_row();
+                        ui.label("Memory Total: ");
+                        ui.label(format!("{} GiB", sr.memory_total));
+                        ui.end_row();
                     });
                 }
                 GuiTab::Miscellaneous => {
@@ -270,24 +264,21 @@ pub fn basic_gui() {
                         ui.label("Send debug signal to JukeBox.")
                     });
 
-                    ui.label("");
-
-                    ui.columns(3, |c| {
-                        c[0].hyperlink_to("Homepage", "https://friendteam.biz");
-                        c[1].hyperlink_to("Repository", "https://github.com/FriendTeamInc/JukeBox");
-                        c[2].hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-                    });
-
-                    ui.label("");
-
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::RIGHT), |ui| {
+                    ui.with_layout(Layout::bottom_up(Align::RIGHT), |ui| {
                         ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
+                        ui.horizontal(|ui| {
+                            ui.hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+                            ui.label(" - ");
+                            ui.hyperlink_to("Repository", "https://github.com/FriendTeamInc/JukeBox");
+                            ui.label(" - ");
+                            ui.hyperlink_to("Homepage", "https://friendteam.biz");
+                        })
                     });
                 }
             });
             let h = r.response.rect.height();
             if h < mh {
-                ui.allocate_space(Vec2::new(0.0, mh - h));
+                ui.allocate_space(vec2(0.0, mh - h));
             }
 
             ui.separator();
@@ -302,7 +293,7 @@ pub fn basic_gui() {
                 }
                 splash_message_timer = Instant::now().add(Duration::from_secs(10));
             }
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::BOTTOM), |ui| {
+            ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui| {
                 ui.monospace(SPLASH_MESSAGES[splash_message_index]);
             });
 
