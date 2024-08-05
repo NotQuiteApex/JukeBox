@@ -175,6 +175,10 @@ pub static SPLASH_MESSAGES: &[&str] = &[
     "Baba is you!",
     "Extra buttons included!",
     "Look directly at implosions!",
+    // Thanks Magic!
+    "Prepare thyself!",
+    "Who you were before is insignificant!",
+    "Who you are now is inconcievable!",
     // Thanks lexikiq!
     "Made with blood!",
     // Thanks Skysometric!
