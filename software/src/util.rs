@@ -55,7 +55,7 @@ impl std::fmt::Display for ExitMsg {
 }
 impl std::error::Error for ExitMsg {}
 
-pub fn is_version_string_newer(new: &str) -> bool {
+pub fn _is_version_string_newer(new: &str) -> bool {
     let old = env!("CARGO_PKG_VERSION");
     let new = if new.starts_with('v') { &new[1..] } else { new };
 
