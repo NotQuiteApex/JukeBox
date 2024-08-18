@@ -54,7 +54,7 @@ fn main() -> ! {
     // set up timers
     let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
 
-    // set up usb interfaces
+    // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
         pac.USBCTRL_REGS,
         pac.USBCTRL_DPRAM,
@@ -70,9 +70,7 @@ fn main() -> ! {
             .product("JukeBox V5")
             .serial_number("SERIAL_NO")])
         .unwrap()
-        .device_class(0xEF)
-        .device_sub_class(0x02)
-        .device_protocol(0x01)
+        .composite_with_iads()
         .build();
 
     // set up modules
@@ -82,8 +80,24 @@ fn main() -> ! {
     loop {
         led_mod.update();
 
-        if usb_dev.poll(&mut [&mut usb_serial, &mut usb_hid]) {
-            // let mut buf = [0u8; 64];
+        if usb_dev.poll(&mut [&mut usb_hid, &mut usb_serial]) {
+            let mut buf = [0u8; 64];
+            match usb_serial.read(&mut buf) {
+                Err(_) => {}
+                Ok(0) => {}
+                Ok(count) => {
+                    buf.iter_mut()
+                        .take(count)
+                        .for_each(|b| b.make_ascii_uppercase());
+                    let mut wr_ptr = &buf[..count];
+                    while !wr_ptr.is_empty() {
+                        match usb_serial.write(wr_ptr) {
+                            Ok(len) => wr_ptr = &wr_ptr[len..],
+                            Err(_) => break,
+                        }
+                    }
+                }
+            }
         }
     }
 }
