@@ -5,7 +5,9 @@
 
 mod uid;
 mod modules {
+    pub mod keyboard;
     pub mod led;
+    pub mod serial;
 }
 
 use rp_pico as bsp;
@@ -22,8 +24,8 @@ use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
 
-use defmt::*;
-use defmt_rtt as _;
+// use defmt::*;
+// use defmt_rtt as _;
 
 #[entry]
 fn main() -> ! {
@@ -79,29 +81,16 @@ fn main() -> ! {
 
     // set up modules
     let mut led_mod = modules::led::LedMod::new(led_pin, &timer);
+    let mut keyboard_mod = modules::keyboard::KeyboardMod::new();
+    let mut serial_mod = modules::serial::SerialMod::new();
 
     // main event loop
     loop {
-        led_mod.update();
-
         if usb_dev.poll(&mut [&mut usb_hid, &mut usb_serial]) {
-            let mut buf = [0u8; 64];
-            match usb_serial.read(&mut buf) {
-                Err(_) => {}
-                Ok(0) => {}
-                Ok(count) => {
-                    buf.iter_mut()
-                        .take(count)
-                        .for_each(|b| b.make_ascii_uppercase());
-                    let mut wr_ptr = &buf[..count];
-                    while !wr_ptr.is_empty() {
-                        match usb_serial.write(wr_ptr) {
-                            Ok(len) => wr_ptr = &wr_ptr[len..],
-                            Err(_) => break,
-                        }
-                    }
-                }
-            }
+            keyboard_mod.update(&mut usb_hid);
+            serial_mod.update(&mut usb_serial);
         }
+
+        led_mod.update();
     }
 }

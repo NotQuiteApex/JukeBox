@@ -27,7 +27,7 @@ impl<'timer> LedMod<'timer> {
         let mut this = LedMod {
             led_pin: led_pin,
             timer: count_down,
-            led_on: false,
+            led_on: true,
         };
 
         this.timer_start();
