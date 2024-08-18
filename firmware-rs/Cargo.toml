@@ -15,6 +15,7 @@ rp-pico = "0.9"
 usb-device = "0.3.2"
 usbd-serial = "0.2.2"
 usbd-hid = "0.8.2"
+rp2040-flash = "0.5.1"
 
 
 # cargo build/run

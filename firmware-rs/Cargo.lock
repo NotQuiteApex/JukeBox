@@ -318,6 +318,7 @@ dependencies = [
  "embedded-hal 0.2.7",
  "panic-probe",
  "rp-pico",
+ "rp2040-flash",
  "usb-device",
  "usbd-hid",
  "usbd-serial",
@@ -471,6 +472,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c92f344f63f950ee36cf4080050e4dce850839b9175da38f9d2ffb69b4dbb21"
 dependencies = [
  "crc-any",
+]
+
+[[package]]
+name = "rp2040-flash"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e41f3c56e59be77dba9b64f06f8b6944e51b241bf750595525fb1b33ba84180"
+dependencies = [
+ "rp2040-hal",
 ]
 
 [[package]]

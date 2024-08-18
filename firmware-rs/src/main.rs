@@ -3,6 +3,7 @@
 #![no_std]
 #![no_main]
 
+mod uid;
 mod modules {
     pub mod led;
 }
@@ -26,6 +27,9 @@ use defmt_rtt as _;
 
 #[entry]
 fn main() -> ! {
+    // load unique flash id
+    let uid = uid::get_flash_uid();
+
     // set up hardware interfaces
     let mut pac = Peripherals::take().unwrap();
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
@@ -68,7 +72,7 @@ fn main() -> ! {
         .strings(&[StringDescriptors::default()
             .manufacturer("FriendTeamInc")
             .product("JukeBox V5")
-            .serial_number("SERIAL_NO")])
+            .serial_number(&uid)])
         .unwrap()
         .composite_with_iads()
         .build();
