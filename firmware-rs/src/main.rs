@@ -18,6 +18,7 @@ use rp_pico as bsp;
 use bsp::entry;
 use bsp::hal::{
     clocks::init_clocks_and_plls,
+    fugit::ExtU32,
     gpio::{DynPinId, FunctionSioInput, FunctionSioOutput, Pin, PinState, PullDown},
     pac::Peripherals,
     sio::Sio,
@@ -25,12 +26,12 @@ use bsp::hal::{
     watchdog::Watchdog,
     Timer,
 };
+use embedded_hal::timer::CountDown as _;
 use panic_probe as _;
 
 use usb_device::{class_prelude::*, prelude::*};
-use usbd_hid::descriptor::generator_prelude::*;
-use usbd_hid::descriptor::KeyboardReport;
-use usbd_hid::hid_class::HIDClass;
+use usbd_hid::prelude::*;
+use usbd_human_interface_device as usbd_hid;
 use usbd_serial::SerialPort;
 
 use defmt::*;
@@ -85,6 +86,8 @@ fn main() -> ! {
 
     // set up timers
     let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
+    let mut tick_timer = timer.count_down();
+    tick_timer.start(1.millis());
 
     // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
@@ -94,7 +97,9 @@ fn main() -> ! {
         true,
         &mut pac.RESETS,
     ));
-    let mut usb_hid = HIDClass::new(&usb_bus, KeyboardReport::desc(), 10);
+    let mut usb_hid = UsbHidClassBuilder::new()
+        .add_device(usbd_hid::device::keyboard::NKROBootKeyboardConfig::default())
+        .build(&usb_bus);
     let mut usb_serial = SerialPort::new(&usb_bus);
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xF20A))
         .strings(&[StringDescriptors::default()
@@ -112,11 +117,25 @@ fn main() -> ! {
 
     // main event loop
     loop {
+        // tick for n-key rollover
+        // TODO: move to keyboard module for cleanliness?
+        if tick_timer.wait().is_ok() {
+            match usb_hid.tick() {
+                Ok(_) => {}
+                Err(UsbHidError::WouldBlock) => {}
+                Err(e) => {
+                    core::panic!("Failed to process keyboard tick: {:?}", e)
+                }
+            };
+        }
+
+        // update usb devices
         if usb_dev.poll(&mut [&mut usb_hid, &mut usb_serial]) {
-            keyboard_mod.update(&mut usb_hid);
+            keyboard_mod.update(&mut usb_hid.device());
             serial_mod.update(&mut usb_serial);
         }
 
+        // update peripherals
         led_mod.update();
     }
 }

@@ -1,5 +1,7 @@
 //! Keyboard processing module
 
+use crate::util;
+
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use embedded_hal::timer::CountDown as _;
 use rp_pico::hal::{
@@ -9,37 +11,33 @@ use rp_pico::hal::{
     usb::UsbBus,
     Timer,
 };
-use usbd_hid::{
-    descriptor::{KeyboardReport, KeyboardUsage::*},
-    hid_class::HIDClass,
-};
-
-use crate::util;
+use usbd_hid::{device::keyboard::NKROBootKeyboard, page::Keyboard, UsbHidError};
+use usbd_human_interface_device as usbd_hid;
 
 const POLL_RATE: u32 = 10;
 const KEY_ROWS: usize = 3;
 const KEY_COLS: usize = 4;
 
-const KEY_MAP: [u8; 12] = [
-    KeyboardF13 as u8,
-    KeyboardF14 as u8,
-    KeyboardF15 as u8,
-    KeyboardF16 as u8,
-    KeyboardF17 as u8,
-    KeyboardF18 as u8,
-    KeyboardF19 as u8,
-    KeyboardF20 as u8,
-    KeyboardF21 as u8,
-    KeyboardF22 as u8,
-    KeyboardF23 as u8,
-    KeyboardF24 as u8,
+const KEY_MAP: [Keyboard; 12] = [
+    Keyboard::F13,
+    Keyboard::F14,
+    Keyboard::F15,
+    Keyboard::F16,
+    Keyboard::F17,
+    Keyboard::F18,
+    Keyboard::F19,
+    Keyboard::F20,
+    Keyboard::F21,
+    Keyboard::F22,
+    Keyboard::F23,
+    Keyboard::F24,
 ];
 
 pub struct KeyboardMod<'a> {
     col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; KEY_COLS],
     row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; KEY_ROWS],
-    timer: CountDown<'a>,
-    prev_keys: [u8; 12],
+    poll_timer: CountDown<'a>,
+    pressed_keys: [Keyboard; 12],
 }
 
 impl<'timer> KeyboardMod<'timer> {
@@ -48,22 +46,22 @@ impl<'timer> KeyboardMod<'timer> {
         row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; KEY_ROWS],
         timer: &'timer Timer,
     ) -> Self {
-        let count_down = timer.count_down();
+        let poll_timer = timer.count_down();
 
         let mut this = KeyboardMod {
             col_pins: col_pins,
             row_pins: row_pins,
-            timer: count_down,
-            prev_keys: [0u8; 12],
+            poll_timer: poll_timer,
+            pressed_keys: [Keyboard::NoEventIndicated; 12],
         };
 
-        this.timer.start(POLL_RATE.millis());
+        this.poll_timer.start(POLL_RATE.millis());
 
         this
     }
 
-    fn get_pressed_keys(&mut self) -> [u8; 12] {
-        let mut keys = [0u8; 12];
+    fn check_pressed_keys(&mut self) -> [Keyboard; 12] {
+        let mut keys = [Keyboard::NoEventIndicated; 12];
 
         for row in 0..KEY_ROWS {
             self.row_pins[row].set_high().unwrap();
@@ -82,31 +80,26 @@ impl<'timer> KeyboardMod<'timer> {
         keys
     }
 
-    pub fn update(&mut self, hid: &mut HIDClass<UsbBus>) {
-        let new_keys = self.get_pressed_keys();
+    fn update_keys(&mut self) {
+        let new_keys = self.check_pressed_keys();
+        self.pressed_keys = new_keys;
+    }
 
-        let mut keycodes = [0u8; 6];
-        let mut keycode_count = 0usize;
-        for k in new_keys {
-            if keycode_count >= 6 {
-                break;
-            }
-            if k != 0 {
-                keycodes[keycode_count] = k;
-                keycode_count += 1;
+    pub fn get_pressed_keys(&self) -> [Keyboard; 12] {
+        self.pressed_keys
+    }
+
+    pub fn update(&mut self, hid: &mut NKROBootKeyboard<UsbBus>) {
+        if self.poll_timer.wait().is_ok() {
+            self.update_keys();
+            match hid.write_report(self.pressed_keys) {
+                Ok(_) => {}
+                Err(UsbHidError::Duplicate) => {}
+                Err(UsbHidError::WouldBlock) => {}
+                Err(e) => {
+                    panic!("Failed to process keyboard tick: {:?}", e)
+                }
             }
         }
-        let rep = KeyboardReport {
-            modifier: 0,
-            reserved: 0,
-            leds: 0,
-            keycodes: keycodes,
-        };
-        let res = hid.push_input(&rep);
-
-        self.prev_keys = new_keys;
-
-        // TODO: implement nkro from https://github.com/dlkj/usbd-human-interface-device/blob/main/examples/src/bin/keyboard_nkro.rs
-        // TODO: return keyboard report from update
     }
 }
