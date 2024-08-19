@@ -4,17 +4,26 @@
 #![no_main]
 
 mod uid;
+mod util;
 mod modules {
     pub mod keyboard;
     pub mod led;
     pub mod serial;
 }
 
+use modules::*;
+
 use rp_pico as bsp;
 
 use bsp::entry;
 use bsp::hal::{
-    clocks::init_clocks_and_plls, pac::Peripherals, sio::Sio, usb, watchdog::Watchdog, Timer,
+    clocks::init_clocks_and_plls,
+    gpio::{DynPinId, FunctionSioInput, FunctionSioOutput, Pin, PinState, PullDown},
+    pac::Peripherals,
+    sio::Sio,
+    usb,
+    watchdog::Watchdog,
+    Timer,
 };
 use panic_probe as _;
 
@@ -24,8 +33,8 @@ use usbd_hid::descriptor::KeyboardReport;
 use usbd_hid::hid_class::HIDClass;
 use usbd_serial::SerialPort;
 
-// use defmt::*;
-// use defmt_rtt as _;
+use defmt::*;
+use defmt_rtt as _;
 
 #[entry]
 fn main() -> ! {
@@ -56,6 +65,23 @@ fn main() -> ! {
 
     // set up hardware pins
     let led_pin = pins.led.into_push_pull_output();
+    let kb_col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; 4] = [
+        pins.gpio12.into_pull_down_input().into_dyn_pin(),
+        pins.gpio13.into_pull_down_input().into_dyn_pin(),
+        pins.gpio14.into_pull_down_input().into_dyn_pin(),
+        pins.gpio15.into_pull_down_input().into_dyn_pin(),
+    ];
+    let kb_row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; 3] = [
+        pins.gpio9
+            .into_push_pull_output_in_state(PinState::Low)
+            .into_dyn_pin(),
+        pins.gpio10
+            .into_push_pull_output_in_state(PinState::Low)
+            .into_dyn_pin(),
+        pins.gpio11
+            .into_push_pull_output_in_state(PinState::Low)
+            .into_dyn_pin(),
+    ];
 
     // set up timers
     let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
@@ -80,9 +106,9 @@ fn main() -> ! {
         .build();
 
     // set up modules
-    let mut led_mod = modules::led::LedMod::new(led_pin, &timer);
-    let mut keyboard_mod = modules::keyboard::KeyboardMod::new();
-    let mut serial_mod = modules::serial::SerialMod::new();
+    let mut led_mod = led::LedMod::new(led_pin, &timer);
+    let mut keyboard_mod = keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, &timer);
+    let mut serial_mod = serial::SerialMod::new();
 
     // main event loop
     loop {

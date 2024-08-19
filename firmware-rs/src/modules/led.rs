@@ -1,4 +1,4 @@
-//! Blinken Light module
+//! Blinken Light for debugging module
 
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::timer::CountDown as _;
@@ -30,13 +30,9 @@ impl<'timer> LedMod<'timer> {
             led_on: true,
         };
 
-        this.timer_start();
+        this.timer.start(BLINK_TIME.millis());
 
         this
-    }
-
-    fn timer_start(&mut self) {
-        self.timer.start(BLINK_TIME.millis());
     }
 
     pub fn update(&mut self) {
