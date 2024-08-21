@@ -9,7 +9,6 @@ use rp_pico::hal::{
     gpio::{DynPinId, FunctionSioInput, FunctionSioOutput, Pin, PullDown},
     timer::CountDown,
     usb::UsbBus,
-    Timer,
 };
 use usbd_hid::{device::keyboard::NKROBootKeyboard, page::Keyboard, UsbHidError};
 use usbd_human_interface_device as usbd_hid;
@@ -33,10 +32,10 @@ const KEY_MAP: [Keyboard; 12] = [
     Keyboard::F24,
 ];
 
-pub struct KeyboardMod<'a> {
+pub struct KeyboardMod<'timer> {
     col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; KEY_COLS],
     row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; KEY_ROWS],
-    poll_timer: CountDown<'a>,
+    poll_timer: CountDown<'timer>,
     pressed_keys: [Keyboard; 12],
 }
 
@@ -44,20 +43,16 @@ impl<'timer> KeyboardMod<'timer> {
     pub fn new(
         col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; KEY_COLS],
         row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; KEY_ROWS],
-        timer: &'timer Timer,
+        mut count_down: CountDown<'timer>,
     ) -> Self {
-        let poll_timer = timer.count_down();
+        count_down.start(POLL_RATE.millis());
 
-        let mut this = KeyboardMod {
+        KeyboardMod {
             col_pins: col_pins,
             row_pins: row_pins,
-            poll_timer: poll_timer,
+            poll_timer: count_down,
             pressed_keys: [Keyboard::NoEventIndicated; 12],
-        };
-
-        this.poll_timer.start(POLL_RATE.millis());
-
-        this
+        }
     }
 
     fn check_pressed_keys(&mut self) -> [Keyboard; 12] {
@@ -90,15 +85,17 @@ impl<'timer> KeyboardMod<'timer> {
     }
 
     pub fn update(&mut self, hid: &mut NKROBootKeyboard<UsbBus>) {
-        if self.poll_timer.wait().is_ok() {
-            self.update_keys();
-            match hid.write_report(self.pressed_keys) {
-                Ok(_) => {}
-                Err(UsbHidError::Duplicate) => {}
-                Err(UsbHidError::WouldBlock) => {}
-                Err(e) => {
-                    panic!("Failed to process keyboard tick: {:?}", e)
-                }
+        if !self.poll_timer.wait().is_ok() {
+            return;
+        }
+
+        self.update_keys();
+        match hid.write_report(self.pressed_keys) {
+            Ok(_) => {}
+            Err(UsbHidError::Duplicate) => {}
+            Err(UsbHidError::WouldBlock) => {}
+            Err(e) => {
+                panic!("Failed to process keyboard tick: {:?}", e)
             }
         }
     }

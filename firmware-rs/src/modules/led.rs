@@ -6,44 +6,41 @@ use rp_pico::hal::{
     fugit::ExtU32,
     gpio::{bank0::Gpio25, FunctionSio, Pin, PullDown, SioOutput},
     timer::CountDown,
-    Timer,
 };
 
 const BLINK_TIME: u32 = 500;
 
-pub struct LedMod<'a> {
+pub struct LedMod<'timer> {
     led_pin: Pin<Gpio25, FunctionSio<SioOutput>, PullDown>,
-    timer: CountDown<'a>,
+    timer: CountDown<'timer>,
     led_on: bool,
 }
 
 impl<'timer> LedMod<'timer> {
     pub fn new(
         led_pin: Pin<Gpio25, FunctionSio<SioOutput>, PullDown>,
-        timer: &'timer Timer,
+        mut count_down: CountDown<'timer>,
     ) -> Self {
-        let count_down = timer.count_down();
+        count_down.start(BLINK_TIME.millis());
 
-        let mut this = LedMod {
+        LedMod {
             led_pin: led_pin,
             timer: count_down,
             led_on: true,
-        };
-
-        this.timer.start(BLINK_TIME.millis());
-
-        this
+        }
     }
 
     pub fn update(&mut self) {
-        if self.timer.wait().is_ok() {
-            if self.led_on {
-                self.led_pin.set_high().unwrap();
-            } else {
-                self.led_pin.set_low().unwrap();
-            }
-
-            self.led_on = !self.led_on;
+        if !self.timer.wait().is_ok() {
+            return;
         }
+
+        if self.led_on {
+            self.led_pin.set_high().unwrap();
+        } else {
+            self.led_pin.set_low().unwrap();
+        }
+
+        self.led_on = !self.led_on;
     }
 }

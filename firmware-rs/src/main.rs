@@ -8,12 +8,16 @@ mod util;
 mod modules {
     pub mod keyboard;
     pub mod led;
+    pub mod rgb;
+    pub mod screen;
     pub mod serial;
 }
 
 use modules::*;
 
 use rp_pico as bsp;
+use rp_pico::hal::pio::PIOExt;
+use rp_pico::hal::Clock;
 
 use bsp::entry;
 use bsp::hal::{
@@ -28,12 +32,14 @@ use bsp::hal::{
 };
 use embedded_hal::timer::CountDown as _;
 use panic_probe as _;
+use ws2812_pio::Ws2812;
 
 use usb_device::{class_prelude::*, prelude::*};
 use usbd_hid::prelude::*;
 use usbd_human_interface_device as usbd_hid;
 use usbd_serial::SerialPort;
 
+#[allow(unused_imports)]
 use defmt::*;
 use defmt_rtt as _;
 
@@ -64,8 +70,12 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    // set up hardware pins
-    let led_pin = pins.led.into_push_pull_output();
+    // set up timers
+    let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
+    let mut tick_timer = timer.count_down();
+    tick_timer.start(1.millis());
+
+    // set up hardware
     let kb_col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; 4] = [
         pins.gpio12.into_pull_down_input().into_dyn_pin(),
         pins.gpio13.into_pull_down_input().into_dyn_pin(),
@@ -84,10 +94,16 @@ fn main() -> ! {
             .into_dyn_pin(),
     ];
 
-    // set up timers
-    let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
-    let mut tick_timer = timer.count_down();
-    tick_timer.start(1.millis());
+    let led_pin = pins.led.into_push_pull_output();
+
+    let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
+    let ws = Ws2812::new(
+        pins.gpio2.into_function(),
+        &mut pio,
+        sm0,
+        clocks.peripheral_clock.freq(),
+        timer.count_down(),
+    );
 
     // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
@@ -111,9 +127,11 @@ fn main() -> ! {
         .build();
 
     // set up modules
-    let mut led_mod = led::LedMod::new(led_pin, &timer);
-    let mut keyboard_mod = keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, &timer);
+    let mut keyboard_mod = keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
     let mut serial_mod = serial::SerialMod::new();
+    let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
+    let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
+    let mut screen_mod = screen::ScreenMod::new();
 
     // main event loop
     loop {
@@ -137,5 +155,7 @@ fn main() -> ! {
 
         // update peripherals
         led_mod.update();
+        rgb_mod.update(timer.get_counter());
+        screen_mod.update();
     }
 }
