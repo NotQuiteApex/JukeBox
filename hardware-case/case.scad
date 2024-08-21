@@ -2,7 +2,7 @@
 
 /* [General settings] */
 // Generates top case piece
-gen_top = true;
+gen_top = false;
 // Generates bottom case piece
 gen_bot = false;
 // Generates leg case piece
@@ -146,10 +146,10 @@ module case_bottom() {
             translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
 
             // Nut holes
-            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
-            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
-            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
-            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
+            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
 
             // Hole for screen cable
             translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
@@ -249,10 +249,10 @@ module case_top() {
             }
 
             // mounting hardware holes
-            translate([   cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([cS-cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([   cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([   cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            translate([cS-cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            translate([   cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
             
             // Jukebox logo
             case_detail();
