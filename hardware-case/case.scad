@@ -9,6 +9,8 @@ gen_bot = false;
 gen_leg = false;
 // Generates screen case piece
 gen_scr = false;
+// Generates screen detail for top case piece
+gen_detail = false;
 // Case size (width & height)
 cS = 98;
 // Case corner radius (rounded corners)
@@ -144,10 +146,10 @@ module case_bottom() {
             translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
 
             // Nut holes
-            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
-            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
-            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
-            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.5);
+            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
 
             // Hole for screen cable
             translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
@@ -247,18 +249,22 @@ module case_top() {
             }
 
             // mounting hardware holes
-            translate([   cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([cS-cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([   cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
-            translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=7, d1=3, h=3); }
+            translate([   cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            translate([cS-cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            translate([   cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
             
             // Jukebox logo
-            translate([logoX, logoY, ctH+1]) linear_extrude(height=1, center=true) scale([logoS, logoS, 1]) import(file="../assets/textlogo.svg", center=true);
-            translate([cS/2-37, cS-18, ctH+1]) scale([1.1, 1.1, 1]) speaker_icon();
-            translate([cS/2+37, cS-18, ctH+1]) scale([1.1, 1.1, 1]) speaker_icon();
-            // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
+            case_detail();
         }
     }
+}
+
+module case_detail() {
+    translate([logoX, logoY, ctH+0.75]) linear_extrude(height=0.5, center=true) scale([logoS, logoS, 0.5]) import(file="../assets/textlogo.svg", center=true);
+    translate([cS/2-37, cS-18, ctH+0.75]) scale([1.1, 1.1, 0.5]) speaker_icon();
+    translate([cS/2+37, cS-18, ctH+0.75]) scale([1.1, 1.1, 0.5]) speaker_icon();
+    // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
 }
 
 module case_leg() {
@@ -295,6 +301,7 @@ module case_leg() {
     translate([0, lH, 0]) cube([lS, clipR, clipW]);
 }
 
-if (gen_top) translate([0, 0, clH]) case_top();
-if (gen_bot) case_bottom();
-if (gen_leg) case_leg();
+if (gen_top) translate([0, 0, clH]) color([1, 1, 0]) case_top();
+if (gen_bot) color([0, 1, 0]) case_bottom();
+if (gen_leg) color([1, 0, 0]) case_leg();
+if (gen_detail) translate([0, 0, clH]) color([0, 0, 1]) case_detail();
