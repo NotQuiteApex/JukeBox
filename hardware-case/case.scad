@@ -20,7 +20,7 @@ cmO = 7;
 // Case mounting hardware bolt size
 cmB = 3.5;
 // Case mounting hardware nut size (center to corner)
-cmN = 3.5;
+cmN = 3.3;
 // Face count on rounded objects
 $fn=32;
 
