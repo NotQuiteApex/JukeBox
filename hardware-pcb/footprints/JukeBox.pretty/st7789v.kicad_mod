@@ -335,56 +335,6 @@
 		(layer "F.SilkS")
 		(uuid "0cf783d3-2c91-4a8d-96e9-25d0d844d60e")
 	)
-	(fp_line
-		(start -24 0)
-		(end 7 0)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "Dwgs.User")
-		(uuid "962c518a-477b-4b9d-9ecd-61a4968ffbf0")
-	)
-	(fp_line
-		(start 6 -7)
-		(end 6 3)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "Dwgs.User")
-		(uuid "3e179631-5566-430b-b3f4-4e4d89153664")
-	)
-	(fp_line
-		(start 7 -17.4)
-		(end 7 -6.4)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "Dwgs.User")
-		(uuid "b74b894b-8127-40c8-92c7-e9abbee454b1")
-	)
-	(fp_line
-		(start 7 2.4)
-		(end 7 17.4)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "Dwgs.User")
-		(uuid "78f0b558-6ecb-48b8-9dbf-ff3e4ede1772")
-	)
-	(fp_line
-		(start 8 -7)
-		(end 8 3)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "Dwgs.User")
-		(uuid "577b4990-c018-4982-a63d-819d3709d01f")
-	)
 	(fp_rect
 		(start -24 -17.4)
 		(end 24 17.4)
