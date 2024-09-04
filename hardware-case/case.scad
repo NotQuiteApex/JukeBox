@@ -92,11 +92,10 @@ clipW = 10;
 clipR = 4;
 
 /* [Case screen settings] */
-csSW = 66;
-csSH = 41;
-csSCRW = 49;
-csSCRH = 36;
-csSCRM = 2;
+// Screen width
+csSCRW = 48;
+// Screen height
+csSCRH = 34.8;
 
 // https://www.youtube.com/watch?v=gKOkJWiTgAY
 module roundedsquare(xdim, ydim, zdim, rdim){
@@ -117,52 +116,6 @@ module chamferedsquare(xdim, ydim, zdim, r1dim, r2dim){
     }
 }
 
-module case_bottom() {
-    difference() {
-        union() {
-            // Case floor
-            chamferedsquare(cS, cS, clC, cR-clC, cR);
-            translate([0, 0, clC]) roundedsquare(cS, cS, clH-clC, cR);
-
-            // PCB table
-            difference() {
-                translate([    clS,     clS, clH]) roundedsquare(cS-clS*2, cS-clS*2, cpH, cpR);
-                translate([clS+cpW, clS+cpW, clH]) cube([cS-clS*2-cpW*2, cS-clS*2-cpW*2, cpH]);
-            }
-            translate([           clS,            clS, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-            translate([cS-clS*2-cpW*2,            clS, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-            translate([           clS, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-            translate([cS-clS*2-cpW*2, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-
-            // USB-C pillar
-            translate([0, 70.5, clH]) cube([clS, 10.5, cpW+1.6]);
-        }
-
-        union() {
-            // Bolt holes
-            translate([   cmO,    cmO, 0]) cylinder(d=cmB, h=7);
-            translate([cS-cmO,    cmO, 0]) cylinder(d=cmB, h=7);
-            translate([   cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
-            translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
-
-            // Nut holes
-            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-
-            // Hole for screen cable
-            translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
-
-            // Indents for rubber feet
-            translate([   cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
-            translate([cS-cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
-            translate([   cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
-            translate([cS-cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
-        }
-    }
-}
-
 module speaker_icon() {
     scale([5/6, 5/6, 1]) {
         difference() {
@@ -177,38 +130,24 @@ module speaker_icon() {
     }
 }
 
-module case_screen() {
-    difference() {
-        union() {
-            translate([0, 0, ctH]) chamferedsquare(csSW, csSH, 1, 3, 2);
-            roundedsquare(csSW, csSH, ctH, 3);
-        }
-        union() {
-            // Cutout interior
-            translate([ctW, ctW, -1]) cube([csSW-ctW*2, csSH-ctW*2, ctH+1]);
-            translate([ctW, -cR, -1]) cube([csSW-ctW*2, cR*3, ctH+1]);
-
-            // Screen cutout
-            translate([csSW/2, csSH/2, 0]) cube([csSCRW, csSCRH, 3*ctH], center=true);
-
-            // Mounting hole cutout
-            translate([csSW/2-53/2, csSH/2-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+53/2, csSH/2-29/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2-53/2, csSH/2+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-            translate([csSW/2+53/2, csSH/2+30/2, 0]) cylinder(d=csSCRM, h=3*ctH);
-        }
-    }
-}
+SOX = cS / 2 - (csSCRW + ctW * 2) / 2; // screen origin x
+SOY = cS - 7.5 - ctW - csSCRH / 2; // screen origin y
 
 module case_top() {
     difference() {
         union() {
             difference() {
                 union() {
-                    // top shell
+                    // Top shell body
                     translate([0, 0, ctH]) chamferedsquare(cS, cS, 1, 3, 2);
                     roundedsquare(cS, cS, ctH, cR);
-                    if (gen_scr) translate([cS/2-csSW/2, cS-3.5, 0]) case_screen();
+                    // Screen body
+                    if (gen_scr) translate([SOX, SOY, 0]) union() {
+                        sW = csSCRW + ctW * 2;
+                        sH = csSCRH + ctW * 2;
+                        translate([0, 0, ctH]) chamferedsquare(sW, sH, 1, 3, 2);
+                        roundedsquare(sW, sH, ctH, 3);
+                    }
                 }
                 union() {
                     // USB-C hole
@@ -216,7 +155,12 @@ module case_top() {
                     // Interior
                     translate([ctW, ctW, -1]) roundedsquare(cS-ctW*2, cS-ctW*2, ctH+1, cR);
                     // Screen cutout
-                    if (gen_scr) translate([cS/2-csSW/2+ctW, cS-4, 0]) cube([csSW-2*ctW, 2*ctW, ctH]);
+                    if (gen_scr) translate([SOX, SOY, 0]) union() {
+                        // Cutout interior
+                        translate([ctW, ctW, 0]) cube([csSCRW, csSCRH, ctH]);
+                        // Screen cutout
+                        translate([ctW + 2, ctW + 2, ctH]) cube([csSCRW - 3.5, csSCRH - 4, 1]);
+                    }
                 }
             }
             // Mounting plates
@@ -255,13 +199,69 @@ module case_top() {
             translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
             
             // Jukebox logo
-            case_detail();
+            if (gen_detail) case_detail();
+        }
+    }
+}
+
+module case_bottom() {
+    difference() {
+        union() {
+            // Case floor
+            chamferedsquare(cS, cS, clC, cR-clC, cR);
+            translate([0, 0, clC]) roundedsquare(cS, cS, clH-clC, cR);
+
+            // Screen floor
+            if (gen_scr) translate([SOX, SOY, 0]) union() {
+                chamferedsquare(csSCRW + clS * 2, csSCRH + clS * 2, clC, cR-clC, cR);
+                translate([0, 0, clC]) roundedsquare(csSCRW + clS * 2, csSCRH + clS * 2, clH-clC, cR);
+                translate([clS, clS+(csSCRH-16), clH]) {
+                    roundedsquare(csSCRW, 16, clH, cR);
+                    translate([0, 4, clH]) roundedsquare(csSCRW, 12, 1.6, cR);
+                }
+            }
+
+            // PCB table
+            difference() {
+                translate([    clS,     clS, clH]) roundedsquare(cS-clS*2, cS-clS*2, cpH, cpR);
+                translate([clS+cpW, clS+cpW, clH]) cube([cS-clS*2-cpW*2, cS-clS*2-cpW*2, cpH]);
+            }
+            translate([           clS,            clS, clH]) roundedsquare(cpM, cpM, cpH, cpR);
+            translate([cS-clS*2-cpW*2,            clS, clH]) roundedsquare(cpM, cpM, cpH, cpR);
+            translate([           clS, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
+            translate([cS-clS*2-cpW*2, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
+
+            // USB-C pillar
+            translate([0, 70, clH]) cube([clS, 11.5, cpW+1.6]);
+        }
+
+        union() {
+            // Bolt holes
+            translate([   cmO,    cmO, 0]) cylinder(d=cmB, h=7);
+            translate([cS-cmO,    cmO, 0]) cylinder(d=cmB, h=7);
+            translate([   cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
+            translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
+
+            // Nut holes
+            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
+
+            // Hole for screen cable
+            // translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
+
+            // Indents for rubber feet
+            translate([   cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            translate([cS-cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            translate([   cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            translate([cS-cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
         }
     }
 }
 
 module case_detail() {
-    translate([logoX, logoY, ctH+0.75]) linear_extrude(height=0.5, center=true) scale([logoS, logoS, 0.5]) import(file="../assets/textlogo.svg", center=true);
+    if (!gen_scr) translate([logoX, logoY, ctH+0.75]) linear_extrude(height=0.5, center=true) scale([logoS, logoS, 0.5]) import(file="../assets/textlogo.svg", center=true);
     translate([cS/2-37, cS-18, ctH+0.75]) scale([1.1, 1.1, 0.5]) speaker_icon();
     translate([cS/2+37, cS-18, ctH+0.75]) scale([1.1, 1.1, 0.5]) speaker_icon();
     // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
