@@ -11041,7 +11041,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -11774,7 +11774,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -12003,7 +12003,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -12578,7 +12578,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -12809,7 +12809,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -14411,7 +14411,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -14951,7 +14951,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -15401,7 +15401,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -15706,7 +15706,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -16007,7 +16007,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -16103,7 +16103,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
@@ -17126,7 +17126,7 @@
 				(hide yes)
 			)
 		)
-		(property "Sim.Params" "type=\"D\" model=\"DIODE\" lib=\"\""
+		(property "Sim.Params" "1N4148W"
 			(at 0 0 0)
 			(effects
 				(font
