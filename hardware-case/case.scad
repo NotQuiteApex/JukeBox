@@ -213,11 +213,11 @@ module case_bottom() {
 
             // Screen floor
             if (gen_scr) translate([SOX, SOY, 0]) union() {
-                chamferedsquare(csSCRW + clS * 2, csSCRH + clS * 2, clC, cR-clC, cR);
-                translate([0, 0, clC]) roundedsquare(csSCRW + clS * 2, csSCRH + clS * 2, clH-clC, cR);
+                chamferedsquare(csSCRW + ctW * 2, csSCRH + ctW * 2, clC, cR-clC, cR);
+                translate([0, 0, clC]) roundedsquare(csSCRW + ctW * 2, csSCRH + ctW * 2, clH-clC, cR);
                 translate([clS, clS+(csSCRH-16), clH]) {
-                    roundedsquare(csSCRW, 16, clH, cR);
-                    translate([0, 4, clH]) roundedsquare(csSCRW, 12, 1.6, cR);
+                    roundedsquare(csSCRW-1, 15, clH, cR);
+                    translate([0, 4, clH]) roundedsquare(csSCRW-1, 11, 1.6, cR);
                 }
             }
 
@@ -232,7 +232,7 @@ module case_bottom() {
             translate([cS-clS*2-cpW*2, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
 
             // USB-C pillar
-            translate([0, 70, clH]) cube([clS, 11.5, cpW+1.6]);
+            translate([0, 70.25, clH]) cube([clS, 11, cpW+1.6]);
         }
 
         union() {
