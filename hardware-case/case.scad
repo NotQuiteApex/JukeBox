@@ -97,22 +97,25 @@ csSCRW = 48;
 // Screen height
 csSCRH = 34.8;
 
+module rect4(x1, y1, x2, y2, h) {
+    translate([x1, y1, h]) children();
+    translate([x2, y1, h]) children();
+    translate([x1, y2, h]) children();
+    translate([x2, y2, h]) children();
+}
+module square4(s1, s2, h) {
+    rect4(s1, s1, s2, s2, h) children();
+}
 // https://www.youtube.com/watch?v=gKOkJWiTgAY
 module roundedsquare(xdim, ydim, zdim, rdim){
     hull() {
-        translate([     rdim,      rdim, 0]) cylinder(h=zdim, r=rdim);
-        translate([xdim-rdim,      rdim, 0]) cylinder(h=zdim, r=rdim);
-        translate([     rdim, ydim-rdim, 0]) cylinder(h=zdim, r=rdim);
-        translate([xdim-rdim, ydim-rdim, 0]) cylinder(h=zdim, r=rdim);
+        rect4(rdim, rdim, xdim-rdim, ydim-rdim, 0) cylinder(h=zdim, r=rdim);
     }
 }
 module chamferedsquare(xdim, ydim, zdim, r1dim, r2dim){
     bigrdim = max(r1dim, r2dim);
     hull() {
-        translate([     bigrdim,      bigrdim, 0]) cylinder(h=zdim, r1=r1dim, r2=r2dim);
-        translate([xdim-bigrdim,      bigrdim, 0]) cylinder(h=zdim, r1=r1dim, r2=r2dim);
-        translate([     bigrdim, ydim-bigrdim, 0]) cylinder(h=zdim, r1=r1dim, r2=r2dim);
-        translate([xdim-bigrdim, ydim-bigrdim, 0]) cylinder(h=zdim, r1=r1dim, r2=r2dim);
+        rect4(bigrdim, bigrdim, xdim-bigrdim, ydim-bigrdim, 0) cylinder(h=zdim, r1=r1dim, r2=r2dim);
     }
 }
 
@@ -163,25 +166,24 @@ module case_top() {
                     }
                 }
             }
+
+            h = ctH-ctMH;
+
             // Mounting plates
-            translate([         0,          0, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
-            translate([cS-ctM-ctW,          0, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
-            translate([         0, cS-ctM-ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
-            translate([cS-ctM-ctW, cS-ctM-ctW, ctH-ctMH]) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
+            square4(0, cS-ctM-ctW, h) roundedsquare(ctM+ctW, ctM+ctW, ctMH, cpR);
 
             // Support poles (keyboard)
-            // Left
-            translate([kbX-(kbSW-kbS)/2-kbSH, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2-kbSH, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2-kbSH, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            // Mid
-            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            // Right
-            translate([kbX-(kbSW-kbS)/2+kbSH, kbY-(kbSH-kbS)/2-  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2+kbSH, kbY-(kbSH-kbS)/2+  kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
-            translate([kbX-(kbSW-kbS)/2+kbSH, kbY-(kbSH-kbS)/2+3*kbSH/2, ctH-ctMH]) cube([kbSW-kbS, kbSH-kbS, ctMH]);
+            kS2 = kbSH / 2;
+            kSW = kbSW - kbS;
+            kSH = kbSH - kbS;
+            kSW2 = kSW / 2;
+            kSH2 = kSH / 2;
+            c = [kSW, kSH, ctMH];
+            for (i = [-1:1]) {
+                for (j = [-1:2:3]) {
+                    translate([kbX - kSW2 + kbSH * i, kbY - kSH2 + kS2 * j, h]) cube(c);
+                }
+            }
         }
 
         union() {
@@ -226,36 +228,21 @@ module case_bottom() {
                 translate([    clS,     clS, clH]) roundedsquare(cS-clS*2, cS-clS*2, cpH, cpR);
                 translate([clS+cpW, clS+cpW, clH]) cube([cS-clS*2-cpW*2, cS-clS*2-cpW*2, cpH]);
             }
-            translate([           clS,            clS, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-            translate([cS-clS*2-cpW*2,            clS, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-            translate([           clS, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
-            translate([cS-clS*2-cpW*2, cS-clS*2-cpW*2, clH]) roundedsquare(cpM, cpM, cpH, cpR);
+            square4(clS, cS-clS*2-cpW*2, clH) roundedsquare(cpM, cpM, cpH, cpR);
 
             // USB-C pillar
             translate([0, 70.25, clH]) cube([clS, 11, cpW+1.6]);
         }
 
         union() {
-            // Bolt holes
-            translate([   cmO,    cmO, 0]) cylinder(d=cmB, h=7);
-            translate([cS-cmO,    cmO, 0]) cylinder(d=cmB, h=7);
-            translate([   cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
-            translate([cS-cmO, cS-cmO, 0]) cylinder(d=cmB, h=7);
-
-            // Nut holes
-            translate([   cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-            translate([cS-cmO,    cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-            translate([   cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-            translate([cS-cmO, cS-cmO, 0]) cylinder($fn=6, r=cmN, h=2.375);
-
-            // Hole for screen cable
-            // translate([cS/2, cS-clS-cpW/2, clH+cpH/2]) cube([24, cpW, cpH], center=true);
+            cmO2 = cS-cmO;
+            nH = 2.375;
+            square4(cmO, cmO2, 0) cylinder(d=cmB, h=7);
+            square4(cmO, cmO2, 0) cylinder($fn=6, r=cmN, h=nH);
+            square4(cmO, cmO2, nH) cylinder($fn=6, r1=cmN, r2=cmB/2, h=1);
 
             // Indents for rubber feet
-            translate([   cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
-            translate([cS-cpF,    cpF, 0]) cylinder(d=cpFD, h=cpFH);
-            translate([   cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
-            translate([cS-cpF, cS-cpF, 0]) cylinder(d=cpFD, h=cpFH);
+            square4(cpF, cS-cpF, 0) cylinder(d=cpFD, h=cpFH);
         }
     }
 }
@@ -275,11 +262,8 @@ module case_leg() {
             translate([ -clipR,  0, 0]) cube([clipR, lH, clipW]);
             translate([     lS,  0, 0]) cube([clipR, lH, clipW]);
             translate([      0, lH, 0]) cube([lS, clipR, clipW]);
-
-            translate([ 0,  0, 0]) cylinder(h=clipW, r=clipR);
-            translate([lS,  0, 0]) cylinder(h=clipW, r=clipR);
-            translate([ 0, lH, 0]) cylinder(h=clipW, r=clipR);
-            translate([lS, lH, 0]) cylinder(h=clipW, r=clipR);
+            
+            rect4(0, 0, lS, lH, 0) cylinder(h=clipW, r=clipR);
 
             hull() {
                 translate([   0,      lH, 0]) cylinder(h=clipW, r=clipR);
