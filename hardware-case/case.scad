@@ -178,27 +178,32 @@ module case_top() {
             kSH = kbSH - kbS;
             kSW2 = kSW / 2;
             kSH2 = kSH / 2;
+            kXW2 = kbX - kSW2;
+            kYH2 = kbY - kSH2;
             c = [kSW, kSH, ctMH];
             for (i = [-1:1]) {
                 for (j = [-1:2:3]) {
-                    translate([kbX - kSW2 + kbSH * i, kbY - kSH2 + kS2 * j, h]) cube(c);
+                    translate([kXW2 + kbSH * i, kYH2 + kS2 * j, h]) cube(c);
                 }
             }
         }
 
         union() {
             // keyboard key holes
+            kX = kbX-kbOX;
+            kY = kbY-kbOY;
+            ch = ctH + 1;
             for (w=[0:kbW-1]) {
                 for (h=[0:kbH-1]) {
-                    translate([kbX-kbOX+w*kbSW, kbY-kbOY+h*kbSH, ctH+1]) cube([kbS, kbS, 2], center=true);
+                    translate([kX + kbSW * w, kY + kbSH * h, ch]) cube([kbS, kbS, 2], center=true);
                 }
             }
 
             // mounting hardware holes
-            translate([   cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
-            translate([cS-cmO,    cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
-            translate([   cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
-            translate([cS-cmO, cS-cmO, ctH-4]) { cylinder(d=cmB, h=5); translate([0,0,2]) cylinder(d2=6, d1=2, h=3); }
+            square4(cmO, cS - cmO, ctH - 4) {
+                cylinder(d=cmB, h=5);
+                translate([0, 0, 2]) cylinder(d2=6, d1=2, h=3);
+            }
             
             // Jukebox logo
             if (gen_detail) case_detail();
@@ -242,16 +247,24 @@ module case_bottom() {
             square4(cmO, cmO2, nH) cylinder($fn=6, r1=cmN, r2=cmB/2, h=1);
 
             // Indents for rubber feet
-            square4(cpF, cS-cpF, 0) cylinder(d=cpFD, h=cpFH);
+            square4(cpF, cS-cpF, 0) cylinder(d=cpFD, h=cpFH/2);
+            square4(cpF, cS-cpF, cpFH/2) cylinder(d1=cpFD, d2=cpFD-2, h=cpFH/2);
         }
     }
 }
 
 module case_detail() {
-    if (!gen_scr) translate([logoX, logoY, ctH+0.75]) linear_extrude(height=0.5, center=true) scale([logoS, logoS, 0.5]) import(file="../assets/textlogo.svg", center=true);
-    translate([cS/2-37, cS-18, ctH+0.75]) scale([1.1, 1.1, 0.5]) speaker_icon();
-    translate([cS/2+37, cS-18, ctH+0.75]) scale([1.1, 1.1, 0.5]) speaker_icon();
-    // translate([cS/2, 6, ctH+1]) linear_extrude(height=1, center=true) text("friendteam.biz", size=4, halign="center", valign="center", font="Cascadia Mono:style=Regular");
+    x1 = cS / 2 - 37;
+    x2 = cS / 2 + 37;
+    y = cS - 18;
+    h = ctH + 0.75;
+    if (!gen_scr)
+        translate([logoX, logoY, h])
+            linear_extrude(height=0.5, center=true)
+                scale([logoS, logoS, 0.5])
+                    import(file="../assets/textlogo.svg", center=true);
+    translate([x1, y, h]) scale([1.1, 1.1, 0.5]) speaker_icon();
+    translate([x2, y, h]) scale([1.1, 1.1, 0.5]) speaker_icon();
 }
 
 module case_leg() {
@@ -288,4 +301,4 @@ module case_leg() {
 if (gen_top) translate([0, 0, clH]) color([1, 1, 0]) case_top();
 if (gen_bot) color([0, 1, 0]) case_bottom();
 if (gen_leg) color([1, 0, 0]) case_leg();
-if (gen_detail) translate([0, 0, clH]) color([0, 0, 1]) case_detail();
+// if (gen_detail) translate([0, 0, clH]) color([0, 0, 1]) case_detail();
