@@ -16,13 +16,19 @@ cS = 98;
 // Case corner radius (rounded corners)
 cR = 3;
 // Case mounting hardware offset
-cmO = 7;
+cmO = 7.5;
 // Case mounting hardware bolt size
 cmB = 3.5;
 // Case mounting hardware nut size (center to corner)
 cmN = 3.3;
 // Face count on rounded objects
 $fn=32;
+// Case connector hole size
+ioHS = 23-3.5;
+// Case connector hole offset
+ioHO = cS-cmO-2.5;
+// Case connector hole buffer
+ioHB = 0.125;
 
 /* [Case bottom settings] */
 // Case bottom lip height
@@ -126,10 +132,10 @@ module speaker_icon() {
             cylinder(r=6, h=1, center=true);
         }
         cube([1, 13, 1], center=true);
-        translate([ 4, 0, 0]) cube([1, 9, 1], center=true);
-        translate([-4, 0, 0]) cube([1, 9, 1], center=true);
-        translate([0, -2.25, 0]) cube([11, 1, 1], center=true);
-        translate([0,  2.25, 0]) cube([11, 1, 1], center=true);
+        translate([ 4, 0, 0]) cube([1, 10, 1], center=true);
+        translate([-4, 0, 0]) cube([1, 10, 1], center=true);
+        translate([0, -2.25, 0]) cube([12, 1, 1], center=true);
+        translate([0,  2.25, 0]) cube([12, 1, 1], center=true);
     }
 }
 
@@ -154,7 +160,7 @@ module case_top() {
                 }
                 union() {
                     // USB-C hole
-                    translate([-1, 70.5-0.5, -1]) cube([ctW+2, 10.5+1, ctH+1]);
+                    translate([-1, ioHO-ioHS, -1]) cube([ctW+2, ioHS, ctH+1]);
                     // Interior
                     translate([ctW, ctW, -1]) roundedsquare(cS-ctW*2, cS-ctW*2, ctH+1, cR);
                     // Screen cutout
@@ -236,7 +242,7 @@ module case_bottom() {
             square4(clS, cS-clS*2-cpW*2, clH) roundedsquare(cpM, cpM, cpH, cpR);
 
             // USB-C pillar
-            translate([0, 70.25, clH]) cube([clS, 11, cpW+1.6]);
+            translate([0, ioHO-ioHS+ioHB, clH]) cube([clS, ioHS-ioHB*2, cpW+1.6]);
         }
 
         union() {
@@ -249,6 +255,9 @@ module case_bottom() {
             // Indents for rubber feet
             square4(cpF, cS-cpF, 0) cylinder(d=cpFD, h=cpFH/2);
             square4(cpF, cS-cpF, cpFH/2) cylinder(d1=cpFD, d2=cpFD-2, h=cpFH/2);
+
+            // cutout for through hole components
+            translate([clS, ioHO-ioHS+ioHB+1, clH]) cube([10, ioHS-ioHB*2-2, cpH]);
         }
     }
 }
@@ -298,7 +307,21 @@ module case_leg() {
     translate([0, lH, 0]) cube([lS, clipR, clipW]);
 }
 
-if (gen_top) translate([0, 0, clH]) color([1, 1, 0]) case_top();
-if (gen_bot) color([0, 1, 0]) case_bottom();
+difference() {
+    union() {
+        if (gen_top) translate([0, 0, clH]) color([1, 1, 0]) case_top();
+        if (gen_bot) color([0, 1, 0]) case_bottom();
+    }
+    
+    // cutout for io
+    union() {
+        // USB side
+        translate([0, ioHO-ioHS, clH]) cube([2, ioHS, 10]);
+
+        // Debug pad side
+        translate([cS-2.5, ioHO-ioHS, clH]) cube([2.5, ioHS, 5]);
+        translate([cS-12, ioHO-ioHS, clH]) cube([12, ioHS, 3]);
+    }
+}
 if (gen_leg) color([1, 0, 0]) case_leg();
 // if (gen_detail) translate([0, 0, clH]) color([0, 0, 1]) case_detail();

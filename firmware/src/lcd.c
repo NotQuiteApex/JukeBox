@@ -139,14 +139,14 @@ void lcd_task(void) {
 		uint8_t r1 = (spinner + 1) % 8;
 		uint8_t r2 = (spinner + 2) % 8;
 		uint8_t r3 = (spinner + 3) % 8;
-		lcd_set_color(0, 21,  85); lcd_rect(rects[r1][0] - spinner_mid + st7789_get_width() / 2, rects[r1][1] - spinner_mid + st7789_get_height() / 2 + 80, rect_size, rect_size);
-		lcd_set_color(0, 42, 170); lcd_rect(rects[r2][0] - spinner_mid + st7789_get_width() / 2, rects[r2][1] - spinner_mid + st7789_get_height() / 2 + 80, rect_size, rect_size);
-		lcd_set_color(0, 64, 255); lcd_rect(rects[r3][0] - spinner_mid + st7789_get_width() / 2, rects[r3][1] - spinner_mid + st7789_get_height() / 2 + 80, rect_size, rect_size);
+		lcd_set_color(0, 21,  85); lcd_rect(rects[r1][0] - spinner_mid + st7789_get_height() / 2, rects[r1][1] - spinner_mid + st7789_get_width() / 2 + 80, rect_size, rect_size);
+		lcd_set_color(0, 42, 170); lcd_rect(rects[r2][0] - spinner_mid + st7789_get_height() / 2, rects[r2][1] - spinner_mid + st7789_get_width() / 2 + 80, rect_size, rect_size);
+		lcd_set_color(0, 64, 255); lcd_rect(rects[r3][0] - spinner_mid + st7789_get_height() / 2, rects[r3][1] - spinner_mid + st7789_get_width() / 2 + 80, rect_size, rect_size);
 		spinner = (spinner + 1) % 8;
 
 		lcd_set_color(255, 255, 255);
-		lcd_print_raw("JukeBoxStats", 18, 114, 2);
-		lcd_print_raw("Waiting for connection...", 16, 156, 1);
+		lcd_print_raw("JukeBoxStats", (320-12*12*2)/2, 120, 2);
+		lcd_print_raw("Waiting for connection...", (320-25*12)/2, 144, 1);
 	} else if (screenstate == ShowStats) {
 		lcd_set_color( 0, 132, 255); lcd_rect(0, st7789_get_height()-50, st7789_get_width(), 20);
 		lcd_set_color(77, 224, 255); lcd_rect(0, st7789_get_height()-30, st7789_get_width(), 10);
