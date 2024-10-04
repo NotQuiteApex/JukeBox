@@ -24,7 +24,7 @@ cmN = 3.3;
 // Face count on rounded objects
 $fn=32;
 // Case connector hole size
-ioHS = 23-3.5;
+ioHS = 23-1.5;
 // Case connector hole offset
 ioHO = cS-cmO-2.5;
 // Case connector hole buffer
@@ -40,7 +40,7 @@ clS = 3;
 // Case bottom PCB corner radius (rounded corners)
 cpR = 3;
 // Case bottom PCB height
-cpH = 3;
+cpH = 2;
 // Case bottom PCB wall size
 cpW = 3;
 // Case bottom PCB mounting plate size
@@ -60,7 +60,7 @@ ctW = 2.5;
 // Case top mounting plate size
 ctM = 9;
 // Case top mounting plate height
-ctMH = 3;
+ctMH = 4;
 
 /* [Logo settings] */
 // TODO
@@ -140,7 +140,7 @@ module speaker_icon() {
 }
 
 SOX = cS / 2 - (csSCRW + ctW * 2) / 2; // screen origin x
-SOY = cS - 7.5 - ctW - csSCRH / 2; // screen origin y
+SOY = cS - 8.5 - ctW - csSCRH / 2; // screen origin y
 
 module case_top() {
     difference() {
@@ -224,13 +224,13 @@ module case_bottom() {
             chamferedsquare(cS, cS, clC, cR-clC, cR);
             translate([0, 0, clC]) roundedsquare(cS, cS, clH-clC, cR);
 
-            // Screen floor
+            // Screen table
             if (gen_scr) translate([SOX, SOY, 0]) union() {
                 chamferedsquare(csSCRW + ctW * 2, csSCRH + ctW * 2, clC, cR-clC, cR);
                 translate([0, 0, clC]) roundedsquare(csSCRW + ctW * 2, csSCRH + ctW * 2, clH-clC, cR);
                 translate([clS, clS+(csSCRH-16), clH]) {
-                    roundedsquare(csSCRW-1, 15, clH, cR);
-                    translate([0, 4, clH]) roundedsquare(csSCRW-1, 11, 1.6, cR);
+                    translate([0, 1, 0]) roundedsquare(csSCRW-1, 14, cpH, cR);
+                    translate([0, 4, cpH]) roundedsquare(csSCRW-1, 11, 1.6, cR);
                 }
             }
 
