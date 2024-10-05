@@ -16,10 +16,9 @@ Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 | C5      | CL21B104KACNNNC      | 1   | 100n  | 0   |
 | C8, C10 | CL21B105KAFNNNG      | 2   | 1u    | 0   |
 | D1-12   | 1N4148W-SOD-123      | 12  |       | 0   |
-| D13-24  | WS2812B-5050         | 12  |       | 1/3 |
+| D13-24  | WS2812B-2020         | 12  |       | 1/3 |
 | D25     | 150080GS75000        | 1   |       | 0   |
 | J1      | USB4105-GF-A         | 1   |       | 0   |
-| J2      | PJ-320A              | 1   |       | 0   |
 | Q1      | S8050-SOT-23         | 1   |       | 2/3 |
 | R1, R5  | RMCF0805FT1K00       | 2   | 1k    | 0   |
 | R3, R4  | RMCF0805JT27R0       | 2   | 27    | 0   |
@@ -40,3 +39,6 @@ Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 1. Default + RGB
 2. Default + Screen
 3. Default + RGB + Screen
+
+# TODO
+Expansion via 3.5mm jack, like with [this one](https://www.digikey.com/en/products/detail/same-sky-formerly-cui-devices/SJ-43615TS-SMT-TR/2625170).
