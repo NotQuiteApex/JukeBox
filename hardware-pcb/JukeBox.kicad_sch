@@ -113,236 +113,6 @@
 				)
 			)
 		)
-		(symbol "Connector_Audio:AudioJack4_Ground"
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "J"
-				(at 0 8.89 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "AudioJack4_Ground"
-				(at 0 6.35 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Audio Jack, 4 Poles (TRRS), Grounded Sleeve"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "audio jack receptacle stereo headphones TRRS connector"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "Jack*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "AudioJack4_Ground_0_1"
-				(rectangle
-					(start -6.35 -7.62)
-					(end -7.62 -5.08)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 -5.08) (xy 0.635 -5.715) (xy 1.27 -5.08) (xy 2.54 -5.08)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -5.715 -5.08) (xy -5.08 -5.715) (xy -4.445 -5.08) (xy -4.445 2.54) (xy 2.54 2.54)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.905 -5.08) (xy -1.27 -5.715) (xy -0.635 -5.08) (xy -0.635 -2.54) (xy 2.54 -2.54)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 2.54 0) (xy -2.54 0) (xy -2.54 -5.08) (xy -3.175 -5.715) (xy -3.81 -5.08)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 2.54 3.81)
-					(end -6.35 -7.62)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "AudioJack4_Ground_1_1"
-				(pin passive line
-					(at 0 -10.16 90)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "G"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 -2.54 180)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "R1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 0 180)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "R2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 2.54 180)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "S"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 5.08 -5.08 180)
-					(length 2.54)
-					(name "~"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "T"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-		)
 		(symbol "Device:C"
 			(pin_numbers hide)
 			(pin_names
@@ -1483,7 +1253,7 @@
 					(justify left top)
 				)
 			)
-			(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+			(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 				(at 1.27 -7.62 0)
 				(effects
 					(font
@@ -5003,12 +4773,6 @@
 		(uuid "91c27cec-5628-4489-9da0-751c5dc41a1f")
 	)
 	(junction
-		(at 190.5 193.04)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "93c12310-398b-4536-9a2d-6442ca8630ee")
-	)
-	(junction
 		(at 401.32 231.14)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5444,16 +5208,6 @@
 	)
 	(wire
 		(pts
-			(xy 190.5 193.04) (xy 190.5 194.31)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "11742936-22ed-4012-96b7-aaace9961cfc")
-	)
-	(wire
-		(pts
 			(xy 114.3 116.84) (xy 121.92 116.84)
 		)
 		(stroke
@@ -5571,6 +5325,16 @@
 			(type default)
 		)
 		(uuid "1b2e66e2-e4e5-4497-8264-e2555fc18cb6")
+	)
+	(wire
+		(pts
+			(xy 167.64 262.89) (xy 176.53 262.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1c52ec50-6e95-439e-9d3e-cb4e92741a5d")
 	)
 	(wire
 		(pts
@@ -6344,6 +6108,16 @@
 	)
 	(wire
 		(pts
+			(xy 167.64 260.35) (xy 176.53 260.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "64e3e4df-217a-4017-bf10-61a5d0ae68bf")
+	)
+	(wire
+		(pts
 			(xy 363.22 222.25) (xy 383.54 222.25)
 		)
 		(stroke
@@ -6371,16 +6145,6 @@
 			(type default)
 		)
 		(uuid "674b2940-bf60-44c4-8825-e83576018da4")
-	)
-	(wire
-		(pts
-			(xy 190.5 181.61) (xy 190.5 193.04)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "676fa1fc-3cd6-44a5-bd6c-96489dd09e8a")
 	)
 	(wire
 		(pts
@@ -6451,16 +6215,6 @@
 			(type default)
 		)
 		(uuid "7019a388-abc7-4c7f-ad8e-9bc04aee83a6")
-	)
-	(wire
-		(pts
-			(xy 191.77 193.04) (xy 190.5 193.04)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "71f517f1-40dc-46b2-bb19-ed7f8ef2aa21")
 	)
 	(wire
 		(pts
@@ -6811,16 +6565,6 @@
 			(type default)
 		)
 		(uuid "94a6e740-45c1-4cfd-a831-58eb8547c562")
-	)
-	(wire
-		(pts
-			(xy 191.77 189.23) (xy 189.23 189.23)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "95294200-8640-4a44-b981-5f57100f1727")
 	)
 	(wire
 		(pts
@@ -7214,16 +6958,6 @@
 	)
 	(wire
 		(pts
-			(xy 189.23 186.69) (xy 191.77 186.69)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b94686f8-df1a-4b28-bf8e-2f2cda436fc7")
-	)
-	(wire
-		(pts
 			(xy 383.54 243.84) (xy 383.54 247.65)
 		)
 		(stroke
@@ -7261,16 +6995,6 @@
 			(type default)
 		)
 		(uuid "bdade66b-b922-409e-9950-c631d8bf623e")
-	)
-	(wire
-		(pts
-			(xy 184.15 194.31) (xy 190.5 194.31)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c0f38ced-5e78-4a43-b297-bf5d0b68858f")
 	)
 	(wire
 		(pts
@@ -7734,26 +7458,6 @@
 	)
 	(wire
 		(pts
-			(xy 189.23 181.61) (xy 190.5 181.61)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fad79b47-92d5-40ce-887b-790a2163fc35")
-	)
-	(wire
-		(pts
-			(xy 189.23 184.15) (xy 191.77 184.15)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fce784d9-fa4f-47e1-8860-5290bdc10351")
-	)
-	(wire
-		(pts
 			(xy 203.2 264.16) (xy 196.85 264.16)
 		)
 		(stroke
@@ -7845,7 +7549,7 @@
 	)
 	(text "Expansion\n"
 		(exclude_from_sim no)
-		(at 177.292 171.704 0)
+		(at 156.972 255.524 0)
 		(effects
 			(font
 				(size 2.54 2.54)
@@ -8323,6 +8027,17 @@
 		)
 		(uuid "400687b2-515e-4652-b645-c6759eb5911b")
 	)
+	(label "I2C0SDA"
+		(at 176.53 260.35 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "419fe7f8-0044-4023-9d56-6923fea1b173")
+	)
 	(label "KBCOL1"
 		(at 326.39 209.55 0)
 		(fields_autoplaced yes)
@@ -8796,17 +8511,6 @@
 		)
 		(uuid "ad650f8a-e809-495d-bfd5-c441171c9aa2")
 	)
-	(label "I2C0SDA"
-		(at 191.77 184.15 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "aedd23ea-004c-44f6-bf21-abe9f0d49ae8")
-	)
 	(label "GPIO21"
 		(at 106.68 243.84 180)
 		(fields_autoplaced yes)
@@ -8861,17 +8565,6 @@
 			(justify right bottom)
 		)
 		(uuid "bfa56056-a73c-48d0-b66b-e492a589e6a4")
-	)
-	(label "I2C0SCL"
-		(at 191.77 186.69 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "c12a216b-5a59-415b-8edb-f5f02f631ee0")
 	)
 	(label "SWD"
 		(at 21.59 257.81 0)
@@ -8938,6 +8631,17 @@
 			(justify left bottom)
 		)
 		(uuid "d52ddca6-d2d6-4085-8ade-1616c8743337")
+	)
+	(label "I2C0SCL"
+		(at 176.53 262.89 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d9108c31-7f64-4c7e-80a2-01773b3b1de4")
 	)
 	(label "SCRRST"
 		(at 107.95 233.68 0)
@@ -10849,83 +10553,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Audio:AudioJack4_Ground")
-		(at 184.15 184.15 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "05f2868d-7a49-426c-a9ee-664baa010b60")
-		(property "Reference" "J2"
-			(at 181.61 175.26 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "AudioJack4_Ground"
-			(at 181.61 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "Connector_Audio:Jack_3.5mm_PJ320E_Horizontal"
-			(at 184.15 184.15 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 184.15 184.15 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Audio Jack, 4 Poles (TRRS), Grounded Sleeve"
-			(at 184.15 184.15 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "T"
-			(uuid "f6c630f7-184b-4a34-ad0c-3b09e7d8833e")
-		)
-		(pin "S"
-			(uuid "322aee7d-d9f3-4ace-a300-0a7c12cb94f8")
-		)
-		(pin "R2"
-			(uuid "d031a7ea-5a18-4a0e-bb2b-b0790c8dbd33")
-		)
-		(pin "R1"
-			(uuid "441de198-76a1-4656-b156-781d14b96564")
-		)
-		(pin "G"
-			(uuid "80814382-21fb-41b3-8339-d46d2dad2636")
-		)
-		(instances
-			(project ""
-				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
-					(reference "J2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 78.74 38.1 180)
 		(unit 1)
@@ -11127,6 +10754,71 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 167.64 260.35 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "0c3c98e9-1362-4446-811e-cddfec75ccbf")
+		(property "Reference" "TP31"
+			(at 160.02 260.35 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 158.75 260.35 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 167.64 255.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 167.64 255.27 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 167.64 260.35 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2aa638f9-b782-4536-9acd-fcbafe46555c")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "TP31")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "USB4105-GF-A:USB4105-GF-A")
 		(at 49.53 44.45 0)
 		(unit 1)
@@ -11302,7 +10994,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 345.44 34.29 0)
 			(effects
 				(font
@@ -11771,7 +11463,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 314.96 34.29 0)
 			(effects
 				(font
@@ -12225,6 +11917,71 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 167.64 262.89 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "32a6059b-24db-4d72-b7ba-e02ae6da7169")
+		(property "Reference" "TP32"
+			(at 160.02 262.89 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 158.75 262.89 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 167.64 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 167.64 257.81 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 167.64 262.89 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "bc08dae3-e6f4-478c-925e-4d1bce5aebbe")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "TP32")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Simulation_SPICE:DIODE")
 		(at 346.71 218.44 180)
 		(unit 1)
@@ -12383,6 +12140,71 @@
 			(project ""
 				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
 					(reference "#PWR02")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:TestPoint")
+		(at 167.64 267.97 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "3acd84f5-bbd9-49e0-9ddb-02742ecde7d7")
+		(property "Reference" "TP34"
+			(at 160.02 267.97 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 158.75 267.97 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 167.64 262.89 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 167.64 262.89 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 167.64 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "4648d36f-47e8-45f5-80a8-5d36deac76fc")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "TP34")
 					(unit 1)
 				)
 			)
@@ -12913,7 +12735,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 269.24 34.29 0)
 			(effects
 				(font
@@ -13032,6 +12854,74 @@
 		)
 	)
 	(symbol
+		(lib_name "GND_2")
+		(lib_id "power:GND")
+		(at 167.64 267.97 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4951ec34-3d15-43a5-abf2-f234d4a1948e")
+		(property "Reference" "#PWR08"
+			(at 173.99 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 171.45 267.9699 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 167.64 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 167.64 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 167.64 267.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "51832935-7a35-444e-aaec-eba55adc2185")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "#PWR08")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "LED:WS2812B")
 		(at 283.21 26.67 0)
 		(unit 1)
@@ -13056,7 +12946,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 284.48 34.29 0)
 			(effects
 				(font
@@ -13101,6 +12991,71 @@
 			(project ""
 				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
 					(reference "D17")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 167.64 265.43 270)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "5f2a66ea-a0ef-4cfc-8904-b2d7f5ff3bc1")
+		(property "Reference" "#PWR07"
+			(at 163.83 265.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 173.228 265.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 167.64 265.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 167.64 265.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 167.64 265.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "bc009bb5-e528-48ce-ae57-ae7cc1721fc2")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "#PWR07")
 					(unit 1)
 				)
 			)
@@ -13461,7 +13416,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 391.16 34.29 0)
 			(effects
 				(font
@@ -13536,7 +13491,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 375.92 34.29 0)
 			(effects
 				(font
@@ -13676,7 +13631,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 330.2 34.29 0)
 			(effects
 				(font
@@ -14742,7 +14697,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 360.68 34.29 0)
 			(effects
 				(font
@@ -14913,7 +14868,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 223.52 34.29 0)
 			(effects
 				(font
@@ -14988,7 +14943,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 238.76 34.29 0)
 			(effects
 				(font
@@ -15128,7 +15083,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 254 34.29 0)
 			(effects
 				(font
@@ -15938,7 +15893,7 @@
 				)
 			)
 		)
-		(property "Footprint" "LED_SMD:LED_WS2812B_PLCC4_5.0x5.0mm_P3.2mm"
+		(property "Footprint" "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm"
 			(at 299.72 34.29 0)
 			(effects
 				(font
@@ -16507,18 +16462,24 @@
 		)
 	)
 	(symbol
-		(lib_name "GND_2")
-		(lib_id "power:GND")
-		(at 191.77 193.04 90)
+		(lib_id "Connector:TestPoint")
+		(at 167.64 265.43 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "e31d9e6a-6001-40c2-b34c-2482e09905c5")
-		(property "Reference" "#PWR012"
-			(at 198.12 193.04 0)
+		(uuid "e3286e6f-bd16-44ff-8e43-d273c83cc728")
+		(property "Reference" "TP33"
+			(at 160.02 265.43 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 158.75 265.43 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16526,17 +16487,8 @@
 				(hide yes)
 			)
 		)
-		(property "Value" "GND"
-			(at 195.58 193.0399 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 191.77 193.04 0)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+			(at 167.64 260.35 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16544,8 +16496,8 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" ""
-			(at 191.77 193.04 0)
+		(property "Datasheet" "~"
+			(at 167.64 260.35 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16553,8 +16505,8 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 191.77 193.04 0)
+		(property "Description" ""
+			(at 167.64 265.43 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16563,12 +16515,12 @@
 			)
 		)
 		(pin "1"
-			(uuid "625ba2f5-69c6-482d-9f4e-4f1bdf9d2bb0")
+			(uuid "baa5436a-adda-49ab-b394-3659a81c693b")
 		)
 		(instances
 			(project "JukeBox"
 				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
-					(reference "#PWR012")
+					(reference "TP33")
 					(unit 1)
 				)
 			)
@@ -16766,71 +16718,6 @@
 			(project ""
 				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
 					(reference "D25")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3V3")
-		(at 191.77 189.23 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "eca6bb91-75f3-4f7b-ae47-398f2b1420e2")
-		(property "Reference" "#PWR020"
-			(at 187.96 189.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "+3V3"
-			(at 197.358 189.23 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 191.77 189.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 191.77 189.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 191.77 189.23 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e2730651-b572-4909-bc75-b14843dbd993")
-		)
-		(instances
-			(project "JukeBox"
-				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
-					(reference "#PWR020")
 					(unit 1)
 				)
 			)
