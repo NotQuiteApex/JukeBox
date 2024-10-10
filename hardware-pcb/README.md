@@ -24,7 +24,7 @@ Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 | R3, R4  | RMCF0805JT27R0       | 2   | 27    | 0   |
 | R6, R7  | RNCP0805FTD5K11      | 2   | 5.11k | 0   |
 | R8-11   | RNCP0805FTD10K0      | 4   | 10k   | 0   |
-| R12     | RMCF0805JT200R       | 1   | 200   | 0   |
+| R12     | RMCF0805JT600R       | 1   | 600   | 0   |
 | R13     | RMCF0805JT10R0       | 1   | 10    | 2/3 |
 | R14     | RMCF0805FT1K00       | 1   | 1k    | 2/3 |
 | R15     | RNCP0805FTD10K0      | 1   | 10k   | 2/3 |

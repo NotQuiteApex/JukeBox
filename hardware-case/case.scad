@@ -30,6 +30,16 @@ ioHO = cS-cmO-2.5;
 // Case connector hole buffer
 ioHB = 0.125;
 
+/* [Case top settings] */
+// Case top height
+ctH = 8;
+// Case top wall size
+ctW = 2.5;
+// Case top mounting plate size
+ctM = 9;
+// Case top mounting plate height
+ctMH = 4;
+
 /* [Case bottom settings] */
 // Case bottom lip height
 clH = 3;
@@ -52,18 +62,7 @@ cpFD = 10;
 // Case bottom rubber feet spot depth
 cpFH = 2;
 
-/* [Case top settings] */
-// Case top height
-ctH = 8;
-// Case top wall size
-ctW = 2.5;
-// Case top mounting plate size
-ctM = 9;
-// Case top mounting plate height
-ctMH = 4;
-
 /* [Logo settings] */
-// TODO
 // Logo size scale
 logoS = 0.035;
 // Logo position (X)

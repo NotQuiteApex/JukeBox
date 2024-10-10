@@ -5108,6 +5108,16 @@
 	)
 	(wire
 		(pts
+			(xy 71.12 33.02) (xy 71.12 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "03dd504d-3cd7-4a3d-89e9-f1d7dd6f8307")
+	)
+	(wire
+		(pts
 			(xy 91.44 246.38) (xy 106.68 246.38)
 		)
 		(stroke
@@ -6418,6 +6428,16 @@
 	)
 	(wire
 		(pts
+			(xy 99.06 82.55) (xy 99.06 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "830557f0-bc4c-484d-81e7-9b7ce517aa7d")
+	)
+	(wire
+		(pts
 			(xy 166.37 118.11) (xy 168.91 118.11)
 		)
 		(stroke
@@ -7455,6 +7475,16 @@
 			(type default)
 		)
 		(uuid "f6acaf40-4713-4478-9c6c-ca7f7d26975d")
+	)
+	(wire
+		(pts
+			(xy 72.39 54.61) (xy 71.12 54.61)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fc472ac7-c7fe-47d8-92b5-ffced4140e06")
 	)
 	(wire
 		(pts
@@ -9191,7 +9221,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 99.06 81.28 0)
+		(at 99.06 82.55 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -9199,7 +9229,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005ed9b1cb")
 		(property "Reference" "#PWR06"
-			(at 99.06 87.63 0)
+			(at 99.06 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9208,7 +9238,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 99.187 85.6742 0)
+			(at 99.187 86.9442 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9216,7 +9246,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 99.06 81.28 0)
+			(at 99.06 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9225,7 +9255,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 99.06 81.28 0)
+			(at 99.06 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -9234,7 +9264,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 99.06 81.28 0)
+			(at 99.06 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15452,7 +15482,7 @@
 				)
 			)
 		)
-		(property "Value" "200"
+		(property "Value" "600"
 			(at 187.96 69.85 90)
 			(effects
 				(font
@@ -16330,7 +16360,7 @@
 	)
 	(symbol
 		(lib_id "power:VBUS")
-		(at 71.12 34.29 0)
+		(at 71.12 33.02 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16338,7 +16368,7 @@
 		(dnp no)
 		(uuid "e1e8d10e-3e8d-48db-9b70-38476f59cd18")
 		(property "Reference" "#PWR0120"
-			(at 71.12 38.1 0)
+			(at 71.12 36.83 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16347,7 +16377,7 @@
 			)
 		)
 		(property "Value" "VBUS"
-			(at 71.12 30.48 0)
+			(at 71.12 29.21 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16355,7 +16385,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 71.12 34.29 0)
+			(at 71.12 33.02 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16364,7 +16394,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 71.12 34.29 0)
+			(at 71.12 33.02 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16373,7 +16403,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 71.12 34.29 0)
+			(at 71.12 33.02 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16816,7 +16846,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 71.12 54.61 90)
+		(at 72.39 54.61 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16824,7 +16854,7 @@
 		(dnp no)
 		(uuid "eda7df96-2094-482a-82aa-ec6fc45ce959")
 		(property "Reference" "#PWR0109"
-			(at 77.47 54.61 0)
+			(at 78.74 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16833,7 +16863,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 76.2 54.61 90)
+			(at 77.47 54.61 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16841,7 +16871,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 71.12 54.61 0)
+			(at 72.39 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16850,7 +16880,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 71.12 54.61 0)
+			(at 72.39 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16859,7 +16889,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 71.12 54.61 0)
+			(at 72.39 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
