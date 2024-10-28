@@ -2936,6 +2936,230 @@
 				)
 			)
 		)
+		(symbol "Memory_EEPROM:CAT24C128"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "U"
+				(at -6.35 6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "CAT24C128"
+				(at 1.27 6.35 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "https://www.onsemi.com/pub/Collateral/CAT24C128-D.PDF"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "128 kb CMOS Serial EEPROM, SOIC-8/TSSOP-8/DFN-8"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "I2C EEPROM Serial 128kb"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "DIP*W7.62mm* SOIC*3.9x4.9mm* TSSOP*4.4x3mm*P0.65mm* DFN*3x2mm*P0.5mm*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "CAT24C128_1_1"
+				(rectangle
+					(start -7.62 5.08)
+					(end 7.62 -5.08)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(pin input line
+					(at -10.16 2.54 0)
+					(length 2.54)
+					(name "A0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -10.16 0 0)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -10.16 -2.54 0)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -7.62 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 10.16 2.54 180)
+					(length 2.54)
+					(name "SDA"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 10.16 0 180)
+					(length 2.54)
+					(name "SCL"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 10.16 -2.54 180)
+					(length 2.54)
+					(name "WP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 7.62 270)
+					(length 2.54)
+					(name "VCC"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+		)
 		(symbol "Regulator_Linear:NCP1117-3.3_SOT223"
 			(pin_names
 				(offset 0.254)
@@ -4987,6 +5211,12 @@
 		(uuid "9d23d5a5-d2c3-40aa-956a-21656909b647")
 	)
 	(junction
+		(at 163.83 234.95)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "9d61f8f7-faa0-48dd-a3e0-6d06f10bc01a")
+	)
+	(junction
 		(at 71.12 57.15)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5003,6 +5233,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "a5839dad-88b9-48a6-bc97-d65af9213a08")
+	)
+	(junction
+		(at 152.4 228.6)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "a7cdf217-c7e5-45ce-bde7-dd291b86fe60")
 	)
 	(junction
 		(at 328.93 34.29)
@@ -5155,6 +5391,12 @@
 		(uuid "ec72eaec-8e89-4e26-a66a-293a54a2d137")
 	)
 	(junction
+		(at 152.4 234.95)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "edd36804-bddc-47cc-b2b1-66db01fef4d5")
+	)
+	(junction
 		(at 344.17 19.05)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5171,6 +5413,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "f4aa946d-ab6b-4b96-91e8-6f6a15eea0fd")
+	)
+	(junction
+		(at 152.4 226.06)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f6b603ea-2dc1-4450-b92d-771d4abc616c")
 	)
 	(junction
 		(at 322.58 234.95)
@@ -5462,6 +5710,16 @@
 	)
 	(wire
 		(pts
+			(xy 152.4 234.95) (xy 152.4 236.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1394bf8b-07ef-40da-b973-8fe70fef08ae")
+	)
+	(wire
+		(pts
 			(xy 21.59 41.91) (xy 29.21 41.91)
 		)
 		(stroke
@@ -5602,6 +5860,16 @@
 	)
 	(wire
 		(pts
+			(xy 173.99 228.6) (xy 175.26 228.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1fa8d66a-15e0-4ea6-a9c1-3f5349373df4")
+	)
+	(wire
+		(pts
 			(xy 91.44 261.62) (xy 106.68 261.62)
 		)
 		(stroke
@@ -5732,6 +6000,16 @@
 	)
 	(wire
 		(pts
+			(xy 152.4 223.52) (xy 152.4 226.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a80cf47-a7f5-4f0b-8aaa-c850e05bcf4b")
+	)
+	(wire
+		(pts
 			(xy 151.13 264.16) (xy 152.4 264.16)
 		)
 		(stroke
@@ -5812,6 +6090,16 @@
 	)
 	(wire
 		(pts
+			(xy 173.99 226.06) (xy 182.88 226.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "365a8135-0a84-4bb8-a1c6-873be672166f")
+	)
+	(wire
+		(pts
 			(xy 168.91 128.27) (xy 168.91 130.81)
 		)
 		(stroke
@@ -5849,6 +6137,16 @@
 			(type default)
 		)
 		(uuid "3a37e539-36c6-4b1d-a8fc-7b81b03a4223")
+	)
+	(wire
+		(pts
+			(xy 152.4 228.6) (xy 153.67 228.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3a95720f-6b38-469f-b507-2ac4ecbe7f4e")
 	)
 	(wire
 		(pts
@@ -5942,6 +6240,16 @@
 	)
 	(wire
 		(pts
+			(xy 175.26 234.95) (xy 163.83 234.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4040a3e3-cc49-4d5d-805d-92fe61de198c")
+	)
+	(wire
+		(pts
 			(xy 72.39 172.72) (xy 72.39 160.02)
 		)
 		(stroke
@@ -5972,6 +6280,16 @@
 	)
 	(wire
 		(pts
+			(xy 162.56 217.17) (xy 163.83 217.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "457f94f9-42af-4f40-9f73-69a272c2b17a")
+	)
+	(wire
+		(pts
 			(xy 39.37 152.4) (xy 39.37 154.94)
 		)
 		(stroke
@@ -5979,6 +6297,16 @@
 			(type default)
 		)
 		(uuid "47ffab52-89b5-4ac7-8a88-0df05a1cfc7a")
+	)
+	(wire
+		(pts
+			(xy 163.83 233.68) (xy 163.83 234.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "48f96ea1-85ee-4ae8-ab95-5b315e0ea9c8")
 	)
 	(wire
 		(pts
@@ -6079,6 +6407,16 @@
 			(type default)
 		)
 		(uuid "55cf6075-df6b-4811-8ebf-1de892b93010")
+	)
+	(wire
+		(pts
+			(xy 153.67 223.52) (xy 152.4 223.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "562b4395-e5e3-4e78-895e-f03199b1a378")
 	)
 	(wire
 		(pts
@@ -6222,6 +6560,16 @@
 	)
 	(wire
 		(pts
+			(xy 152.4 226.06) (xy 152.4 228.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5e1f539a-10f3-4fbf-8b39-e55e675c33d1")
+	)
+	(wire
+		(pts
 			(xy 63.5 160.02) (xy 66.04 160.02)
 		)
 		(stroke
@@ -6252,6 +6600,16 @@
 	)
 	(wire
 		(pts
+			(xy 163.83 217.17) (xy 163.83 218.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "611baa6e-4d14-4cbd-8456-bbca2ea06c9b")
+	)
+	(wire
+		(pts
 			(xy 166.37 138.43) (xy 171.45 138.43)
 		)
 		(stroke
@@ -6279,6 +6637,16 @@
 			(type default)
 		)
 		(uuid "62b1c956-e3ee-42c5-8afb-719b69f2b198")
+	)
+	(wire
+		(pts
+			(xy 152.4 226.06) (xy 153.67 226.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6305526c-e6b2-42ca-99ca-7b1b7c8a96c5")
 	)
 	(wire
 		(pts
@@ -6762,6 +7130,16 @@
 	)
 	(wire
 		(pts
+			(xy 163.83 234.95) (xy 152.4 234.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "912e404d-e6e0-461c-8b18-6ec16c4bc64d")
+	)
+	(wire
+		(pts
 			(xy 359.41 19.05) (xy 374.65 19.05)
 		)
 		(stroke
@@ -6989,6 +7367,16 @@
 			(type default)
 		)
 		(uuid "a396e4f2-d89f-48f7-b600-d0a4f2218c3f")
+	)
+	(wire
+		(pts
+			(xy 173.99 223.52) (xy 182.88 223.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a3cfb3fe-18d5-41d4-9bd3-4ced0995bbd1")
 	)
 	(wire
 		(pts
@@ -7339,6 +7727,16 @@
 			(type default)
 		)
 		(uuid "c507a394-b605-4e2c-8aae-d6954f401980")
+	)
+	(wire
+		(pts
+			(xy 152.4 228.6) (xy 152.4 234.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c5c7278e-4580-4142-81d3-abcb8a120d07")
 	)
 	(wire
 		(pts
@@ -7802,6 +8200,16 @@
 	)
 	(wire
 		(pts
+			(xy 175.26 228.6) (xy 175.26 234.95)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fad90057-1e81-4f7f-b03c-29e5ec874919")
+	)
+	(wire
+		(pts
 			(xy 72.39 54.61) (xy 71.12 54.61)
 		)
 		(stroke
@@ -7900,6 +8308,19 @@
 			(justify left bottom)
 		)
 		(uuid "8eb2f90e-5a93-4597-87ef-4fc0b423780b")
+	)
+	(text "Storage"
+		(exclude_from_sim no)
+		(at 156.21 213.106 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+				(thickness 0.508)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "92964eb4-8a85-457d-9aa6-5ac15bf56fad")
 	)
 	(text "Expansion\n"
 		(exclude_from_sim no)
@@ -9041,6 +9462,17 @@
 		)
 		(uuid "e6b3678c-8c82-44d4-86cf-358a038c6c6d")
 	)
+	(label "I2C0SDA"
+		(at 182.88 223.52 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e785f205-22df-4847-9d05-84c8d250b544")
+	)
 	(label "RUN"
 		(at 22.86 243.84 0)
 		(fields_autoplaced yes)
@@ -9150,6 +9582,17 @@
 			(justify right bottom)
 		)
 		(uuid "f4186a24-e069-47fe-9bae-48d8b07d0fde")
+	)
+	(label "I2C0SCL"
+		(at 182.88 226.06 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "fc523293-4cd5-4a8c-94f4-894d69d6f317")
 	)
 	(label "QSPI_SD0"
 		(at 38.1 130.81 0)
@@ -14428,6 +14871,71 @@
 		)
 	)
 	(symbol
+		(lib_id "power:+3V3")
+		(at 162.56 217.17 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "97738e04-68d9-4b18-94e4-9c0b78a6d9f7")
+		(property "Reference" "#PWR010"
+			(at 166.37 217.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 156.464 217.17 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 162.56 217.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 162.56 217.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 162.56 217.17 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "d0f1b4a4-91fa-44f7-b5ca-8c9258f0c975")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "#PWR010")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Simulation_SPICE:DIODE")
 		(at 326.39 231.14 180)
 		(unit 1)
@@ -14518,6 +15026,71 @@
 			(project ""
 				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
 					(reference "D5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 152.4 236.22 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "99ae5b51-f300-4349-9148-d5a34527a303")
+		(property "Reference" "#PWR019"
+			(at 152.4 242.57 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 152.527 240.6142 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 152.4 236.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 152.4 236.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 152.4 236.22 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "689553e2-d627-4502-82ea-971015453e36")
+		)
+		(instances
+			(project "JukeBox"
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "#PWR019")
 					(unit 1)
 				)
 			)
@@ -16946,6 +17519,94 @@
 			(project ""
 				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
 					(reference "TP23")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Memory_EEPROM:CAT24C128")
+		(at 163.83 226.06 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "e6923339-760f-4767-9c2b-bf8832f74272")
+		(property "Reference" "U5"
+			(at 166.0241 215.9 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "CAT24C512"
+			(at 166.0241 218.44 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+			(at 163.83 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://www.onsemi.com/pub/Collateral/CAT24C512-D.PDF"
+			(at 163.83 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "512 kb CMOS Serial EEPROM, SOIC-8/TSSOP-8/DFN-8"
+			(at 163.83 226.06 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "3"
+			(uuid "2225be1f-a0a5-412f-870f-cb1e8c2f150b")
+		)
+		(pin "5"
+			(uuid "24212866-40da-44bd-8ea9-fb11656b5c66")
+		)
+		(pin "8"
+			(uuid "f5390e74-283b-47bd-9e20-500321afdd2b")
+		)
+		(pin "4"
+			(uuid "69249937-25aa-4a33-a548-c315961ea146")
+		)
+		(pin "7"
+			(uuid "754928ec-4d16-4567-8712-d21fe863cd64")
+		)
+		(pin "6"
+			(uuid "2783ac0f-2ff9-49eb-a142-9ce0b29b4253")
+		)
+		(pin "1"
+			(uuid "6d7351a3-918b-4f1c-a529-66b7bdb311de")
+		)
+		(pin "2"
+			(uuid "f341fd64-ae35-486e-b429-8825ba5abcd7")
+		)
+		(instances
+			(project ""
+				(path "/6328db6d-b3ae-4344-8bbe-195d6ec45eb3"
+					(reference "U5")
 					(unit 1)
 				)
 			)
