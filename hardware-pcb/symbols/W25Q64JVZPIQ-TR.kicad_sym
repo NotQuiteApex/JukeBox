@@ -1,0 +1,86 @@
+
+(kicad_symbol_lib (version 20211014) (generator kicad_symbol_editor)
+  (symbol "W25Q64JVZPIQ-TR" (pin_names (offset 1.016)) (in_bom yes) (on_board yes)
+    (property "Reference" "U" (id 0) (at -7.63441 10.4337 0)
+      (effects (font (size 1.27 1.27)) (justify bottom left))
+    )
+    (property "Value" "W25Q64JVZPIQ-TR" (id 1) (at -7.62672 -15.2534 0)
+      (effects (font (size 1.27 1.27)) (justify bottom left))
+    )
+    (property "Footprint" "W25Q64JVZPIQ-TR:SON127P610X510X80-8N430X340" (id 2) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (property "MANUFACTURER" "SPIFLASH" (id 4) (at 0 0 0)
+      (effects (font (size 1.27 1.27)) (justify bottom) hide)
+    )
+    (symbol "W25Q64JVZPIQ-TR_0_0"
+      (rectangle (start -7.62 -12.7) (end 10.16 10.16)
+        (stroke (width 0.254)) (fill (type background))
+      )
+      (pin input line (at -10.16 7.62 0) (length 2.54)
+        (name "/CS"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "1"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin bidirectional line (at -10.16 -2.54 0) (length 2.54)
+        (name "DO(IO1)"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "2"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin bidirectional line (at -10.16 -5.08 0) (length 2.54)
+        (name "IO2"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "3"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin power_in line (at 12.7 -10.16 180.0) (length 2.54)
+        (name "GND"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "4"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin bidirectional line (at -10.16 -10.16 0) (length 2.54)
+        (name "DI(IO0)"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "5"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin input line (at -10.16 5.08 0) (length 2.54)
+        (name "CLK"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "6"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin bidirectional line (at -10.16 -7.62 0) (length 2.54)
+        (name "IO3"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "7"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+      (pin power_in line (at 12.7 7.62 180.0) (length 2.54)
+        (name "VCC"
+          (effects (font (size 1.016 1.016)))
+        )
+        (number "8"
+          (effects (font (size 1.016 1.016)))
+        )
+      )
+    )
+  )
+)

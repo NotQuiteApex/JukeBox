@@ -5,4 +5,5 @@
   (lib (name "ECS-120-20-33-AEL-TR")(type "KiCad")(uri "${KIPRJMOD}/symbols/ECS-120-20-33-AEL-TR.kicad_sym")(options "")(descr ""))
   (lib (name "st7789v")(type "KiCad")(uri "${KIPRJMOD}/symbols/st7789v.kicad_sym")(options "")(descr ""))
   (lib (name "W25Q16JVUXIQ-TR")(type "KiCad")(uri "${KIPRJMOD}/symbols/W25Q16JVUXIQ-TR.kicad_sym")(options "")(descr ""))
+  (lib (name "W25Q64JVZPIQ-TR")(type "KiCad")(uri "${KIPRJMOD}/symbols/W25Q64JVZPIQ-TR.kicad_sym")(options "")(descr ""))
 )
