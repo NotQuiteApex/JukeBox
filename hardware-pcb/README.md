@@ -4,7 +4,7 @@ Made with KiCad 8, the PCB is the physical heart of the project.
 Footprints and models:
 - [USB4105-GF-A](https://www.digikey.com/en/products/detail/gct/usb4105-gf-a/11198441)
 - [W25Q16JVUXIQ TR](https://www.digikey.com/en/products/detail/winbond-electronics/W25Q16JVUXIQ-TR/15182017)
-- [Kailh Choc's & Cherry MX's](https://github.com/kiswitch/kiswitch)
+- [Cherry/Kailh Switch footprint based on this.](https://github.com/luke-schutt/Pi5Keyboard/blob/main/Pi5-pcb/Pi5Footprints.pretty/Low%20Profile%20GC%20plus%20MX.kicad_mod)
 
 Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 
@@ -19,6 +19,7 @@ Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 | D13-24  | WS2812B-2020         | 12  |       | 1/3 |
 | D25     | 150080GS75000        | 1   |       | 0   |
 | J1      | USB4105-GF-A         | 1   |       | 0   |
+| J2      | JST-SH-SM04B-SRSS-TB | 1   |       | 0   |
 | Q1      | S8050-SOT-23         | 1   |       | 2/3 |
 | R1, R5  | RMCF0805FT1K00       | 2   | 1k    | 0   |
 | R3, R4  | RMCF0805JT27R0       | 2   | 27    | 0   |
@@ -39,6 +40,3 @@ Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 1. Default + RGB
 2. Default + Screen
 3. Default + RGB + Screen
-
-# TODO
-Expansion via 3.5mm jack, like with [this one](https://www.digikey.com/en/products/detail/same-sky-formerly-cui-devices/SJ-43615TS-SMT-TR/2625170).

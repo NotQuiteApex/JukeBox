@@ -8,7 +8,7 @@ gen_bot = false;
 // Generates leg case piece
 gen_leg = false;
 // Generates screen case piece
-gen_scr = false;
+gen_scr = true;
 // Generates screen detail for top case piece
 gen_detail = false;
 // Case size (width & height)
@@ -24,9 +24,9 @@ cmN = 3.3;
 // Face count on rounded objects
 $fn=32;
 // Case connector hole size
-ioHS = 23-1.5;
+ioHS = 20;
 // Case connector hole offset
-ioHO = cS-cmO-2.5;
+ioHO = cS-cmO-7;
 // Case connector hole buffer
 ioHB = 0.125;
 
@@ -38,7 +38,7 @@ ctW = 2.5;
 // Case top mounting plate size
 ctM = 9;
 // Case top mounting plate height
-ctMH = 4;
+ctMH = 3.4;
 
 /* [Case bottom settings] */
 // Case bottom lip height
@@ -50,7 +50,7 @@ clS = 3;
 // Case bottom PCB corner radius (rounded corners)
 cpR = 3;
 // Case bottom PCB height
-cpH = 2;
+cpH = 2.6;
 // Case bottom PCB wall size
 cpW = 3;
 // Case bottom PCB mounting plate size
@@ -315,11 +315,13 @@ difference() {
     // cutout for io
     union() {
         // USB side
-        translate([0, ioHO-ioHS, clH]) cube([2, ioHS, 10]);
+        translate([0, ioHO-ioHS, clH]) cube([3, ioHS, 10]);
 
         // Debug pad side
-        translate([cS-2.5, ioHO-ioHS, clH]) cube([2.5, ioHS, 5]);
-        translate([cS-12, ioHO-ioHS, clH]) cube([12, ioHS, 3]);
+        ioHS2 = 23-1.5;
+        ioHO2 = cS-cmO-2.5;
+        translate([cS-2.5, ioHO2-ioHS2, clH]) cube([2.5, ioHS2, 3.8]);
+        translate([cS-12, ioHO2-ioHS2, clH]) cube([12, ioHS2, 3]);
     }
 }
 if (gen_leg) color([1, 0, 0]) case_leg();
