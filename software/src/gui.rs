@@ -1,17 +1,19 @@
-use std::ops::Add;
 use std::thread;
 use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui::{
-    vec2, Align, CentralPanel, Color32, Layout, RichText, ViewportBuilder, ViewportCommand,
+    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, SelectableLabel,
+    Sense, ViewportBuilder, ViewportCommand,
 };
+use egui_phosphor::regular as phos;
 
 use rand::prelude::*;
 
 use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
 
+// TODO: remove? probably redundant
 #[derive(PartialEq)]
 enum ConnectionStatus {
     Connected,
@@ -23,6 +25,16 @@ enum ConnectionStatus {
 enum GuiTab {
     Device,
     Settings,
+}
+
+#[derive(PartialEq)]
+enum GuiDeviceTab {
+    Keyboard,
+    Knobs1,
+    Knobs2,
+    Pedal1,
+    Pedal2,
+    Pedal3,
 }
 
 const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -82,9 +94,13 @@ pub fn basic_gui() {
     let serialcommand_tx1 = serialcommand_tx.clone();
 
     let mut gui_tab = GuiTab::Device;
+    let mut gui_device_tab = GuiDeviceTab::Keyboard;
 
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
-        ctx.set_zoom_factor(2.0); // TODO: find a better solution, the first frame is always the wrong size
+        let mut fonts = eframe::egui::FontDefinitions::default();
+        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
+        ctx.set_fonts(fonts);
+        ctx.set_zoom_factor(2.0);
 
         while let Ok(event) = serialevent_rx.try_recv() {
             match event {
@@ -96,35 +112,115 @@ pub fn basic_gui() {
 
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.selectable_value(&mut gui_tab, GuiTab::Device, "Device");
-                ui.selectable_value(&mut gui_tab, GuiTab::Settings, "Settings");
+                // Profile select
+                // TODO: disable select when editing reaction
+                ComboBox::from_label("")
+                    .selected_text("Profile Select") // TODO: show current profile name here
+                    .width(150.0)
+                    .show_ui(ui, |ui| {
+                        // TODO: populate dynamically
+                        ui.add(SelectableLabel::new(true, "Profile 1"));
+                        ui.add(SelectableLabel::new(false, "Profile 2"));
+                        ui.add(SelectableLabel::new(false, "Profile 4"));
+                    })
+                    .response
+                    .on_hover_text_at_pointer("Profie Select");
+
+                // Profile management
+                // TODO: hide buttons when editing reaction
+                let new_btn = ui
+                    .button(RichText::new(phos::PLUS_CIRCLE))
+                    .on_hover_text_at_pointer("New Profile");
+                let edit_btn = ui
+                    .button(RichText::new(phos::NOTE_PENCIL))
+                    .on_hover_text_at_pointer("Edit Profile Name");
+                let save_btn = ui
+                    .button(RichText::new(phos::FLOPPY_DISK))
+                    .on_hover_text_at_pointer("Save Profile");
+                let delete_btn = ui
+                    .button(RichText::new(phos::TRASH))
+                    .on_hover_text_at_pointer("Delete Profile");
+                if new_btn.clicked() {
+                    log::info!("New Profile button clicked!");
+                }
+                if edit_btn.clicked() {
+                    log::info!("Edit Profile Name button clicked!");
+                }
+                if save_btn.clicked() {
+                    log::info!("Save Profile button clicked!");
+                }
+                if delete_btn.clicked() {
+                    log::info!("Delete Profile button clicked!");
+                }
+
+                // Settings page toggle
+                // TODO: hide button when editing reaction
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    let settings_btn = ui
+                        .selectable_label(
+                            gui_tab == GuiTab::Settings,
+                            RichText::new(phos::GEAR_FINE),
+                        )
+                        .on_hover_text_at_pointer("Settings");
+                    if settings_btn.clicked() {
+                        match gui_tab {
+                            GuiTab::Device => gui_tab = GuiTab::Settings,
+                            GuiTab::Settings => gui_tab = GuiTab::Device,
+                        }
+                    }
+                });
             });
 
             ui.separator();
 
             let mw = 464.0;
-            let mh = 246.0;
+            let mh = 252.0;
             ui.allocate_ui(vec2(mw, mh), |ui| match gui_tab {
                 GuiTab::Device => {
-                    let col = 4;
-                    let row = 3;
-                    let h = mh / 3.0 - 2.0;
-                    for y in 0..row {
-                        ui.columns(col, |c| {
-                            for x in 0..col {
-                                c[x].set_min_height(h);
-                                c[x].set_max_height(h);
-                                c[x].centered_and_justified(|ui| {
-                                    if ui.button(format!("F{}", 12 + x + y * col + 1)).clicked() {
-                                        log::info!("({}, {}) clicked", x + 1, y + 1);
-                                        // TODO: add config menu when button is clicked
-                                        // TODO: highlight button when press signal is recieved
-                                        // TODO: display some better text in the buttons
+                    match gui_device_tab {
+                        GuiDeviceTab::Keyboard => {
+                            let s = Sense::hover();
+                            ui.horizontal(|ui| {
+                                ui.allocate_exact_size([(mw - 340.0) / 2.0, 0.0].into(), s);
+                                Grid::new("KBGrid").show(ui, |ui| {
+                                    let col = 4;
+                                    let row = 3;
+                                    for y in 0..row {
+                                        for x in 0..col {
+                                            let btn =
+                                                Button::new(format!("F{}", 12 + x + y * col + 1));
+                                            let btn = ui.add_sized([75.0, 75.0], btn);
+                                            if btn.clicked() {
+                                                log::info!("({}, {}) clicked", x + 1, y + 1);
+                                                // TODO: add config menu when button is clicked
+                                                // TODO: highlight button when press signal is recieved
+                                                // TODO: display some better text in the buttons
+                                                // TODO: add hover text for button info
+                                            }
+                                        }
+                                        ui.end_row();
                                     }
                                 });
-                            }
-                        });
+                            });
+                        }
+                        GuiDeviceTab::Knobs1 | GuiDeviceTab::Knobs2 => {
+                            ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+                        }
+                        GuiDeviceTab::Pedal1 | GuiDeviceTab::Pedal2 | GuiDeviceTab::Pedal3 => {
+                            ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+                        }
                     }
+                    ui.horizontal(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+                            let _ = ui.button(RichText::new(phos::ARROW_CLOCKWISE)); // TODO: send refresh peripherals signal
+                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Pedal3, "Pedal 3");
+                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Pedal2, "Pedal 2");
+                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Pedal1, "Pedal 1");
+                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Knobs2, "Knobs 2");
+                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Knobs1, "Knobs 1");
+                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Keyboard, "Keyboard");
+                        });
+                    });
                 }
                 GuiTab::Settings => {
                     ui.horizontal(|ui| {
@@ -133,7 +229,7 @@ pub fn basic_gui() {
                                 .heading()
                                 .color(Color32::from_rgb(255, 200, 100)),
                         );
-                        ui.label(format!(" - v{}", APP_VERSION));
+                        ui.label(format!("-  v{}", APP_VERSION));
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             let res = match connection_status {
                                 ConnectionStatus::Connected => {
@@ -187,21 +283,30 @@ pub fn basic_gui() {
                         ui.label("Send debug signal to JukeBox.")
                     });
 
-                    ui.with_layout(Layout::bottom_up(Align::RIGHT), |ui| {
-                        ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
+                    ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
                         ui.horizontal(|ui| {
-                            ui.hyperlink_to(
-                                "Donate",
-                                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                            );
-                            ui.label(" - ");
-                            ui.hyperlink_to(
-                                "Repository",
-                                "https://github.com/FriendTeamInc/JukeBox",
-                            );
-                            ui.label(" - ");
-                            ui.hyperlink_to("Homepage", "https://friendteam.biz");
-                        })
+                            ui.label("Firmware Version: TODO");
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
+                            });
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Serial ID: TODO");
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                ui.hyperlink_to(
+                                    "Donate",
+                                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                                );
+                                ui.label(" - ");
+                                ui.hyperlink_to(
+                                    "Repository",
+                                    "https://github.com/FriendTeamInc/JukeBox",
+                                );
+                                ui.label(" - ");
+                                ui.hyperlink_to("Homepage", "https://friendteam.biz");
+                            });
+                        });
                     });
                 }
             });
@@ -216,13 +321,11 @@ pub fn basic_gui() {
                         break;
                     }
                 }
-                splash_message_timer = Instant::now().add(Duration::from_secs(10));
+                splash_message_timer = Instant::now() + Duration::from_secs(30);
             }
             ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui| {
-                ui.monospace(SPLASH_MESSAGES[splash_message_index]);
+                ui.label(RichText::new(SPLASH_MESSAGES[splash_message_index]).monospace().size(6.0));
             });
-
-            ui.separator();
         });
 
         // Call a new frame every frame, bypassing the limited updates.
