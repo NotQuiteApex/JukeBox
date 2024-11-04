@@ -11,7 +11,6 @@ use rand::prelude::*;
 
 use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
-use crate::system::{PCSystem, SystemReport};
 
 #[derive(PartialEq)]
 enum ConnectionStatus {
@@ -45,8 +44,6 @@ pub fn basic_gui() {
 
     let (serialevent_tx, serialevent_rx) = channel::<SerialEvent>(); // serialcomms thread sends events to gui thread
     let (serialcommand_tx, serialcommand_rx) = channel::<SerialCommand>(); // gui thread sends commands to serialcomms thread
-    let (sysreport_tx1, sysreport_rx1) = channel::<SystemReport>(); // sends systemreports to gui thread
-    let (sysreport_tx2, sysreport_rx2) = channel::<SystemReport>(); // sends systemreports to serialcomms thread
 
     let (breaker_tx1, breaker_rx1) = channel::<bool>(); // ends systemstats thread from gui
     let (breaker_tx2, breaker_rx2) = channel::<bool>(); // ends serialcomms thread from gui
@@ -54,7 +51,6 @@ pub fn basic_gui() {
     // system stats thread
     let systemstats = thread::spawn(move || {
         // TODO: handle removable PC hardware (such as external GPUs)
-        let mut pcs = PCSystem::new().expect("COULD NOT MAKE PC REPORTER");
         let mut timer = Instant::now();
 
         loop {
@@ -66,16 +62,6 @@ pub fn basic_gui() {
                 continue;
             }
             timer = Instant::now().add(Duration::from_secs(1));
-
-            sysreport_tx1
-                .send(pcs.get_report())
-                .expect("COULD NOT SEND PC REPORT 1"); // send to gui
-
-            // TODO: stop sending if there is no device connected
-            sysreport_tx2
-                .send(pcs.get_report())
-                .expect("COULD NOT SEND PC REPORT 2"); // send to serial
-            pcs.update();
         }
     });
 
@@ -98,7 +84,7 @@ pub fn basic_gui() {
             }
             let mut f = f.unwrap();
 
-            match serial_task(&mut f, &sysreport_rx1, &serialcommand_rx, &serialevent_tx) {
+            match serial_task(&mut f, &serialcommand_rx, &serialevent_tx) {
                 Err(e) => {
                     log::warn!("Serial device error: `{}`", e);
                     if let Err(e) = serialevent_tx.send(SerialEvent::LostConnection) {
@@ -111,15 +97,11 @@ pub fn basic_gui() {
     });
 
     let mut connection_status = ConnectionStatus::NotConnected;
-    let mut sr = SystemReport::default();
     let serialcommand_tx1 = serialcommand_tx.clone();
 
     let mut gui_tab = GuiTab::Keyboard;
 
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
-        while let Ok(snsr) = sysreport_rx2.try_recv() {
-            sr = snsr;
-        }
         while let Ok(event) = serialevent_rx.try_recv() {
             match event {
                 SerialEvent::Connected => connection_status = ConnectionStatus::Connected,
@@ -193,49 +175,6 @@ pub fn basic_gui() {
                     }
                 }
                 GuiTab::System => {
-                    let g = Grid::new("sys_stats")
-                        .spacing(vec2(0.0, -0.5))
-                        .striped(true)
-                        .min_col_width(mw / 4.0);
-
-                    g.show(ui, |ui| {
-                        ui.label("CPU: ");
-                        ui.label(format!("'{}'", sr.cpu_name));
-                        ui.end_row();
-                        ui.label("CPU Freq: ");
-                        ui.label(format!("{} GHz", sr.cpu_freq));
-                        ui.end_row();
-                        ui.label("CPU Load: ");
-                        ui.label(format!("{} %", sr.cpu_load));
-                        ui.end_row();
-                        ui.label("CPU Temp: ");
-                        ui.label(format!("{} ° C", sr.cpu_temp));
-                        ui.end_row();
-                        ui.label("GPU: ");
-                        ui.label(format!("'{}'", sr.gpu_name));
-                        ui.end_row();
-                        ui.label("GPU Core Freq: ");
-                        ui.label(format!("{} MHz", sr.gpu_core_clock));
-                        ui.end_row();
-                        ui.label("GPU Core Load: ");
-                        ui.label(format!("{} %", sr.gpu_core_load));
-                        ui.end_row();
-                        ui.label("GPU VRAM Freq: ");
-                        ui.label(format!("{} MHz", sr.gpu_memory_clock));
-                        ui.end_row();
-                        ui.label("GPU VRAM Load: ");
-                        ui.label(format!("{} %", sr.gpu_memory_load));
-                        ui.end_row();
-                        ui.label("GPU Temp: ");
-                        ui.label(format!("{} ° C", sr.gpu_temp));
-                        ui.end_row();
-                        ui.label("Memory Used: ");
-                        ui.label(format!("{} GiB", sr.memory_used));
-                        ui.end_row();
-                        ui.label("Memory Total: ");
-                        ui.label(format!("{} GiB", sr.memory_total));
-                        ui.end_row();
-                    });
                 }
                 GuiTab::Miscellaneous => {
                     ui.label("");

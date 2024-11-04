@@ -8,9 +8,6 @@
 pub enum ExitCode {
     // Special codes
     _CleanExit,
-    CannotInitStderrLogger,
-
-    _CannotInitializeGpu,
 
     GenericError,
 

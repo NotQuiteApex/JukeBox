@@ -1,6 +1,5 @@
 // Serial communication
 
-use crate::system::SystemReport;
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
@@ -108,42 +107,6 @@ fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     send_expect(f, b"H\x30\r\n", "H\x31\r\n")
 }
 
-fn transmit_system_info(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Result<(), ExitMsg> {
-    let m = format!(
-        "D\x11\x30{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_name, pcs.gpu_name, pcs.memory_total,
-    );
-    let m = m.as_bytes();
-    if m.len() > 128 {
-        log::warn!("TInit string longer than 64 bytes!");
-        log::warn!("TInit CPU Brand: '{}'.", pcs.cpu_name);
-        log::warn!("TInit GPU Brand: '{}'.", pcs.gpu_name);
-        log::warn!("TInit Memory: '{}'.", pcs.memory_total);
-        log::warn!("TInit string len: {} bytes.", m.len());
-        // log::warn!("TInit string: {:?}", m);
-    }
-
-    send_expect(f, m, "D\x11\x06\r\n")
-}
-
-fn transmit_system_stats(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Result<(), ExitMsg> {
-    let m = format!(
-        "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_freq,
-        pcs.cpu_temp,
-        pcs.cpu_load,
-        pcs.memory_used,
-        pcs.gpu_temp,
-        pcs.gpu_core_clock,
-        pcs.gpu_core_load,
-        pcs.gpu_memory_clock,
-        pcs.gpu_memory_load,
-    );
-    let m = m.as_bytes();
-
-    send_expect(f, m, "D\x11\x06\r\n")
-}
-
 fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
     send_expect(f, b"U\x30\r\n", RSP_DISCONNECTED)
 }
@@ -198,23 +161,15 @@ pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
 
 pub fn serial_task(
     f: &mut Box<dyn SerialPort>,
-    sysreport_rx: &Receiver<SystemReport>,
     serialcommand_rx: &Receiver<SerialCommand>,
     serialevent_tx: &Sender<SerialEvent>,
 ) -> Result<(), ExitMsg> {
-    // let mut pcs = PCSystem::new()?;
-    let mut sysreport = sysreport_rx
-        .recv()
-        .expect("did not recieve sysreport for serial");
-
     greet_host(f)?;
     link_confirm_host(f)?;
 
     serialevent_tx
         .send(SerialEvent::Connected)
         .expect("failed to send command");
-
-    transmit_system_info(f, &sysreport)?;
 
     let mut timer = Instant::now();
 
@@ -226,11 +181,6 @@ pub fn serial_task(
         timer = Instant::now().add(Duration::from_millis(500));
 
         transmit_heartbeat(f)?;
-
-        if let Ok(newreport) = sysreport_rx.try_recv() {
-            sysreport = newreport;
-            transmit_system_stats(f, &sysreport)?;
-        }
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
