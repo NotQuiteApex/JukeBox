@@ -4,7 +4,7 @@ use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui::{
-    vec2, Align, CentralPanel, Color32, Grid, Layout, RichText, ViewportBuilder, ViewportCommand,
+    vec2, Align, CentralPanel, Color32, Layout, RichText, ViewportBuilder, ViewportCommand,
 };
 
 use rand::prelude::*;
@@ -21,9 +21,8 @@ enum ConnectionStatus {
 
 #[derive(PartialEq)]
 enum GuiTab {
-    Keyboard,
-    System,
-    Miscellaneous,
+    Device,
+    Settings,
 }
 
 const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -32,38 +31,21 @@ pub fn basic_gui() {
     let options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
             .with_title("JukeBox Desktop")
-            .with_inner_size([480.0, 320.0])
+            .with_inner_size([960.0, 640.0])
             .with_maximize_button(false)
             .with_resizable(false)
             .with_icon(
                 eframe::icon_data::from_png_bytes(&include_bytes!("../../assets/applogo.png")[..])
                     .unwrap(),
             ),
+        centered: true,
         ..Default::default()
     };
 
     let (serialevent_tx, serialevent_rx) = channel::<SerialEvent>(); // serialcomms thread sends events to gui thread
     let (serialcommand_tx, serialcommand_rx) = channel::<SerialCommand>(); // gui thread sends commands to serialcomms thread
 
-    let (breaker_tx1, breaker_rx1) = channel::<bool>(); // ends systemstats thread from gui
-    let (breaker_tx2, breaker_rx2) = channel::<bool>(); // ends serialcomms thread from gui
-
-    // system stats thread
-    let systemstats = thread::spawn(move || {
-        // TODO: handle removable PC hardware (such as external GPUs)
-        let mut timer = Instant::now();
-
-        loop {
-            if let Ok(_) = breaker_rx1.try_recv() {
-                break;
-            }
-            if Instant::now() < timer {
-                thread::sleep(Duration::from_millis(250));
-                continue;
-            }
-            timer = Instant::now().add(Duration::from_secs(1));
-        }
-    });
+    let (breaker_tx, breaker_rx) = channel::<bool>(); // ends serialcomms thread from gui
 
     let mut splash_message_timer = Instant::now();
     let mut splash_message_index = 0usize;
@@ -72,7 +54,7 @@ pub fn basic_gui() {
     let serialcomms = thread::spawn(move || {
         // TODO: check application cpu usage when device is connected
         loop {
-            if let Ok(_) = breaker_rx2.try_recv() {
+            if let Ok(_) = breaker_rx.try_recv() {
                 break;
             }
 
@@ -99,9 +81,11 @@ pub fn basic_gui() {
     let mut connection_status = ConnectionStatus::NotConnected;
     let serialcommand_tx1 = serialcommand_tx.clone();
 
-    let mut gui_tab = GuiTab::Keyboard;
+    let mut gui_tab = GuiTab::Device;
 
     eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
+        ctx.set_zoom_factor(2.0); // TODO: find a better solution, the first frame is always the wrong size
+
         while let Ok(event) = serialevent_rx.try_recv() {
             match event {
                 SerialEvent::Connected => connection_status = ConnectionStatus::Connected,
@@ -112,51 +96,19 @@ pub fn basic_gui() {
 
         CentralPanel::default().show(ctx, |ui| {
             ui.horizontal(|ui| {
-                ui.label(
-                    RichText::new("JukeBox Desktop")
-                        .heading()
-                        .color(Color32::from_rgb(255, 200, 100)),
-                );
-                ui.label(format!(" - v{}", APP_VERSION));
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    let res = match connection_status {
-                        ConnectionStatus::Connected => {
-                            ("Connected.", Color32::from_rgb(50, 200, 50))
-                        }
-                        ConnectionStatus::NotConnected => {
-                            ("Not connected.", Color32::from_rgb(200, 200, 50))
-                        }
-                        ConnectionStatus::LostConnection => {
-                            ("Lost connection!", Color32::from_rgb(200, 50, 50))
-                        }
-                    };
-
-                    ui.label(RichText::new(res.0).color(res.1));
-
-                    ctx.send_viewport_cmd(ViewportCommand::Title(format!(
-                        "JukeBox Desktop - v{} - {}",
-                        APP_VERSION, res.0
-                    )));
-                });
-            });
-
-            ui.separator();
-
-            ui.horizontal(|ui| {
-                ui.selectable_value(&mut gui_tab, GuiTab::Keyboard, "Keyboard");
-                ui.selectable_value(&mut gui_tab, GuiTab::System, "System");
-                ui.selectable_value(&mut gui_tab, GuiTab::Miscellaneous, "Miscellaneous");
+                ui.selectable_value(&mut gui_tab, GuiTab::Device, "Device");
+                ui.selectable_value(&mut gui_tab, GuiTab::Settings, "Settings");
             });
 
             ui.separator();
 
             let mw = 464.0;
-            let mh = 208.0;
-            let r = ui.allocate_ui(vec2(mw, mh), |ui| match gui_tab {
-                GuiTab::Keyboard => {
+            let mh = 246.0;
+            ui.allocate_ui(vec2(mw, mh), |ui| match gui_tab {
+                GuiTab::Device => {
                     let col = 4;
                     let row = 3;
-                    let h = mh / 3.0 - 1.0;
+                    let h = mh / 3.0 - 2.0;
                     for y in 0..row {
                         ui.columns(col, |c| {
                             for x in 0..col {
@@ -164,7 +116,7 @@ pub fn basic_gui() {
                                 c[x].set_max_height(h);
                                 c[x].centered_and_justified(|ui| {
                                     if ui.button(format!("F{}", 12 + x + y * col + 1)).clicked() {
-                                        println!("({}, {}) clicked", x + 1, y + 1);
+                                        log::info!("({}, {}) clicked", x + 1, y + 1);
                                         // TODO: add config menu when button is clicked
                                         // TODO: highlight button when press signal is recieved
                                         // TODO: display some better text in the buttons
@@ -174,13 +126,43 @@ pub fn basic_gui() {
                         });
                     }
                 }
-                GuiTab::System => {
-                }
-                GuiTab::Miscellaneous => {
+                GuiTab::Settings => {
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new("JukeBox Desktop")
+                                .heading()
+                                .color(Color32::from_rgb(255, 200, 100)),
+                        );
+                        ui.label(format!(" - v{}", APP_VERSION));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            let res = match connection_status {
+                                ConnectionStatus::Connected => {
+                                    ("Connected.", Color32::from_rgb(50, 200, 50))
+                                }
+                                ConnectionStatus::NotConnected => {
+                                    ("Not connected.", Color32::from_rgb(200, 200, 50))
+                                }
+                                ConnectionStatus::LostConnection => {
+                                    ("Lost connection!", Color32::from_rgb(200, 50, 50))
+                                }
+                            };
+
+                            ui.label(RichText::new(res.0).color(res.1));
+
+                            ctx.send_viewport_cmd(ViewportCommand::Title(format!(
+                                "JukeBox Desktop - v{} - {}",
+                                APP_VERSION, res.0
+                            )));
+                        });
+                    });
+
+                    ui.separator();
                     ui.label("");
 
                     ui.horizontal(|ui| {
-                        ui.set_enabled(connection_status == ConnectionStatus::Connected);
+                        if connection_status != ConnectionStatus::Connected {
+                            ui.disable();
+                        }
                         if ui.button("Update JukeBox").clicked() {
                             serialcommand_tx1
                                 .send(SerialCommand::UpdateDevice)
@@ -193,7 +175,9 @@ pub fn basic_gui() {
                     ui.label("");
 
                     ui.horizontal(|ui| {
-                        ui.set_enabled(connection_status == ConnectionStatus::Connected);
+                        if connection_status != ConnectionStatus::Connected {
+                            ui.disable();
+                        }
                         if ui.button("Debug Signal").clicked() {
                             serialcommand_tx1
                                 .send(SerialCommand::TestFunction0)
@@ -206,19 +190,21 @@ pub fn basic_gui() {
                     ui.with_layout(Layout::bottom_up(Align::RIGHT), |ui| {
                         ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
                         ui.horizontal(|ui| {
-                            ui.hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+                            ui.hyperlink_to(
+                                "Donate",
+                                "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                            );
                             ui.label(" - ");
-                            ui.hyperlink_to("Repository", "https://github.com/FriendTeamInc/JukeBox");
+                            ui.hyperlink_to(
+                                "Repository",
+                                "https://github.com/FriendTeamInc/JukeBox",
+                            );
                             ui.label(" - ");
                             ui.hyperlink_to("Homepage", "https://friendteam.biz");
                         })
                     });
                 }
             });
-            let h = r.response.rect.height();
-            if h < mh {
-                ui.allocate_space(vec2(0.0, mh - h));
-            }
 
             ui.separator();
 
@@ -246,10 +232,7 @@ pub fn basic_gui() {
     })
     .expect("eframe error");
 
-    breaker_tx1
-        .send(true)
-        .expect("could not send breaker 1 signal");
-    breaker_tx2
+    breaker_tx
         .send(true)
         .expect("could not send breaker 2 signal");
 
@@ -257,9 +240,6 @@ pub fn basic_gui() {
         .send(SerialCommand::DisconnectDevice)
         .expect("could not send disconnect signal");
 
-    systemstats
-        .join()
-        .expect("could not rejoin systemstats thread");
     serialcomms
         .join()
         .expect("could not rejoin serialcomms thread");
