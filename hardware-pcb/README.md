@@ -33,4 +33,5 @@ Estimated power usage is 5 volts at 0.1 amps, or 0.5 watts.
 | U2      | W25Q64JVSSIQ-TR      | 1   |       |
 | U3      | RP2040-SC0914(13)    | 1   |       |
 | U4      | TFTQ-T20SH12ZP01     | 1   |       |
+| U5      | CAT24C512            | 1   |       |
 | Y1      | ECS-120-20-33-AEL-TR | 1   |       |
