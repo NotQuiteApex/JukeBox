@@ -12,7 +12,9 @@ use egui_phosphor::regular as phos;
 use rand::prelude::*;
 
 use crate::reaction::{InputKey, ReactionConfig};
-use crate::serial::{serial_get_device, serial_task, JukeBoxPeripherals, SerialCommand, SerialEvent};
+use crate::serial::{
+    serial_get_device, serial_task, JukeBoxPeripherals, SerialCommand, SerialEvent,
+};
 use crate::splash::SPLASH_MESSAGES;
 
 #[derive(PartialEq)]
@@ -40,7 +42,7 @@ enum GuiDeviceTab {
 
 // TODO: manage this with serde json
 struct _JukeBoxConfig {
-	profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
+    profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
 }
 
 const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -229,18 +231,23 @@ pub fn basic_gui() {
                     ui.horizontal(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                             if ui.button(RichText::new(phos::ARROW_CLOCKWISE)).clicked() {
-                                serialcommand_tx1.send(SerialCommand::RefreshPeripherals)
-                                .expect("failed to send refresh peripherals command");
+                                serialcommand_tx1
+                                    .send(SerialCommand::RefreshPeripherals)
+                                    .expect("failed to send refresh peripherals command");
                             }
 
                             for p in connected_peripherals.iter() {
                                 let p = match p {
-                                    JukeBoxPeripherals::Keyboard => (GuiDeviceTab::Pedal3, "Pedal 3"),
-                                    JukeBoxPeripherals::Knobs1 =>   (GuiDeviceTab::Pedal2, "Pedal 2"),
-                                    JukeBoxPeripherals::Knobs2 =>   (GuiDeviceTab::Pedal1, "Pedal 1"),
-                                    JukeBoxPeripherals::Pedal1 =>   (GuiDeviceTab::Knobs2, "Knobs 2"),
-                                    JukeBoxPeripherals::Pedal2 =>   (GuiDeviceTab::Knobs1, "Knobs 1"),
-                                    JukeBoxPeripherals::Pedal3 =>   (GuiDeviceTab::Keyboard, "Keyboard"),
+                                    JukeBoxPeripherals::Keyboard => {
+                                        (GuiDeviceTab::Pedal3, "Pedal 3")
+                                    }
+                                    JukeBoxPeripherals::Knobs1 => (GuiDeviceTab::Pedal2, "Pedal 2"),
+                                    JukeBoxPeripherals::Knobs2 => (GuiDeviceTab::Pedal1, "Pedal 1"),
+                                    JukeBoxPeripherals::Pedal1 => (GuiDeviceTab::Knobs2, "Knobs 2"),
+                                    JukeBoxPeripherals::Pedal2 => (GuiDeviceTab::Knobs1, "Knobs 1"),
+                                    JukeBoxPeripherals::Pedal3 => {
+                                        (GuiDeviceTab::Keyboard, "Keyboard")
+                                    }
                                 };
                                 ui.selectable_value(&mut gui_device_tab, p.0, p.1);
                             }
@@ -349,7 +356,11 @@ pub fn basic_gui() {
                 splash_message_timer = Instant::now() + Duration::from_secs(30);
             }
             ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui| {
-                ui.label(RichText::new(SPLASH_MESSAGES[splash_message_index]).monospace().size(6.0));
+                ui.label(
+                    RichText::new(SPLASH_MESSAGES[splash_message_index])
+                        .monospace()
+                        .size(6.0),
+                );
             });
         });
 

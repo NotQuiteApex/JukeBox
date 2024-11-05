@@ -230,7 +230,7 @@ pub fn serial_task(
                     }
                     break 'forv; // The device has disconnected, we should too.
                 }
-                _ => todo!()
+                _ => todo!(),
             }
         }
 
