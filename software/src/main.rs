@@ -6,10 +6,9 @@ mod gui;
 mod serial;
 mod splash;
 mod util;
+mod reaction;
 
-use crate::util::ExitMsg;
-
-fn deffered_main() -> Result<(), ExitMsg> {
+fn deffered_main() -> Result<(), util::ExitMsg> {
     env_logger::init();
 
     gui::basic_gui();

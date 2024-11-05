@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::thread;
 use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
@@ -10,10 +11,10 @@ use egui_phosphor::regular as phos;
 
 use rand::prelude::*;
 
-use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
+use crate::reaction::{InputKey, ReactionConfig};
+use crate::serial::{serial_get_device, serial_task, JukeBoxPeripherals, SerialCommand, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
 
-// TODO: remove? probably redundant
 #[derive(PartialEq)]
 enum ConnectionStatus {
     Connected,
@@ -35,6 +36,11 @@ enum GuiDeviceTab {
     Pedal1,
     Pedal2,
     Pedal3,
+}
+
+// TODO: manage this with serde json
+struct _JukeBoxConfig {
+	profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
 }
 
 const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -93,6 +99,16 @@ pub fn basic_gui() {
     let mut connection_status = ConnectionStatus::NotConnected;
     let serialcommand_tx1 = serialcommand_tx.clone();
 
+    // TODO: make mut later when firmware supports reporting it
+    let connected_peripherals = vec![
+        JukeBoxPeripherals::Keyboard,
+        JukeBoxPeripherals::Knobs1,
+        JukeBoxPeripherals::Knobs2,
+        JukeBoxPeripherals::Pedal1,
+        JukeBoxPeripherals::Pedal2,
+        JukeBoxPeripherals::Pedal3,
+    ];
+
     let mut gui_tab = GuiTab::Device;
     let mut gui_device_tab = GuiDeviceTab::Keyboard;
 
@@ -114,7 +130,7 @@ pub fn basic_gui() {
             ui.horizontal(|ui| {
                 // Profile select
                 // TODO: disable select when editing reaction
-                ComboBox::from_label("")
+                ComboBox::from_label("ProfileSelect")
                     .selected_text("Profile Select") // TODO: show current profile name here
                     .width(150.0)
                     .show_ui(ui, |ui| {
@@ -212,13 +228,22 @@ pub fn basic_gui() {
                     }
                     ui.horizontal(|ui| {
                         ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                            let _ = ui.button(RichText::new(phos::ARROW_CLOCKWISE)); // TODO: send refresh peripherals signal
-                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Pedal3, "Pedal 3");
-                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Pedal2, "Pedal 2");
-                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Pedal1, "Pedal 1");
-                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Knobs2, "Knobs 2");
-                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Knobs1, "Knobs 1");
-                            ui.selectable_value(&mut gui_device_tab, GuiDeviceTab::Keyboard, "Keyboard");
+                            if ui.button(RichText::new(phos::ARROW_CLOCKWISE)).clicked() {
+                                serialcommand_tx1.send(SerialCommand::RefreshPeripherals)
+                                .expect("failed to send refresh peripherals command");
+                            }
+
+                            for p in connected_peripherals.iter() {
+                                let p = match p {
+                                    JukeBoxPeripherals::Keyboard => (GuiDeviceTab::Pedal3, "Pedal 3"),
+                                    JukeBoxPeripherals::Knobs1 =>   (GuiDeviceTab::Pedal2, "Pedal 2"),
+                                    JukeBoxPeripherals::Knobs2 =>   (GuiDeviceTab::Pedal1, "Pedal 1"),
+                                    JukeBoxPeripherals::Pedal1 =>   (GuiDeviceTab::Knobs2, "Knobs 2"),
+                                    JukeBoxPeripherals::Pedal2 =>   (GuiDeviceTab::Knobs1, "Knobs 1"),
+                                    JukeBoxPeripherals::Pedal3 =>   (GuiDeviceTab::Keyboard, "Keyboard"),
+                                };
+                                ui.selectable_value(&mut gui_device_tab, p.0, p.1);
+                            }
                         });
                     });
                 }

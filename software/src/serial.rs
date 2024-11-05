@@ -3,18 +3,31 @@
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
-use std::ops::Add;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::yield_now;
 use std::time::{Duration, Instant};
 
 // Utility
+const CMD_GREET: &[u8] = b"JB\x05\r\n";
+const CMD_PROTOCOL_ACCEPT: &[u8] = b"P\x06\r\n";
+const CMD_HEARTBEAT: &[u8] = b"H\x30\r\n";
+const CMD_DISCONNECT: &[u8] = b"U\x30\r\n";
+const CMD_UPDATE: &[u8] = b"U\x31\r\n";
+const CMD_TEST_FUNC_0: &[u8] = b"U\x32\x30\r\n";
 
+const RSP_PROTOCOL: &str = "P001\r\n";
+const RSP_LINK_ESTABLISHED: &str = "L\x06\r\n";
+const RSP_HEARTBEAT: &str = "H\x31\r\n";
 const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
+const RSP_DEV1_ACK: &str = "U\x11\x06\r\n";
+const RSP_DEV2_ACK: &str = "U\x12\x06\r\n";
+const RSP_DEV3_ACK: &str = "U\x13\x06\r\n";
+const RSP_DEV4_ACK: &str = "U\x14\x06\r\n";
 
 pub enum SerialCommand {
     UpdateDevice,
     DisconnectDevice,
+    RefreshPeripherals,
     TestFunction0,
 }
 
@@ -24,8 +37,17 @@ pub enum SerialEvent {
     Disconnected,
 }
 
+pub enum JukeBoxPeripherals {
+    Keyboard,
+    Knobs1,
+    Knobs2,
+    Pedal1,
+    Pedal2,
+    Pedal3,
+}
+
 fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
-    let timeout = Instant::now().add(Duration::from_secs(3));
+    let timeout = Instant::now() + Duration::from_secs(3);
     let mut buf = Vec::new();
 
     loop {
@@ -95,28 +117,33 @@ fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result
 // Tasks
 
 fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"JB\x05\r\n", "P001\r\n")
+    // Sends greeting, recieves protocol string
+    send_expect(f, CMD_GREET, RSP_PROTOCOL)
     // TODO: send nack in response to bad protocol
 }
 
 fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"P\x06\r\n", "L\x06\r\n")
+    // Host confirms protocol is good, recieves "link established"
+    send_expect(f, CMD_PROTOCOL_ACCEPT, RSP_LINK_ESTABLISHED)
 }
 
 fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"H\x30\r\n", "H\x31\r\n")
+    // confirm the device is still alive
+    send_expect(f, CMD_HEARTBEAT, RSP_HEARTBEAT)
 }
 
 fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x30\r\n", RSP_DISCONNECTED)
+    // tell the device to disconnect cleanly
+    send_expect(f, CMD_DISCONNECT, RSP_DISCONNECTED)
 }
 
 fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x31\r\n", RSP_DISCONNECTED)
+    // tell the device to reboot for updating
+    send_expect(f, CMD_UPDATE, RSP_DISCONNECTED)
 }
 
 fn transmit_test_function_0_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x32\x30\r\n", "U\x12\x06\r\n")
+    send_expect(f, CMD_TEST_FUNC_0, RSP_DEV2_ACK)
 }
 
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
@@ -178,9 +205,11 @@ pub fn serial_task(
             yield_now();
             continue;
         }
-        timer = Instant::now().add(Duration::from_millis(500));
+        timer = Instant::now() + Duration::from_millis(500);
 
         transmit_heartbeat(f)?;
+
+        // TODO: query device for pressed buttons
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
@@ -201,6 +230,7 @@ pub fn serial_task(
                     }
                     break 'forv; // The device has disconnected, we should too.
                 }
+                _ => todo!()
             }
         }
 
