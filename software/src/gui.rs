@@ -1,11 +1,12 @@
 use std::collections::HashMap;
+use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Instant;
 use std::{sync::mpsc::channel, time::Duration};
 
 use eframe::egui::{
     vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, SelectableLabel,
-    Sense, ViewportBuilder, ViewportCommand,
+    Sense, Ui, ViewportBuilder,
 };
 use egui_phosphor::regular as phos;
 
@@ -173,53 +174,16 @@ pub fn basic_gui() {
 
                 // Settings page toggle
                 // TODO: hide button when editing reaction
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    let settings_btn = ui
-                        .selectable_label(
-                            gui_tab == GuiTab::Settings,
-                            RichText::new(phos::GEAR_FINE),
-                        )
-                        .on_hover_text_at_pointer("Settings");
-                    if settings_btn.clicked() {
-                        match gui_tab {
-                            GuiTab::Device => gui_tab = GuiTab::Settings,
-                            GuiTab::Settings => gui_tab = GuiTab::Device,
-                        }
-                    }
-                });
+                draw_settings_toggle(ui, &mut gui_tab);
             });
 
             ui.separator();
 
-            let mw = 464.0;
-            let mh = 252.0;
-            ui.allocate_ui(vec2(mw, mh), |ui| match gui_tab {
+            ui.allocate_ui(vec2(464.0, 252.0), |ui| match gui_tab {
                 GuiTab::Device => {
                     match gui_device_tab {
                         GuiDeviceTab::Keyboard => {
-                            let s = Sense::hover();
-                            ui.horizontal(|ui| {
-                                ui.allocate_exact_size([(mw - 340.0) / 2.0, 0.0].into(), s);
-                                Grid::new("KBGrid").show(ui, |ui| {
-                                    let col = 4;
-                                    let row = 3;
-                                    for y in 0..row {
-                                        for x in 0..col {
-                                            let btn =
-                                                Button::new(format!("F{}", 12 + x + y * col + 1));
-                                            let btn = ui.add_sized([75.0, 75.0], btn);
-                                            if btn.clicked() {
-                                                log::info!("({}, {}) clicked", x + 1, y + 1);
-                                                // TODO: add config menu when button is clicked
-                                                // TODO: highlight button when press signal is recieved
-                                                // TODO: display some better text in the buttons
-                                                // TODO: add hover text for button info
-                                            }
-                                        }
-                                        ui.end_row();
-                                    }
-                                });
-                            });
+                            draw_keyboard(ui);
                         }
                         GuiDeviceTab::Knobs1 | GuiDeviceTab::Knobs2 => {
                             ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
@@ -228,140 +192,28 @@ pub fn basic_gui() {
                             ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
                         }
                     }
-                    ui.horizontal(|ui| {
-                        ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                            if ui.button(RichText::new(phos::ARROW_CLOCKWISE)).clicked() {
-                                serialcommand_tx1
-                                    .send(SerialCommand::RefreshPeripherals)
-                                    .expect("failed to send refresh peripherals command");
-                            }
 
-                            for p in connected_peripherals.iter() {
-                                let p = match p {
-                                    JukeBoxPeripherals::Keyboard => {
-                                        (GuiDeviceTab::Pedal3, "Pedal 3")
-                                    }
-                                    JukeBoxPeripherals::Knobs1 => (GuiDeviceTab::Pedal2, "Pedal 2"),
-                                    JukeBoxPeripherals::Knobs2 => (GuiDeviceTab::Pedal1, "Pedal 1"),
-                                    JukeBoxPeripherals::Pedal1 => (GuiDeviceTab::Knobs2, "Knobs 2"),
-                                    JukeBoxPeripherals::Pedal2 => (GuiDeviceTab::Knobs1, "Knobs 1"),
-                                    JukeBoxPeripherals::Pedal3 => {
-                                        (GuiDeviceTab::Keyboard, "Keyboard")
-                                    }
-                                };
-                                ui.selectable_value(&mut gui_device_tab, p.0, p.1);
-                            }
-                        });
-                    });
+                    draw_peripheral_tabs(
+                        ui,
+                        &serialcommand_tx1,
+                        &connected_peripherals,
+                        &mut gui_device_tab,
+                    );
                 }
                 GuiTab::Settings => {
-                    ui.horizontal(|ui| {
-                        ui.label(
-                            RichText::new("JukeBox Desktop")
-                                .heading()
-                                .color(Color32::from_rgb(255, 200, 100)),
-                        );
-                        ui.label(format!("-  v{}", APP_VERSION));
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            let res = match connection_status {
-                                ConnectionStatus::Connected => {
-                                    ("Connected.", Color32::from_rgb(50, 200, 50))
-                                }
-                                ConnectionStatus::NotConnected => {
-                                    ("Not connected.", Color32::from_rgb(200, 200, 50))
-                                }
-                                ConnectionStatus::LostConnection => {
-                                    ("Lost connection!", Color32::from_rgb(200, 50, 50))
-                                }
-                            };
-
-                            ui.label(RichText::new(res.0).color(res.1));
-
-                            ctx.send_viewport_cmd(ViewportCommand::Title(format!(
-                                "JukeBox Desktop - v{} - {}",
-                                APP_VERSION, res.0
-                            )));
-                        });
-                    });
-
+                    draw_jukebox_logo(ui, &connection_status);
                     ui.separator();
                     ui.label("");
-
-                    ui.horizontal(|ui| {
-                        if connection_status != ConnectionStatus::Connected {
-                            ui.disable();
-                        }
-                        if ui.button("Update JukeBox").clicked() {
-                            serialcommand_tx1
-                                .send(SerialCommand::UpdateDevice)
-                                .expect("failed to send update command");
-                        }
-                        ui.label(" - ");
-                        ui.label("Reboots the connected JukeBox into Update Mode.")
-                    });
-
+                    draw_update_button(ui, &connection_status, &serialcommand_tx1);
                     ui.label("");
-
-                    ui.horizontal(|ui| {
-                        if connection_status != ConnectionStatus::Connected {
-                            ui.disable();
-                        }
-                        if ui.button("Debug Signal").clicked() {
-                            serialcommand_tx1
-                                .send(SerialCommand::TestFunction0)
-                                .expect("failed to send test command");
-                        }
-                        ui.label(" - ");
-                        ui.label("Send debug signal to JukeBox.")
-                    });
-
-                    ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("Firmware Version: TODO");
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
-                            });
-                        });
-
-                        ui.horizontal(|ui| {
-                            ui.label("Serial ID: TODO");
-                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                ui.hyperlink_to(
-                                    "Donate",
-                                    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                                );
-                                ui.label(" - ");
-                                ui.hyperlink_to(
-                                    "Repository",
-                                    "https://github.com/FriendTeamInc/JukeBox",
-                                );
-                                ui.label(" - ");
-                                ui.hyperlink_to("Homepage", "https://friendteam.biz");
-                            });
-                        });
-                    });
+                    draw_testfunc_button(ui, &connection_status, &serialcommand_tx1);
+                    draw_settings_bottom(ui);
                 }
             });
 
             ui.separator();
 
-            if Instant::now() > splash_message_timer {
-                loop {
-                    let new_index = rand::thread_rng().gen_range(0..SPLASH_MESSAGES.len());
-                    if new_index != splash_message_index {
-                        splash_message_index = new_index;
-                        break;
-                    }
-                }
-                splash_message_timer = Instant::now() + Duration::from_secs(30);
-            }
-            ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui| {
-                ui.label(
-                    RichText::new(SPLASH_MESSAGES[splash_message_index])
-                        .monospace()
-                        .size(6.0),
-                );
-            });
+            draw_splash_text(ui, &mut splash_message_timer, &mut splash_message_index);
         });
 
         // Call a new frame every frame, bypassing the limited updates.
@@ -382,4 +234,180 @@ pub fn basic_gui() {
     serialcomms
         .join()
         .expect("could not rejoin serialcomms thread");
+}
+
+fn draw_settings_toggle(ui: &mut Ui, gui_tab: &mut GuiTab) {
+    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+        let settings_btn = ui
+            .selectable_label(*gui_tab == GuiTab::Settings, RichText::new(phos::GEAR_FINE))
+            .on_hover_text_at_pointer("Settings");
+        if settings_btn.clicked() {
+            match gui_tab {
+                GuiTab::Device => *gui_tab = GuiTab::Settings,
+                GuiTab::Settings => *gui_tab = GuiTab::Device,
+            }
+        }
+    });
+}
+
+fn draw_keyboard(ui: &mut Ui) {
+    let s = Sense::hover();
+    ui.horizontal(|ui| {
+        ui.allocate_exact_size([62.0, 0.0].into(), s);
+        Grid::new("KBGrid").show(ui, |ui| {
+            let col = 4;
+            let row = 3;
+            for y in 0..row {
+                for x in 0..col {
+                    let btn = Button::new(format!("F{}", 12 + x + y * col + 1));
+                    let btn = ui.add_sized([75.0, 75.0], btn);
+                    if btn.clicked() {
+                        log::info!("({}, {}) clicked", x + 1, y + 1);
+                        // TODO: add config menu when button is clicked
+                        // TODO: highlight button when press signal is recieved
+                        // TODO: display some better text in the buttons
+                        // TODO: add hover text for button info
+                    }
+                }
+                ui.end_row();
+            }
+        });
+    });
+}
+
+fn draw_peripheral_tabs(
+    ui: &mut Ui,
+    serialcommand_tx1: &Sender<SerialCommand>,
+    connected_peripherals: &Vec<JukeBoxPeripherals>,
+    gui_device_tab: &mut GuiDeviceTab,
+) {
+    ui.horizontal(|ui| {
+        ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
+            if ui.button(RichText::new(phos::ARROW_CLOCKWISE)).clicked() {
+                serialcommand_tx1
+                    .send(SerialCommand::RefreshPeripherals)
+                    .expect("failed to send refresh peripherals command");
+            }
+
+            for p in connected_peripherals.iter() {
+                let p = match p {
+                    JukeBoxPeripherals::Keyboard => (GuiDeviceTab::Pedal3, "Pedal 3"),
+                    JukeBoxPeripherals::Knobs1 => (GuiDeviceTab::Pedal2, "Pedal 2"),
+                    JukeBoxPeripherals::Knobs2 => (GuiDeviceTab::Pedal1, "Pedal 1"),
+                    JukeBoxPeripherals::Pedal1 => (GuiDeviceTab::Knobs2, "Knobs 2"),
+                    JukeBoxPeripherals::Pedal2 => (GuiDeviceTab::Knobs1, "Knobs 1"),
+                    JukeBoxPeripherals::Pedal3 => (GuiDeviceTab::Keyboard, "Keyboard"),
+                };
+                ui.selectable_value(gui_device_tab, p.0, p.1);
+            }
+        });
+    });
+}
+
+fn draw_jukebox_logo(ui: &mut Ui, connection_status: &ConnectionStatus) {
+    ui.horizontal(|ui| {
+        ui.label(
+            RichText::new("JukeBox Desktop")
+                .heading()
+                .color(Color32::from_rgb(255, 200, 100)),
+        );
+        ui.label(format!("-  v{}", APP_VERSION));
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            let res = match connection_status {
+                ConnectionStatus::Connected => ("Connected.", Color32::from_rgb(50, 200, 50)),
+                ConnectionStatus::NotConnected => {
+                    ("Not connected.", Color32::from_rgb(200, 200, 50))
+                }
+                ConnectionStatus::LostConnection => {
+                    ("Lost connection!", Color32::from_rgb(200, 50, 50))
+                }
+            };
+
+            ui.label(RichText::new(res.0).color(res.1));
+        });
+    });
+}
+
+fn draw_update_button(
+    ui: &mut Ui,
+    connection_status: &ConnectionStatus,
+    serialcommand_tx1: &Sender<SerialCommand>,
+) {
+    ui.horizontal(|ui| {
+        if *connection_status != ConnectionStatus::Connected {
+            ui.disable();
+        }
+        if ui.button("Update JukeBox").clicked() {
+            serialcommand_tx1
+                .send(SerialCommand::UpdateDevice)
+                .expect("failed to send update command");
+        }
+        ui.label(" - ");
+        ui.label("Reboots the connected JukeBox into Update Mode.")
+    });
+}
+
+fn draw_testfunc_button(
+    ui: &mut Ui,
+    connection_status: &ConnectionStatus,
+    serialcommand_tx1: &Sender<SerialCommand>,
+) {
+    ui.horizontal(|ui| {
+        if *connection_status != ConnectionStatus::Connected {
+            ui.disable();
+        }
+        if ui.button("Debug Signal").clicked() {
+            serialcommand_tx1
+                .send(SerialCommand::TestFunction0)
+                .expect("failed to send test command");
+        }
+        ui.label(" - ");
+        ui.label("Send debug signal to JukeBox.")
+    });
+}
+
+fn draw_settings_bottom(ui: &mut Ui) {
+    ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Firmware Version: TODO");
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
+            });
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Serial ID: TODO");
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                ui.hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+                ui.label(" - ");
+                ui.hyperlink_to("Repository", "https://github.com/FriendTeamInc/JukeBox");
+                ui.label(" - ");
+                ui.hyperlink_to("Homepage", "https://friendteam.biz");
+            });
+        });
+    });
+}
+
+fn draw_splash_text(
+    ui: &mut Ui,
+    splash_message_timer: &mut Instant,
+    splash_message_index: &mut usize,
+) {
+    if Instant::now() > *splash_message_timer {
+        loop {
+            let new_index = rand::thread_rng().gen_range(0..SPLASH_MESSAGES.len());
+            if new_index != *splash_message_index {
+                *splash_message_index = new_index;
+                break;
+            }
+        }
+        *splash_message_timer = Instant::now() + Duration::from_secs(30);
+    }
+    ui.with_layout(Layout::right_to_left(Align::BOTTOM), |ui| {
+        ui.label(
+            RichText::new(SPLASH_MESSAGES[*splash_message_index])
+                .monospace()
+                .size(6.0),
+        );
+    });
 }
