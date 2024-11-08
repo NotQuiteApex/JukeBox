@@ -1,6 +1,18 @@
 // Defining reactions to perform when actions happen (key pressed, knob turned, etc.)
 
-#[derive(PartialEq, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Eq, PartialEq, Debug, Hash)]
+pub enum Peripheral {
+    Keyboard,
+    Knobs1,
+    Knobs2,
+    Pedal1,
+    Pedal2,
+    Pedal3,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Hash)]
 pub enum InputKey {
     KeyboardSwitch1,
     KeyboardSwitch2,
@@ -48,6 +60,7 @@ pub trait Reaction {
     fn on_release(&self, key: InputKey);
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum ReactionConfig {
     // Meta
     MetaTest(ReactionMetaTest),
@@ -79,6 +92,7 @@ pub enum ReactionConfig {
     // OBS
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct ReactionMetaTest {}
 impl Reaction for ReactionMetaTest {
     fn on_press(&self, key: InputKey) -> () {
