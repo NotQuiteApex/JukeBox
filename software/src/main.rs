@@ -3,29 +3,13 @@
 // #![windows_subsystem = "windows"] // disables console spawning for release build
 
 mod gui;
+mod reaction;
 mod serial;
 mod splash;
-mod system;
 mod util;
 
-use crate::util::{ExitCode, ExitMsg};
-
-fn deffered_main() -> Result<(), ExitMsg> {
-    // Setup the logger
-    stderrlog::new()
-        .module(module_path!())
-        .timestamp(stderrlog::Timestamp::Millisecond)
-        .verbosity(0)
-        .init()
-        .map_err(|e| {
-            ExitMsg::new(
-                ExitCode::CannotInitStderrLogger,
-                format!(
-                    "Failed to initialize stderr logger, reason: \"{}\".",
-                    e.to_string()
-                ),
-            )
-        })?;
+fn deffered_main() -> Result<(), util::ExitMsg> {
+    env_logger::init();
 
     gui::basic_gui();
 

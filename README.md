@@ -4,6 +4,9 @@ An affordable, adorable, powerful hotkey device to run macros, play funny sounds
 
 (TODO: image here)
 
+# Disclaimer
+While this project is public, it is not ready for any sort of prime time.
+
 # Docs and Assets
 If you are the proud owner of a new JukeBox, or are building your own, take a look at the [getting started doc](docs/getting-started.md).
 

@@ -1,5 +1,8 @@
 (sym_lib_table
+  (version 7)
   (lib (name "MCU_RaspberryPi_RP2040")(type "Legacy")(uri "${KIPRJMOD}/symbols/MCU_RaspberryPi_RP2040.lib")(options "")(descr ""))
   (lib (name "USB4105-GF-A")(type "KiCad")(uri "${KIPRJMOD}/symbols/USB4105-GF-A.kicad_sym")(options "")(descr ""))
   (lib (name "ECS-120-20-33-AEL-TR")(type "KiCad")(uri "${KIPRJMOD}/symbols/ECS-120-20-33-AEL-TR.kicad_sym")(options "")(descr ""))
+  (lib (name "st7789v")(type "KiCad")(uri "${KIPRJMOD}/symbols/st7789v.kicad_sym")(options "")(descr ""))
+  (lib (name "W25Q64JVZPIQ-TR")(type "KiCad")(uri "${KIPRJMOD}/symbols/W25Q64JVZPIQ-TR.kicad_sym")(options "")(descr ""))
 )

@@ -1,32 +1,54 @@
 // Serial communication
 
-use crate::system::SystemReport;
+use crate::reaction::{InputKey, Peripheral};
 use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
-use std::ops::Add;
+use std::collections::HashSet;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::yield_now;
 use std::time::{Duration, Instant};
 
 // Utility
+const CMD_GREET: &[u8] = b"JB\x05\r\n";
+const CMD_PROTOCOL_ACCEPT: &[u8] = b"P\x06\r\n";
+const CMD_HEARTBEAT: &[u8] = b"H\x30\r\n";
 
+const CMD_DISCONNECT: &[u8] = b"U\x30\r\n";
+const CMD_UPDATE: &[u8] = b"U\x31\r\n";
+const CMD_TEST: &[u8] = b"U\x39\x39\r\n";
+
+const CMD_GET_INPUT_KEYS: &[u8] = b"U\x30\x30\r\n";
+const CMD_GET_PERIPHERALS: &[u8] = b"U\x31\x30\r\n";
+
+const RSP_PROTOCOL: &str = "P001\r\n";
+const RSP_LINK_ESTABLISHED: &str = "L\x06\r\n";
+const RSP_HEARTBEAT: &str = "H\x31\r\n";
 const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
+// const RSP_DEV1_ACK: &str = "U\x11\x06\r\n";
+// const RSP_DEV2_ACK: &str = "U\x12\x06\r\n";
+// const RSP_DEV3_ACK: &str = "U\x13\x06\r\n";
+const RSP_DEV4_ACK: &str = "U\x14\x06\r\n";
 
 pub enum SerialCommand {
+    _GetInputKeys,
+    GetPeripherals,
     UpdateDevice,
     DisconnectDevice,
-    TestFunction0,
+    TestFunction,
 }
 
+#[derive(PartialEq)]
 pub enum SerialEvent {
     Connected,
+    GetInputKeys(HashSet<InputKey>),
+    GetPeripherals(HashSet<Peripheral>),
     LostConnection,
     Disconnected,
 }
 
 fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
-    let timeout = Instant::now().add(Duration::from_secs(3));
+    let timeout = Instant::now() + Duration::from_secs(3);
     let mut buf = Vec::new();
 
     loop {
@@ -63,7 +85,7 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
     }
 }
 
-fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result<(), ExitMsg> {
+fn send_bytes(f: &mut Box<dyn SerialPort>, send: &[u8]) -> Result<(), ExitMsg> {
     f.write_all(send).map_err(|why| {
         ExitMsg::new(
             ExitCode::SerialSendMessageError,
@@ -77,6 +99,10 @@ fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result
         )
     })?;
 
+    Ok(())
+}
+
+fn expect_string(f: &mut Box<dyn SerialPort>, expect: &str) -> Result<(), ExitMsg> {
     let s = get_serial_string(f).map_err(|why| {
         ExitMsg::new(
             ExitCode::SerialExpectRecieveError,
@@ -93,67 +119,67 @@ fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result
     Ok(())
 }
 
+fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result<(), ExitMsg> {
+    send_bytes(f, send)?;
+    expect_string(f, expect)?;
+    Ok(())
+}
+
 // Tasks
 
 fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"JB\x05\r\n", "P001\r\n")
+    // Sends greeting, recieves protocol string
+    send_expect(f, CMD_GREET, RSP_PROTOCOL)
     // TODO: send nack in response to bad protocol
 }
 
 fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"P\x06\r\n", "L\x06\r\n")
+    // Host confirms protocol is good, recieves "link established"
+    send_expect(f, CMD_PROTOCOL_ACCEPT, RSP_LINK_ESTABLISHED)
 }
 
 fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"H\x30\r\n", "H\x31\r\n")
+    // confirm the device is still alive
+    send_expect(f, CMD_HEARTBEAT, RSP_HEARTBEAT)
 }
 
-fn transmit_system_info(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Result<(), ExitMsg> {
-    let m = format!(
-        "D\x11\x30{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_name, pcs.gpu_name, pcs.memory_total,
-    );
-    let m = m.as_bytes();
-    if m.len() > 128 {
-        log::warn!("TInit string longer than 64 bytes!");
-        log::warn!("TInit CPU Brand: '{}'.", pcs.cpu_name);
-        log::warn!("TInit GPU Brand: '{}'.", pcs.gpu_name);
-        log::warn!("TInit Memory: '{}'.", pcs.memory_total);
-        log::warn!("TInit string len: {} bytes.", m.len());
-        // log::warn!("TInit string: {:?}", m);
-    }
+fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputKey>, ExitMsg> {
+    send_bytes(f, CMD_GET_INPUT_KEYS)?;
+    let _resp = get_serial_string(f)?;
 
-    send_expect(f, m, "D\x11\x06\r\n")
+    let mut result = HashSet::new();
+    result.insert(InputKey::KeyboardSwitch1);
+
+    Ok(result)
 }
 
-fn transmit_system_stats(f: &mut Box<dyn SerialPort>, pcs: &SystemReport) -> Result<(), ExitMsg> {
-    let m = format!(
-        "D\x11\x31{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F{}\x1F\r\n",
-        pcs.cpu_freq,
-        pcs.cpu_temp,
-        pcs.cpu_load,
-        pcs.memory_used,
-        pcs.gpu_temp,
-        pcs.gpu_core_clock,
-        pcs.gpu_core_load,
-        pcs.gpu_memory_clock,
-        pcs.gpu_memory_load,
-    );
-    let m = m.as_bytes();
+fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Peripheral>, ExitMsg> {
+    send_bytes(f, CMD_GET_PERIPHERALS)?;
+    let _resp = get_serial_string(f)?;
 
-    send_expect(f, m, "D\x11\x06\r\n")
-}
+    let mut result = HashSet::new();
+    result.insert(Peripheral::Keyboard);
+    result.insert(Peripheral::Knobs1);
+    result.insert(Peripheral::Knobs2);
+    result.insert(Peripheral::Pedal1);
+    result.insert(Peripheral::Pedal2);
+    result.insert(Peripheral::Pedal3);
 
-fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x30\r\n", RSP_DISCONNECTED)
+    Ok(result)
 }
 
 fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x31\r\n", RSP_DISCONNECTED)
+    // tell the device to reboot for updating
+    send_expect(f, CMD_UPDATE, RSP_DISCONNECTED)
 }
 
-fn transmit_test_function_0_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    send_expect(f, b"U\x32\x30\r\n", "U\x12\x06\r\n")
+fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    // tell the device to disconnect cleanly
+    send_expect(f, CMD_DISCONNECT, RSP_DISCONNECTED)
+}
+
+fn transmit_test_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+    send_expect(f, CMD_TEST, RSP_DEV4_ACK)
 }
 
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
@@ -198,51 +224,49 @@ pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
 
 pub fn serial_task(
     f: &mut Box<dyn SerialPort>,
-    sysreport_rx: &Receiver<SystemReport>,
     serialcommand_rx: &Receiver<SerialCommand>,
     serialevent_tx: &Sender<SerialEvent>,
 ) -> Result<(), ExitMsg> {
-    // let mut pcs = PCSystem::new()?;
-    let mut sysreport = sysreport_rx
-        .recv()
-        .expect("did not recieve sysreport for serial");
+    // Flush serial command queue
+    while let Ok(_) = serialcommand_rx.try_recv() {}
 
+    // Greet and link up
     greet_host(f)?;
     link_confirm_host(f)?;
-
     serialevent_tx
         .send(SerialEvent::Connected)
         .expect("failed to send command");
 
-    transmit_system_info(f, &sysreport)?;
+    let peripherals = transmit_get_peripherals(f)?;
+    serialevent_tx
+        .send(SerialEvent::GetPeripherals(peripherals))
+        .expect("failed to send command");
 
     let mut timer = Instant::now();
-
     'forv: loop {
+        // TODO: Despite yielding, this can still lead to high CPU usage, and should probably be fixed.
         if Instant::now() < timer {
             yield_now();
             continue;
         }
-        timer = Instant::now().add(Duration::from_millis(500));
+        timer = Instant::now() + Duration::from_millis(10);
 
-        transmit_heartbeat(f)?;
+        transmit_heartbeat(f)?; // TODO: replace with get input keys
 
-        if let Ok(newreport) = sysreport_rx.try_recv() {
-            sysreport = newreport;
-            transmit_system_stats(f, &sysreport)?;
+        // TODO: query device for pressed buttons
+        let keys = transmit_get_input_keys(f)?;
+        if let Err(_e) = serialevent_tx.send(SerialEvent::GetInputKeys(keys)) {
+            todo!();
         }
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
-                SerialCommand::TestFunction0 => {
-                    transmit_test_function_0_signal(f)?;
-                }
-                SerialCommand::DisconnectDevice => {
-                    transmit_disconnect_signal(f)?;
-                    if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
-                        log::warn!("Disconnect event signal failed, reason: `{}`", e);
+                SerialCommand::_GetInputKeys => (),
+                SerialCommand::GetPeripherals => {
+                    let peripherals = transmit_get_peripherals(f)?;
+                    if let Err(_e) = serialevent_tx.send(SerialEvent::GetPeripherals(peripherals)) {
+                        todo!();
                     }
-                    break 'forv; // The device has disconnected, we should too.
                 }
                 SerialCommand::UpdateDevice => {
                     transmit_update_signal(f)?;
@@ -251,10 +275,18 @@ pub fn serial_task(
                     }
                     break 'forv; // The device has disconnected, we should too.
                 }
+                SerialCommand::DisconnectDevice => {
+                    transmit_disconnect_signal(f)?;
+                    if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
+                        log::warn!("Disconnect event signal failed, reason: `{}`", e);
+                    }
+                    break 'forv; // The device has disconnected, we should too.
+                }
+                SerialCommand::TestFunction => {
+                    transmit_test_signal(f)?;
+                }
             }
         }
-
-        // TODO: implement recieving command check
     }
 
     Ok(())

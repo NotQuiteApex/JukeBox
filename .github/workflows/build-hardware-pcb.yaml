@@ -9,8 +9,8 @@ jobs:
   build-hardware-pcb:
     runs-on: ubuntu-latest
     steps:
-      - name: "Add KiCAD 7 PPA"
-        run: sudo add-apt-repository ppa:kicad/kicad-7.0-releases && sudo apt update
+      - name: "Add KiCAD 8 PPA"
+        run: sudo add-apt-repository ppa:kicad/kicad-8.0-releases && sudo apt update
       - name: "Get dependencies"
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
