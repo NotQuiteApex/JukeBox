@@ -17,11 +17,11 @@ use modules::*;
 
 use embedded_hal::timer::CountDown as _;
 use panic_probe as _;
-use rp_pico::hal::multicore::{Multicore, Stack};
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
     gpio::{DynPinId, FunctionSioInput, FunctionSioOutput, Pin, PinState, PullDown},
+    multicore::{Multicore, Stack},
     pac::Peripherals,
     pio::PIOExt,
     sio::Sio,
@@ -50,7 +50,9 @@ static mut CORE1_STACK: Stack<4096> = Stack::new();
 #[entry]
 fn main() -> ! {
     // load unique flash id
+    let ver = env!("CARGO_PKG_VERSION");
     let uid = uid::get_flash_uid();
+    info!("ver:{}, uid:{}", ver, uid);
 
     // set up hardware interfaces
     let mut pac = Peripherals::take().unwrap();
@@ -67,42 +69,17 @@ fn main() -> ! {
     .ok()
     .unwrap();
     let mut sio = Sio::new(pac.SIO);
-    let pins = Pins::new(
-        pac.IO_BANK0,
-        pac.PADS_BANK0,
-        sio.gpio_bank0,
-        &mut pac.RESETS,
-    );
     let mut mc = Multicore::new(&mut pac.PSM, &mut pac.PPB, &mut sio.fifo);
     let core1 = &mut mc.cores()[1];
 
     // set up timers
     let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
+    let mut serial_timer = timer.count_down();
+    serial_timer.start(100.millis());
     let mut hid_tick = timer.count_down();
     hid_tick.start(4.millis());
     let mut nkro_tick = timer.count_down();
     nkro_tick.start(1.millis());
-
-    // set up hardware
-    let kb_col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; 4] = [
-        pins.gpio12.into_pull_down_input().into_dyn_pin(),
-        pins.gpio13.into_pull_down_input().into_dyn_pin(),
-        pins.gpio14.into_pull_down_input().into_dyn_pin(),
-        pins.gpio15.into_pull_down_input().into_dyn_pin(),
-    ];
-    let kb_row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; 3] = [
-        pins.gpio9
-            .into_push_pull_output_in_state(PinState::Low)
-            .into_dyn_pin(),
-        pins.gpio10
-            .into_push_pull_output_in_state(PinState::Low)
-            .into_dyn_pin(),
-        pins.gpio11
-            .into_push_pull_output_in_state(PinState::Low)
-            .into_dyn_pin(),
-    ];
-
-    let led_pin = pins.led.into_push_pull_output();
 
     // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
@@ -126,13 +103,43 @@ fn main() -> ! {
         .composite_with_iads()
         .build();
 
+    // set up inter-core mutexes
+
     // set up modules
-    let mut serial_mod = serial::SerialMod::new();
+    let mut serial_mod = serial::SerialMod::new(timer.count_down());
 
     // core 1 event loop (GPIO)
     let _ = core1.spawn(unsafe { &mut CORE1_STACK.mem }, move || {
         let mut pac = unsafe { Peripherals::steal() };
         // let core = unsafe { CorePeripherals::steal() };
+        // let sio = Sio::new(pac.SIO);
+        let pins = Pins::new(
+            pac.IO_BANK0,
+            pac.PADS_BANK0,
+            sio.gpio_bank0,
+            &mut pac.RESETS,
+        );
+
+        // set up GPIO
+        let kb_col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; 4] = [
+            pins.gpio12.into_pull_down_input().into_dyn_pin(),
+            pins.gpio13.into_pull_down_input().into_dyn_pin(),
+            pins.gpio14.into_pull_down_input().into_dyn_pin(),
+            pins.gpio15.into_pull_down_input().into_dyn_pin(),
+        ];
+        let kb_row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; 3] = [
+            pins.gpio9
+                .into_push_pull_output_in_state(PinState::Low)
+                .into_dyn_pin(),
+            pins.gpio10
+                .into_push_pull_output_in_state(PinState::Low)
+                .into_dyn_pin(),
+            pins.gpio11
+                .into_push_pull_output_in_state(PinState::Low)
+                .into_dyn_pin(),
+        ];
+
+        let led_pin = pins.led.into_push_pull_output();
 
         let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
         let ws = Ws2812::new(
@@ -143,6 +150,7 @@ fn main() -> ! {
             timer.count_down(),
         );
 
+        // set up modules
         let mut keyboard_mod =
             keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
 
@@ -206,7 +214,7 @@ fn main() -> ! {
         // update usb devices
         if usb_dev.poll(&mut [&mut usb_hid, &mut usb_serial]) {
             // handle serial
-            serial_mod.update(&mut usb_serial);
+            serial_mod.update(&mut usb_serial, ver, uid);
         }
     }
 }

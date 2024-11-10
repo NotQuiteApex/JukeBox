@@ -1,11 +1,10 @@
 // Graphical User Interface (pronounced like GIF)
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use eframe::egui::ahash::{HashSet, HashSetExt};
 use eframe::egui::{
     vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, SelectableLabel,
     Sense, TextBuffer, TextEdit, Ui, ViewportBuilder,
@@ -16,7 +15,9 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::reaction::{InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
-use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
+use crate::serial::{
+    serial_get_device, serial_task, SerialCommand, SerialConnectionDetails, SerialEvent,
+};
 use crate::splash::SPLASH_MESSAGES;
 
 #[derive(PartialEq)]
@@ -36,6 +37,13 @@ enum GuiDeviceTab {
     Pedal3,
 }
 
+#[derive(PartialEq)]
+enum ConnectionStatus {
+    Connected,
+    LostConnection,
+    Disconnected,
+}
+
 #[derive(Serialize, Deserialize)]
 struct JukeBoxConfig {
     current_profile: String,
@@ -48,11 +56,12 @@ struct JukeBoxGui {
     splash_timer: Instant,
     splash_index: usize,
 
-    conn_status: SerialEvent,
+    conn_status: ConnectionStatus,
 
     gui_tab: GuiTab,
     device_tab: GuiDeviceTab,
 
+    device_info: Option<SerialConnectionDetails>,
     device_peripherals: HashSet<Peripheral>,
 
     config: JukeBoxConfig,
@@ -85,10 +94,11 @@ impl JukeBoxGui {
         JukeBoxGui {
             splash_timer: Instant::now(),
             splash_index: 0usize,
-            conn_status: SerialEvent::Disconnected,
+            conn_status: ConnectionStatus::Disconnected,
             gui_tab: GuiTab::Device,
             device_tab: GuiDeviceTab::None,
             device_peripherals: HashSet::new(),
+            device_info: None,
             config: config,
             config_renaming_profile: false,
             config_profile_name_entry: String::new(),
@@ -154,9 +164,30 @@ impl JukeBoxGui {
 
             while let Ok(event) = s_evnt_rx.try_recv() {
                 match event {
-                    SerialEvent::Connected => self.conn_status = SerialEvent::Connected,
-                    SerialEvent::LostConnection => self.conn_status = SerialEvent::LostConnection,
-                    SerialEvent::Disconnected => self.conn_status = SerialEvent::Disconnected,
+                    SerialEvent::Connected(d) => {
+                        self.conn_status = ConnectionStatus::Connected;
+                        self.device_info = Some(d);
+                    }
+                    SerialEvent::LostConnection => {
+                        self.conn_status = ConnectionStatus::LostConnection;
+                        self.device_tab = GuiDeviceTab::None;
+                        self.device_peripherals.clear();
+                        self.device_info = None;
+                    }
+                    SerialEvent::Disconnected => {
+                        self.conn_status = ConnectionStatus::Disconnected;
+                        self.device_tab = GuiDeviceTab::None;
+                        self.device_peripherals.clear();
+                        self.device_info = None;
+                    }
+                    SerialEvent::GetPeripherals(p) => {
+                        self.device_peripherals = p;
+                        if self.device_peripherals.contains(&Peripheral::Keyboard) {
+                            self.device_tab = GuiDeviceTab::Keyboard;
+                        } else {
+                            self.device_tab = GuiDeviceTab::None;
+                        }
+                    }
                     _ => todo!(),
                 }
             }
@@ -385,18 +416,17 @@ impl JukeBoxGui {
                         .expect("failed to send get peripherals command");
                 }
 
-                // TODO: may be out of order, we don't want that
-                for p in self.device_peripherals.iter() {
-                    let p = match p {
-                        Peripheral::Keyboard => (GuiDeviceTab::Keyboard, "Keyboard"),
-                        Peripheral::Knobs1 => (GuiDeviceTab::Knobs1, "Knobs 1"),
-                        Peripheral::Knobs2 => (GuiDeviceTab::Knobs2, "Knobs 2"),
-                        Peripheral::Pedal1 => (GuiDeviceTab::Pedal1, "Pedal 1"),
-                        Peripheral::Pedal2 => (GuiDeviceTab::Pedal2, "Pedal 2"),
-                        Peripheral::Pedal3 => (GuiDeviceTab::Pedal3, "Pedal 3"),
-                    };
-                    ui.selectable_value(&mut self.device_tab, p.0, p.1);
-                }
+                let mut f = |t1, t2, s: &str| {
+                    if self.device_peripherals.contains(t1) {
+                        ui.selectable_value(&mut self.device_tab, t2, s);
+                    }
+                };
+                f(&Peripheral::Pedal3, GuiDeviceTab::Pedal3, "Pedal 3");
+                f(&Peripheral::Pedal2, GuiDeviceTab::Pedal2, "Pedal 2");
+                f(&Peripheral::Pedal1, GuiDeviceTab::Pedal1, "Pedal 1");
+                f(&Peripheral::Knobs2, GuiDeviceTab::Knobs2, "Knobs 2");
+                f(&Peripheral::Knobs1, GuiDeviceTab::Knobs1, "Knobs 1");
+                f(&Peripheral::Keyboard, GuiDeviceTab::Keyboard, "Keyboard");
             });
         });
     }
@@ -411,14 +441,13 @@ impl JukeBoxGui {
             ui.label(format!("-  v{}", APP_VERSION));
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 let res = match self.conn_status {
-                    SerialEvent::Connected => ("Connected.", Color32::from_rgb(50, 200, 50)),
-                    SerialEvent::Disconnected => {
+                    ConnectionStatus::Connected => ("Connected.", Color32::from_rgb(50, 200, 50)),
+                    ConnectionStatus::Disconnected => {
                         ("Not connected.", Color32::from_rgb(200, 200, 50))
                     }
-                    SerialEvent::LostConnection => {
+                    ConnectionStatus::LostConnection => {
                         ("Lost connection!", Color32::from_rgb(200, 50, 50))
                     }
-                    _ => panic!("Bad Connection State!"),
                 };
 
                 ui.label(RichText::new(res.0).color(res.1));
@@ -428,7 +457,7 @@ impl JukeBoxGui {
 
     fn draw_update_button(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
         ui.horizontal(|ui| {
-            if self.conn_status != SerialEvent::Connected {
+            if self.conn_status != ConnectionStatus::Connected {
                 ui.disable();
             }
             if ui.button("Update JukeBox").clicked() {
@@ -443,7 +472,7 @@ impl JukeBoxGui {
 
     fn draw_testfunc_button(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
         ui.horizontal(|ui| {
-            if self.conn_status != SerialEvent::Connected {
+            if self.conn_status != ConnectionStatus::Connected {
                 ui.disable();
             }
             if ui.button("Debug Signal").clicked() {
@@ -459,14 +488,20 @@ impl JukeBoxGui {
     fn draw_settings_bottom(&mut self, ui: &mut Ui) {
         ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
             ui.horizontal(|ui| {
-                ui.label("Firmware Version: TODO");
+                if let Some(i) = &self.device_info {
+                    ui.label(format!("Firmware Version: {}", i.firmware_version));
+                }
+
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
                 });
             });
 
             ui.horizontal(|ui| {
-                ui.label("Serial ID: TODO");
+                if let Some(i) = &self.device_info {
+                    ui.label(format!("Device UID: {}", i.device_uid));
+                }
+
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
                     ui.label(" - ");

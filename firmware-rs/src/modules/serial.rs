@@ -1,31 +1,26 @@
 //! Serial processing module
 
 use defmt::info;
+use embedded_hal::timer::CountDown as _;
 use itertools::Itertools;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-use rp_pico::hal::usb::UsbBus;
+use rp_pico::hal::{fugit::ExtU32, timer::CountDown, usb::UsbBus};
 use usbd_serial::SerialPort;
 
 const BUFFER_SIZE: usize = 1024;
 
-const RSP_PROTOCOL: &[u8] = b"P001\r\n";
-const RSP_LINK_ESTABLISHED: &[u8] = b"L\r\n";
 const RSP_HEARTBEAT: &[u8] = b"H\r\n";
 const RSP_UNKNOWN: &[u8] = b"?\r\n";
 const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n";
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum SerialState {
     NotConnected,
-    Greeted,
     Connected,
 }
 
 enum Command {
-    Unknown,
-
     Greeting,
-    ProtocolAccept,
     Heartbeat,
 
     GetInputKeys,
@@ -34,18 +29,25 @@ enum Command {
     Update,
     Disconnect,
     Test,
+    Unknown,
 }
 
-pub struct SerialMod {
+const KEEPALIVE: u32 = 100;
+
+pub struct SerialMod<'timer> {
     buffer: ConstGenericRingBuffer<u8, BUFFER_SIZE>,
     state: SerialState,
+    keepalive_timer: CountDown<'timer>,
 }
 
-impl SerialMod {
-    pub fn new() -> Self {
+impl<'timer> SerialMod<'timer> {
+    pub fn new(mut timer: CountDown<'timer>) -> Self {
+        timer.start(KEEPALIVE.millis());
+
         SerialMod {
             buffer: ConstGenericRingBuffer::new(),
             state: SerialState::NotConnected,
+            keepalive_timer: timer,
         }
     }
 
@@ -62,23 +64,16 @@ impl SerialMod {
     fn send_response(serial: &mut SerialPort<UsbBus>, rsp: &[u8]) {
         match serial.write(rsp) {
             Err(_) => todo!(),
-            Ok(s) => {
-                if rsp.len() != s {
-                    todo!()
-                }
-
-                match serial.flush() {
-                    Err(_) => todo!(),
-                    Ok(()) => {}
-                }
-            }
+            Ok(_) => match serial.flush() {
+                Err(_) => {}
+                Ok(()) => {}
+            },
         };
     }
 
     fn decode_cmd(&mut self, size: usize) -> Command {
         let res = match self.buffer.get(0).unwrap() {
             b'\x05' => Command::Greeting,
-            b'P' => Command::ProtocolAccept,
             b'H' => Command::Heartbeat,
             b'U' => {
                 let p2 = self.buffer.get(1);
@@ -109,14 +104,32 @@ impl SerialMod {
     }
 
     pub fn _get_connection_status(&self) -> SerialState {
-        match self.state {
-            SerialState::Connected => SerialState::Connected,
-            _ => SerialState::NotConnected,
-        }
+        self.state.clone()
     }
 
-    pub fn update(&mut self, serial: &mut SerialPort<UsbBus>) {
-        let mut buf = [0u8; 64];
+    fn start_update(&mut self, serial: &mut SerialPort<UsbBus>) {
+        info!("Command Update");
+        // We don't care what state we're in for an update, because we need to be able to update whenever.
+        Self::send_response(serial, RSP_DISCONNECTED);
+        self.state = SerialState::NotConnected;
+        // reset_to_usb_boot(0, 0);
+        todo!();
+        // TODO: schedule a reset_to_usb_boot call,
+        // make sure to cleanly stop all other modules and clear screen and rgb.
+    }
+
+    pub fn update(
+        &mut self,
+        serial: &mut SerialPort<UsbBus>,
+        firmware_version: &str,
+        device_uid: &str,
+    ) {
+        if self.state == SerialState::Connected && self.keepalive_timer.wait().is_ok() {
+            info!("Keepalive triggered.");
+            self.state = SerialState::NotConnected;
+        }
+
+        let mut buf = [0u8; 128];
         match serial.read(&mut buf) {
             Err(_) => {}
             Ok(s) => {
@@ -135,74 +148,73 @@ impl SerialMod {
         let decode = self.decode_cmd(size.unwrap());
 
         // process command
-        let _res = match decode {
-            Command::Greeting => {
-                if self.state == SerialState::NotConnected {
-                    Self::send_response(serial, RSP_PROTOCOL);
-                    self.state = SerialState::Greeted;
-                } else {
-                    Self::send_response(serial, RSP_UNKNOWN);
+        let mut unknown = || {
+            Self::send_response(serial, RSP_UNKNOWN);
+            false
+        };
+        let valid = match self.state {
+            SerialState::NotConnected => match decode {
+                Command::Update => {
+                    self.start_update(serial);
+                    true
                 }
-            }
-            Command::ProtocolAccept => {
-                if self.state == SerialState::Greeted {
-                    Self::send_response(serial, RSP_LINK_ESTABLISHED);
+                Command::Greeting => {
+                    let _ = serial.write(b"L,");
+                    let _ = serial.write(firmware_version.as_bytes());
+                    let _ = serial.write(b",");
+                    let _ = serial.write(device_uid.as_bytes());
+                    Self::send_response(serial, b",\r\n");
+
                     self.state = SerialState::Connected;
                     info!("Serial Connected");
-                } else {
-                    Self::send_response(serial, RSP_UNKNOWN);
+                    true
                 }
-            }
-            Command::Heartbeat => {
-                if self.state == SerialState::Connected {
-                    Self::send_response(serial, RSP_HEARTBEAT)
-                } else {
-                    Self::send_response(serial, RSP_UNKNOWN);
+                _ => unknown(),
+            },
+            SerialState::Connected => match decode {
+                Command::Update => {
+                    self.start_update(serial);
+                    true
                 }
-            }
-
-            Command::GetInputKeys => {
-                if self.state == SerialState::Connected {
+                Command::Test => {
+                    info!("Command Test");
+                    true
+                }
+                Command::Heartbeat => {
+                    Self::send_response(serial, RSP_HEARTBEAT);
+                    true
+                }
+                Command::GetInputKeys => {
                     info!("Command GetInputKeys");
-                    todo!() // TODO: get all current key strokes from a mutex?
-                } else {
-                    Self::send_response(serial, RSP_UNKNOWN);
+                    // TODO: get all current key strokes from a mutex?
+                    todo!();
+                    // true
                 }
-            }
-            Command::GetPeripherals => {
-                if self.state == SerialState::Connected {
+                Command::GetPeripherals => {
                     info!("Command GetPeripherals");
-                    todo!() // TODO: get all peripherals from a quick bus scan in other thread
-                } else {
-                    Self::send_response(serial, RSP_UNKNOWN);
+                    // A - Peripheral Response Indicator
+                    // K - Keyboard Peripheral
+                    // N - Knobs 1 Peripheral
+                    // O - Knobs 2 Peripheral
+                    // P - Pedal 1 Peripheral
+                    // E - Pedal 2 Peripheral
+                    // D - Pedal 3 Peripheral
+                    Self::send_response(serial, b"AK\r\n");
+                    // TODO: get all peripherals from a quick bus scan in other thread
+                    true
                 }
-            }
-
-            Command::Update => {
-                info!("Command Update");
-                // We don't care what state we're in for an update, because we need to be able to update whenever.
-                Self::send_response(serial, RSP_DISCONNECTED);
-                self.state = SerialState::NotConnected;
-                // reset_to_usb_boot(0, 0);
-                todo!();
-                // TODO: schedule a reset_to_usb_boot call,
-                // make sure to cleanly stop all other modules and clear screen and rgb.
-            }
-            Command::Disconnect => {
-                if self.state == SerialState::Connected {
+                Command::Disconnect => {
                     Self::send_response(serial, RSP_DISCONNECTED);
                     self.state = SerialState::NotConnected;
                     info!("Serial Disconnected");
-                } else {
-                    Self::send_response(serial, RSP_UNKNOWN);
+                    true
                 }
-            }
-            Command::Test => info!("Command Test"),
-
-            Command::Unknown => {
-                // We don't know what the host wanted, so we'll communicate as such.
-                Self::send_response(serial, RSP_UNKNOWN);
-            }
+                _ => unknown(),
+            },
         };
+
+        if valid {
+            self.keepalive_timer.start(KEEPALIVE.millis()); // restart keepalive timer with valid command
+        }
     }
 }

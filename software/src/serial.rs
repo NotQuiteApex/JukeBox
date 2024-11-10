@@ -11,7 +11,6 @@ use std::time::{Duration, Instant};
 
 // Utility
 const CMD_GREET: &[u8] = b"\x05\r\n";
-const CMD_PROTOCOL_ACCEPT: &[u8] = b"P\r\n";
 const CMD_HEARTBEAT: &[u8] = b"H\r\n";
 
 const CMD_TEST: &[u8] = b"U\x37\r\n";
@@ -32,7 +31,6 @@ const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
 const RSP_DEV4_ACK: &str = "U\x14\x06\r\n";
 
 pub enum SerialCommand {
-    _GetInputKeys,
     GetPeripherals,
     UpdateDevice,
     DisconnectDevice,
@@ -40,13 +38,21 @@ pub enum SerialCommand {
 }
 
 #[derive(PartialEq)]
+pub struct SerialConnectionDetails {
+    pub firmware_version: String,
+    pub device_uid: String,
+}
+
+#[derive(PartialEq)]
 pub enum SerialEvent {
-    Connected,
+    Connected(SerialConnectionDetails),
     GetInputKeys(HashSet<InputKey>),
     GetPeripherals(HashSet<Peripheral>),
     LostConnection,
     Disconnected,
 }
+
+// TODO: replace ExitMsg with SerialErr (since serial is not used in the main thread)
 
 fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
     let timeout = Instant::now() + Duration::from_secs(3);
@@ -128,15 +134,33 @@ fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result
 
 // Tasks
 
-fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    // Sends greeting, recieves protocol string
-    send_expect(f, CMD_GREET, RSP_PROTOCOL)
-    // TODO: send nack in response to bad protocol
-}
+fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, ExitMsg> {
+    // Host confirms protocol is good, recieves "link established" with some info about the device
+    send_bytes(f, CMD_GREET)?;
+    let resp = get_serial_string(f)?;
 
-fn link_confirm_host(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
-    // Host confirms protocol is good, recieves "link established"
-    send_expect(f, CMD_PROTOCOL_ACCEPT, RSP_LINK_ESTABLISHED)
+    if resp.chars().nth(0).unwrap() != 'L' {
+        todo!()
+    }
+
+    let mut firmware_version: Option<_> = None;
+    let mut device_uid: Option<_> = None;
+    for (i, s) in resp.split(",").enumerate() {
+        if i == 1 {
+            firmware_version = Some(s);
+        } else if i == 2 {
+            device_uid = Some(s);
+        }
+    }
+
+    if firmware_version.is_none() || device_uid.is_none() {
+        todo!()
+    }
+
+    Ok(SerialConnectionDetails {
+        firmware_version: firmware_version.unwrap().to_owned(),
+        device_uid: device_uid.unwrap().to_owned(),
+    })
 }
 
 fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
@@ -156,15 +180,36 @@ fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputK
 
 fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Peripheral>, ExitMsg> {
     send_bytes(f, CMD_GET_PERIPHERALS)?;
-    let _resp = get_serial_string(f)?;
+    let resp = get_serial_string(f)?;
+
+    if resp.chars().nth(0).unwrap() != 'A' {
+        todo!()
+    }
 
     let mut result = HashSet::new();
-    result.insert(Peripheral::Keyboard);
-    result.insert(Peripheral::Knobs1);
-    result.insert(Peripheral::Knobs2);
-    result.insert(Peripheral::Pedal1);
-    result.insert(Peripheral::Pedal2);
-    result.insert(Peripheral::Pedal3);
+    for c in resp.chars() {
+        match c {
+            'K' => {
+                result.insert(Peripheral::Keyboard);
+            }
+            'N' => {
+                result.insert(Peripheral::Knobs1);
+            }
+            'O' => {
+                result.insert(Peripheral::Knobs2);
+            }
+            'P' => {
+                result.insert(Peripheral::Pedal1);
+            }
+            'E' => {
+                result.insert(Peripheral::Pedal2);
+            }
+            'D' => {
+                result.insert(Peripheral::Pedal3);
+            }
+            _ => {}
+        }
+    }
 
     Ok(result)
 }
@@ -232,16 +277,16 @@ pub fn serial_task(
     while let Ok(_) = serialcommand_rx.try_recv() {}
 
     // Greet and link up
-    greet_host(f)?;
-    link_confirm_host(f)?;
+    // TODO: merge greet_host and link_confirm_host and base protocol on firmware version
+    let device_info = greet_host(f)?;
     serialevent_tx
-        .send(SerialEvent::Connected)
+        .send(SerialEvent::Connected(device_info))
         .expect("failed to send command");
 
-    // let peripherals = transmit_get_peripherals(f)?;
-    // serialevent_tx
-    //     .send(SerialEvent::GetPeripherals(peripherals))
-    //     .expect("failed to send command");
+    let peripherals = transmit_get_peripherals(f)?;
+    serialevent_tx
+        .send(SerialEvent::GetPeripherals(peripherals))
+        .expect("failed to send command");
 
     let mut timer = Instant::now();
     'forv: loop {
@@ -262,7 +307,6 @@ pub fn serial_task(
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
-                SerialCommand::_GetInputKeys => (),
                 SerialCommand::GetPeripherals => {
                     let peripherals = transmit_get_peripherals(f)?;
                     if let Err(_e) = serialevent_tx.send(SerialEvent::GetPeripherals(peripherals)) {
