@@ -10,20 +10,21 @@ use std::thread::yield_now;
 use std::time::{Duration, Instant};
 
 // Utility
-const CMD_GREET: &[u8] = b"JB\x05\r\n";
-const CMD_PROTOCOL_ACCEPT: &[u8] = b"P\x06\r\n";
-const CMD_HEARTBEAT: &[u8] = b"H\x30\r\n";
+const CMD_GREET: &[u8] = b"\x05\r\n";
+const CMD_PROTOCOL_ACCEPT: &[u8] = b"P\r\n";
+const CMD_HEARTBEAT: &[u8] = b"H\r\n";
 
-const CMD_DISCONNECT: &[u8] = b"U\x30\r\n";
-const CMD_UPDATE: &[u8] = b"U\x31\r\n";
-const CMD_TEST: &[u8] = b"U\x39\x39\r\n";
+const CMD_TEST: &[u8] = b"U\x37\r\n";
+const CMD_UPDATE: &[u8] = b"U\x38\r\n";
+const CMD_DISCONNECT: &[u8] = b"U\x39\r\n";
 
-const CMD_GET_INPUT_KEYS: &[u8] = b"U\x30\x30\r\n";
-const CMD_GET_PERIPHERALS: &[u8] = b"U\x31\x30\r\n";
+const CMD_GET_INPUT_KEYS: &[u8] = b"U\x30\r\n";
+const CMD_GET_PERIPHERALS: &[u8] = b"U\x31\r\n";
 
 const RSP_PROTOCOL: &str = "P001\r\n";
-const RSP_LINK_ESTABLISHED: &str = "L\x06\r\n";
-const RSP_HEARTBEAT: &str = "H\x31\r\n";
+const RSP_LINK_ESTABLISHED: &str = "L\r\n";
+const RSP_HEARTBEAT: &str = "H\r\n";
+const RSP_UNKNOWN: &[u8] = b"?\r\n";
 const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
 // const RSP_DEV1_ACK: &str = "U\x11\x06\r\n";
 // const RSP_DEV2_ACK: &str = "U\x12\x06\r\n";
@@ -237,10 +238,10 @@ pub fn serial_task(
         .send(SerialEvent::Connected)
         .expect("failed to send command");
 
-    let peripherals = transmit_get_peripherals(f)?;
-    serialevent_tx
-        .send(SerialEvent::GetPeripherals(peripherals))
-        .expect("failed to send command");
+    // let peripherals = transmit_get_peripherals(f)?;
+    // serialevent_tx
+    //     .send(SerialEvent::GetPeripherals(peripherals))
+    //     .expect("failed to send command");
 
     let mut timer = Instant::now();
     'forv: loop {
@@ -249,15 +250,15 @@ pub fn serial_task(
             yield_now();
             continue;
         }
-        timer = Instant::now() + Duration::from_millis(10);
+        timer = Instant::now() + Duration::from_millis(5);
 
         transmit_heartbeat(f)?; // TODO: replace with get input keys
 
         // TODO: query device for pressed buttons
-        let keys = transmit_get_input_keys(f)?;
-        if let Err(_e) = serialevent_tx.send(SerialEvent::GetInputKeys(keys)) {
-            todo!();
-        }
+        // let keys = transmit_get_input_keys(f)?;
+        // if let Err(_e) = serialevent_tx.send(SerialEvent::GetInputKeys(keys)) {
+        //     todo!();
+        // }
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {

@@ -13,7 +13,7 @@ use rp_pico::hal::{
 use usbd_hid::{device::keyboard::NKROBootKeyboard, page::Keyboard, UsbHidError};
 use usbd_human_interface_device as usbd_hid;
 
-const POLL_RATE: u32 = 10;
+const POLL_RATE: u32 = 5;
 const KEY_ROWS: usize = 3;
 const KEY_COLS: usize = 4;
 
