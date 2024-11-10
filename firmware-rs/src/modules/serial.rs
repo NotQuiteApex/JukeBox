@@ -3,7 +3,7 @@
 use defmt::info;
 use itertools::Itertools;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
-use rp_pico::hal::{rom_data::reset_to_usb_boot, usb::UsbBus};
+use rp_pico::hal::usb::UsbBus;
 use usbd_serial::SerialPort;
 
 const BUFFER_SIZE: usize = 1024;

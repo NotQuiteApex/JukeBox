@@ -15,26 +15,28 @@ mod modules {
 
 use modules::*;
 
-use rp_pico as bsp;
-use rp_pico::hal::pio::PIOExt;
-use rp_pico::hal::Clock;
-
-use bsp::entry;
-use bsp::hal::{
+use embedded_hal::timer::CountDown as _;
+use panic_probe as _;
+use rp_pico::hal::multicore::{Multicore, Stack};
+use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
     gpio::{DynPinId, FunctionSioInput, FunctionSioOutput, Pin, PinState, PullDown},
     pac::Peripherals,
+    pio::PIOExt,
     sio::Sio,
     usb,
     watchdog::Watchdog,
-    Timer,
+    Clock, Timer,
 };
-use embedded_hal::timer::CountDown as _;
-use panic_probe as _;
+use rp_pico::{entry, Pins};
 use ws2812_pio::Ws2812;
 
 use usb_device::{class_prelude::*, prelude::*};
+use usbd_hid::device::{
+    keyboard::NKROBootKeyboard,
+    // mouse::{WheelMouse, WheelMouseReport},
+};
 use usbd_hid::prelude::*;
 use usbd_human_interface_device as usbd_hid;
 use usbd_serial::SerialPort;
@@ -42,6 +44,8 @@ use usbd_serial::SerialPort;
 #[allow(unused_imports)]
 use defmt::*;
 use defmt_rtt as _;
+
+static mut CORE1_STACK: Stack<4096> = Stack::new();
 
 #[entry]
 fn main() -> ! {
@@ -52,7 +56,7 @@ fn main() -> ! {
     let mut pac = Peripherals::take().unwrap();
     let mut watchdog = Watchdog::new(pac.WATCHDOG);
     let clocks = init_clocks_and_plls(
-        bsp::XOSC_CRYSTAL_FREQ,
+        rp_pico::XOSC_CRYSTAL_FREQ,
         pac.XOSC,
         pac.CLOCKS,
         pac.PLL_SYS,
@@ -62,18 +66,22 @@ fn main() -> ! {
     )
     .ok()
     .unwrap();
-    let sio = Sio::new(pac.SIO);
-    let pins = bsp::Pins::new(
+    let mut sio = Sio::new(pac.SIO);
+    let pins = Pins::new(
         pac.IO_BANK0,
         pac.PADS_BANK0,
         sio.gpio_bank0,
         &mut pac.RESETS,
     );
+    let mut mc = Multicore::new(&mut pac.PSM, &mut pac.PPB, &mut sio.fifo);
+    let core1 = &mut mc.cores()[1];
 
     // set up timers
     let timer = Timer::new(pac.TIMER, &mut pac.RESETS, &clocks);
-    let mut tick_timer = timer.count_down();
-    tick_timer.start(1.millis());
+    let mut hid_tick = timer.count_down();
+    hid_tick.start(4.millis());
+    let mut nkro_tick = timer.count_down();
+    nkro_tick.start(1.millis());
 
     // set up hardware
     let kb_col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; 4] = [
@@ -96,15 +104,6 @@ fn main() -> ! {
 
     let led_pin = pins.led.into_push_pull_output();
 
-    let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
-    let ws = Ws2812::new(
-        pins.gpio2.into_function(),
-        &mut pio,
-        sm0,
-        clocks.peripheral_clock.freq(),
-        timer.count_down(),
-    );
-
     // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
         pac.USBCTRL_REGS,
@@ -115,6 +114,7 @@ fn main() -> ! {
     ));
     let mut usb_hid = UsbHidClassBuilder::new()
         .add_device(usbd_hid::device::keyboard::NKROBootKeyboardConfig::default())
+        // .add_device(usbd_hid::device::mouse::WheelMouseConfig::default())
         .build(&usb_bus);
     let mut usb_serial = SerialPort::new(&usb_bus);
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xF20A))
@@ -127,17 +127,73 @@ fn main() -> ! {
         .build();
 
     // set up modules
-    let mut keyboard_mod = keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
     let mut serial_mod = serial::SerialMod::new();
-    let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
-    let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
-    let mut screen_mod = screen::ScreenMod::new();
 
-    // main event loop
+    // core 1 event loop (GPIO)
+    let _ = core1.spawn(unsafe { &mut CORE1_STACK.mem }, move || {
+        let mut pac = unsafe { Peripherals::steal() };
+        // let core = unsafe { CorePeripherals::steal() };
+
+        let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
+        let ws = Ws2812::new(
+            pins.gpio2.into_function(),
+            &mut pio,
+            sm0,
+            clocks.peripheral_clock.freq(),
+            timer.count_down(),
+        );
+
+        let mut keyboard_mod =
+            keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
+
+        let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
+        let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
+        let mut screen_mod = screen::ScreenMod::new();
+
+        loop {
+            // update input devices
+            keyboard_mod.update();
+
+            // update accessories
+            led_mod.update();
+            rgb_mod.update(timer.get_counter());
+            screen_mod.update();
+        }
+    });
+
+    // main event loop (USB comms)
     loop {
+        // tick for hid devices
+        if hid_tick.wait().is_ok() {
+            // handle keyboard
+            match usb_hid
+                .device::<NKROBootKeyboard<'_, _>, _>()
+                .write_report([usbd_hid::page::Keyboard::NoEventIndicated; 12])
+            {
+                Ok(_) => {}
+                Err(UsbHidError::Duplicate) => {}
+                Err(UsbHidError::WouldBlock) => {}
+                Err(e) => {
+                    core::panic!("Failed to write keyboard report: {:?}", e)
+                }
+            }
+
+            // handle mouse
+            // match usb_hid
+            //     .device::<WheelMouse<'_, _>, _>()
+            //     .write_report(&WheelMouseReport::default())
+            // {
+            //     Ok(_) => {}
+            //     Err(UsbHidError::Duplicate) => {}
+            //     Err(UsbHidError::WouldBlock) => {}
+            //     Err(e) => {
+            //         core::panic!("Failed to write mouse report: {:?}", e)
+            //     }
+            // }
+        }
+
         // tick for n-key rollover
-        // TODO: move to keyboard module for cleanliness?
-        if tick_timer.wait().is_ok() {
+        if nkro_tick.wait().is_ok() {
             match usb_hid.tick() {
                 Ok(_) => {}
                 Err(UsbHidError::WouldBlock) => {}
@@ -149,13 +205,8 @@ fn main() -> ! {
 
         // update usb devices
         if usb_dev.poll(&mut [&mut usb_hid, &mut usb_serial]) {
-            keyboard_mod.update(&mut usb_hid.device());
+            // handle serial
             serial_mod.update(&mut usb_serial);
         }
-
-        // update peripherals
-        led_mod.update();
-        rgb_mod.update(timer.get_counter());
-        screen_mod.update();
     }
 }
