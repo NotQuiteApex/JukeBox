@@ -39,6 +39,14 @@ impl<'timer> RgbMod<'timer> {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.brightness = 0;
+        self.buffer = [(0, 0, 0).into(); RGB_LEN];
+        self.ws
+            .write(brightness(self.buffer.iter().copied(), self.brightness))
+            .unwrap();
+    }
+
     pub fn update(&mut self, t: Instant) {
         if !self.frame_timer.wait().is_ok() {
             return;

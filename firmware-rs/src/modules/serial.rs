@@ -7,14 +7,13 @@ use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rp_pico::hal::{fugit::ExtU32, timer::CountDown, usb::UsbBus};
 use usbd_serial::SerialPort;
 
-const BUFFER_SIZE: usize = 2048;
+use crate::mutex::Mutex;
+use crate::peripheral::{
+    ConnectedPeripherals, PeripheralsInputs, PERIPHERAL_ID_KEYBOARD, PERIPHERAL_ID_KNOBS_1,
+    PERIPHERAL_ID_KNOBS_2, PERIPHERAL_ID_PEDAL_1, PERIPHERAL_ID_PEDAL_2, PERIPHERAL_ID_PEDAL_3,
+};
 
-const PERIPHERAL_ID_KEYBOARD: u8 = 0b1000_0000;
-const PERIPHERAL_ID_KNOBS_1: u8 = 0b1000_0010;
-const PERIPHERAL_ID_KNOBS_2: u8 = 0b1000_0011;
-const PERIPHERAL_ID_PEDAL_1: u8 = 0b1000_0101;
-const PERIPHERAL_ID_PEDAL_2: u8 = 0b1000_0110;
-const PERIPHERAL_ID_PEDAL_3: u8 = 0b1000_0111;
+const BUFFER_SIZE: usize = 2048;
 
 const RSP_HEARTBEAT: &[u8] = b"H\r\n";
 const RSP_UNKNOWN: &[u8] = b"?\r\n";
@@ -26,6 +25,7 @@ pub enum SerialState {
     Connected,
 }
 
+#[derive(defmt::Format)]
 enum Command {
     Greeting,
     Heartbeat,
@@ -128,16 +128,17 @@ impl<'timer> SerialMod<'timer> {
         self.state.clone()
     }
 
-    fn start_update(&mut self, serial: &mut SerialPort<UsbBus>) {
+    fn start_update(
+        &mut self,
+        serial: &mut SerialPort<UsbBus>,
+        update_trigger_mutex: &mut Mutex<2, bool>,
+    ) {
         info!("Command Update");
-        // we don't care what state we're in for an update,
-        // because we need to be able to update whenever.
         Self::send_response(serial, RSP_DISCONNECTED);
         self.state = SerialState::NotConnected;
-        // reset_to_usb_boot(0, 0);
-        todo!();
-        // TODO: schedule a reset_to_usb_boot call,
-        // make sure to cleanly stop all other modules and clear screen and rgb.
+        update_trigger_mutex.with_mut_lock(|u| {
+            *u = true;
+        });
     }
 
     pub fn update(
@@ -145,6 +146,9 @@ impl<'timer> SerialMod<'timer> {
         serial: &mut SerialPort<UsbBus>,
         firmware_version: &str,
         device_uid: &str,
+        connected_peripherals_mutex: &Mutex<0, ConnectedPeripherals>,
+        peripheral_inputs_mutex: &Mutex<1, PeripheralsInputs>,
+        update_trigger_mutex: &mut Mutex<2, bool>,
     ) {
         if self.state == SerialState::Connected && self.keepalive_timer.wait().is_ok() {
             info!("Keepalive triggered.");
@@ -177,7 +181,7 @@ impl<'timer> SerialMod<'timer> {
         let valid = match self.state {
             SerialState::NotConnected => match decode {
                 Command::Update => {
-                    self.start_update(serial);
+                    self.start_update(serial, update_trigger_mutex);
                     true
                 }
                 Command::Greeting => {
@@ -195,7 +199,7 @@ impl<'timer> SerialMod<'timer> {
             },
             SerialState::Connected => match decode {
                 Command::Update => {
-                    self.start_update(serial);
+                    self.start_update(serial, update_trigger_mutex);
                     true
                 }
                 Command::Test => {
@@ -208,37 +212,72 @@ impl<'timer> SerialMod<'timer> {
                 }
                 Command::GetInputKeys => {
                     info!("Command GetInputKeys");
-                    todo!();
+
+                    // copy peripherals and inputs out
+                    let mut peripherals = ConnectedPeripherals::default();
+                    let mut inputs = PeripheralsInputs::default();
+                    connected_peripherals_mutex.with_lock(|c| {
+                        peripherals = *c;
+                    });
+                    peripheral_inputs_mutex.with_lock(|i| {
+                        inputs = *i;
+                    });
+                    let peripherals = peripherals;
+                    let inputs = inputs;
+
+                    // write all the inputs out
                     let _ = serial.write(b"I");
-                    // TODO: get all current key strokes from a mutex?
-                    // TODO: send these conditionally
-                    let _ = serial.write(&[PERIPHERAL_ID_KEYBOARD, 0, 0]);
-                    let _ = serial.write(&[PERIPHERAL_ID_KNOBS_1, 0]);
-                    let _ = serial.write(&[PERIPHERAL_ID_KNOBS_2, 0]);
-                    let _ = serial.write(&[PERIPHERAL_ID_PEDAL_1, 0]);
-                    let _ = serial.write(&[PERIPHERAL_ID_PEDAL_2, 0]);
-                    let _ = serial.write(&[PERIPHERAL_ID_PEDAL_3, 0]);
+                    if peripherals.keyboard.connected() {
+                        let _ = serial.write(&inputs.keyboard.encode());
+                    }
+                    if peripherals.knobs1.connected() {
+                        let _ = serial.write(&inputs.knobs1.encode_1());
+                    }
+                    if peripherals.knobs2.connected() {
+                        let _ = serial.write(&inputs.knobs2.encode_2());
+                    }
+                    if peripherals.pedal1.connected() {
+                        let _ = serial.write(&inputs.pedal1.encode_1());
+                    }
+                    if peripherals.pedal2.connected() {
+                        let _ = serial.write(&inputs.pedal2.encode_2());
+                    }
+                    if peripherals.pedal3.connected() {
+                        let _ = serial.write(&inputs.pedal3.encode_3());
+                    }
                     Self::send_response(serial, b"\r\n");
-                    // we'll need to pack bits for efficient transfer
-                    // write I
-                    // write peripheral id word (0b0 - keyboard, 0b1XX - pedal, 0b1X - knob), then write peripheral word
-                    // keyboard word - 16 bit word, each bit for a key (0 up, 1 pressed)
-                    // pedal pad word - 8 bit word per pedal, last 3 bits are keys
-                    // knob word - last bits are 2 sets of 3 bits;
-                    // -- first bit is key, second two are rotation (00 - none, 10 - CCW, 01 - CW)
-                    // write \r\n
+
                     true
                 }
                 Command::GetPeripherals => {
                     info!("Command GetPeripherals");
+
+                    // copy peripherals out
+                    let mut peripherals = ConnectedPeripherals::default();
+                    connected_peripherals_mutex.with_lock(|c| {
+                        peripherals = *c;
+                    });
+                    let peripherals = peripherals;
+
                     let _ = serial.write(b"A");
-                    // TODO: send these conditionally
-                    let _ = serial.write(&[PERIPHERAL_ID_KEYBOARD]);
-                    let _ = serial.write(&[PERIPHERAL_ID_KNOBS_1]);
-                    let _ = serial.write(&[PERIPHERAL_ID_KNOBS_2]);
-                    let _ = serial.write(&[PERIPHERAL_ID_PEDAL_1]);
-                    let _ = serial.write(&[PERIPHERAL_ID_PEDAL_2]);
-                    let _ = serial.write(&[PERIPHERAL_ID_PEDAL_3]);
+                    if peripherals.keyboard.connected() {
+                        let _ = serial.write(&[PERIPHERAL_ID_KEYBOARD]);
+                    }
+                    if peripherals.knobs1.connected() {
+                        let _ = serial.write(&[PERIPHERAL_ID_KNOBS_1]);
+                    }
+                    if peripherals.knobs2.connected() {
+                        let _ = serial.write(&[PERIPHERAL_ID_KNOBS_2]);
+                    }
+                    if peripherals.pedal1.connected() {
+                        let _ = serial.write(&[PERIPHERAL_ID_PEDAL_1]);
+                    }
+                    if peripherals.pedal2.connected() {
+                        let _ = serial.write(&[PERIPHERAL_ID_PEDAL_2]);
+                    }
+                    if peripherals.pedal3.connected() {
+                        let _ = serial.write(&[PERIPHERAL_ID_PEDAL_3]);
+                    }
                     Self::send_response(serial, b"\r\n");
                     true
                 }

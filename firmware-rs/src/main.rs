@@ -4,6 +4,7 @@
 #![no_main]
 
 mod mutex;
+mod peripheral;
 mod uid;
 mod modules {
     pub mod keyboard;
@@ -18,6 +19,7 @@ use modules::*;
 use embedded_hal::timer::CountDown as _;
 use mutex::Mutex;
 use panic_probe as _;
+use peripheral::{ConnectedPeripherals, PeripheralConnection, PeripheralsInputs, SwitchPosition};
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
@@ -25,6 +27,7 @@ use rp_pico::hal::{
     multicore::{Multicore, Stack},
     pac::Peripherals,
     pio::PIOExt,
+    rom_data::reset_to_usb_boot,
     sio::Sio,
     usb,
     watchdog::Watchdog,
@@ -81,8 +84,6 @@ fn main() -> ! {
     hid_tick.start(4.millis());
     let mut nkro_tick = timer.count_down();
     nkro_tick.start(1.millis());
-    let mut eso_tick = timer.count_down();
-    eso_tick.start(1000.millis());
 
     // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
@@ -107,8 +108,15 @@ fn main() -> ! {
         .build();
 
     // set up inter-core mutexes
-    let mut test_data = 0usize;
-    let mut test_mutex = Mutex::<2, usize>::new(&mut test_data as *mut usize);
+    let mut connected_peripherals = ConnectedPeripherals::default();
+    let mut connected_peripherals_mutex = Mutex::<0, ConnectedPeripherals>::new(
+        &mut connected_peripherals as *mut ConnectedPeripherals,
+    );
+    let mut peripheral_inputs = PeripheralsInputs::default();
+    let mut peripheral_inputs_mutex =
+        Mutex::<1, PeripheralsInputs>::new(&mut peripheral_inputs as *mut PeripheralsInputs);
+    let mut update_trigger = false;
+    let mut update_trigger_mutex = Mutex::<2, bool>::new(&mut update_trigger as *mut bool);
 
     // set up modules
     let mut serial_mod = serial::SerialMod::new(timer.count_down());
@@ -172,8 +180,31 @@ fn main() -> ! {
             rgb_mod.update(timer.get_counter());
             screen_mod.update();
 
-            test_mutex.with_mut_lock(|d| {
-                *d += 1;
+            // update mutexes
+            connected_peripherals_mutex.with_mut_lock(|c| {
+                c.keyboard = PeripheralConnection::Connected;
+            });
+            peripheral_inputs_mutex.with_mut_lock(|i| {
+                i.keyboard.key1 = SwitchPosition::Down;
+            });
+
+            // check if we need to shutdown "cleanly" for update
+            update_trigger_mutex.with_lock(|u| {
+                if *u {
+                    led_mod.clear();
+                    rgb_mod.clear();
+                    screen_mod.clear();
+
+                    // wait a few cycles for the IO to finish
+                    for _ in 0..100 {
+                        cortex_m::asm::nop();
+                    }
+
+                    reset_to_usb_boot(0, 0);
+                    // TODO: schedule a reset_to_usb_boot call,
+                    // make sure to cleanly stop all other modules and clear screen and rgb.
+                    core::todo!()
+                }
             });
         }
     });
@@ -220,18 +251,17 @@ fn main() -> ! {
             };
         }
 
-        if eso_tick.wait().is_ok() {
-            test_mutex.with_lock(|d| {
-                // test_mutex.with_lock(|d| info!("blah"));
-                info!("read1: {}", d);
-                info!("read2: {}", d);
-            });
-        }
-
         // update usb devices
         if usb_dev.poll(&mut [&mut usb_hid, &mut usb_serial]) {
             // handle serial
-            serial_mod.update(&mut usb_serial, ver, uid);
+            serial_mod.update(
+                &mut usb_serial,
+                ver,
+                uid,
+                &connected_peripherals_mutex,
+                &peripheral_inputs_mutex,
+                &mut update_trigger_mutex,
+            );
         }
     }
 }

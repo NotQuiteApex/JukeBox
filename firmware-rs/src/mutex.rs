@@ -1,5 +1,4 @@
-use defmt::info;
-use rp_pico::hal::sio::{Spinlock, Spinlock0, SpinlockValid};
+use rp_pico::hal::sio::{Spinlock, SpinlockValid};
 
 #[derive(Clone, Copy)]
 pub struct Mutex<const N: usize, T>

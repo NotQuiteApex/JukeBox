@@ -7,5 +7,7 @@ impl ScreenMod {
         ScreenMod {}
     }
 
+    pub fn clear(&mut self) {}
+
     pub fn update(&mut self) {}
 }

@@ -19,16 +19,20 @@ const CMD_DISCONNECT: &[u8] = b"U\x39\r\n";
 
 const CMD_GET_INPUT_KEYS: &[u8] = b"U\x30\r\n";
 const CMD_GET_PERIPHERALS: &[u8] = b"U\x31\r\n";
+const PERIPHERAL_ID_KEYBOARD: u8 = 0b1000_0000;
+const PERIPHERAL_ID_KNOBS_1: u8 = 0b1000_0010;
+const PERIPHERAL_ID_KNOBS_2: u8 = 0b1000_0011;
+const PERIPHERAL_ID_PEDAL_1: u8 = 0b1000_0101;
+const PERIPHERAL_ID_PEDAL_2: u8 = 0b1000_0110;
+const PERIPHERAL_ID_PEDAL_3: u8 = 0b1000_0111;
 
-const RSP_PROTOCOL: &str = "P001\r\n";
-const RSP_LINK_ESTABLISHED: &str = "L\r\n";
-const RSP_HEARTBEAT: &str = "H\r\n";
+const RSP_HEARTBEAT: &[u8] = b"H\r\n";
 const RSP_UNKNOWN: &[u8] = b"?\r\n";
-const RSP_DISCONNECTED: &str = "\x04\x04\r\n";
-// const RSP_DEV1_ACK: &str = "U\x11\x06\r\n";
-// const RSP_DEV2_ACK: &str = "U\x12\x06\r\n";
-// const RSP_DEV3_ACK: &str = "U\x13\x06\r\n";
-const RSP_DEV4_ACK: &str = "U\x14\x06\r\n";
+const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n";
+// const RSP_DEV1_ACK: &[u8] = b"U\x11\x06\r\n";
+// const RSP_DEV2_ACK: &[u8] = b"U\x12\x06\r\n";
+// const RSP_DEV3_ACK: &[u8] = b"U\x13\x06\r\n";
+const RSP_DEV4_ACK: &[u8] = b"U\x14\x06\r\n";
 
 pub enum SerialCommand {
     GetPeripherals,
@@ -54,7 +58,7 @@ pub enum SerialEvent {
 
 // TODO: replace ExitMsg with SerialErr (since serial is not used in the main thread)
 
-fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
+fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<Vec<u8>, ExitMsg> {
     let timeout = Instant::now() + Duration::from_secs(3);
     let mut buf = Vec::new();
 
@@ -66,7 +70,7 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
             ));
         }
 
-        let mut b: [u8; 1] = [0; 1];
+        let mut b = [0u8; 1];
         let res = f.read(&mut b);
         if res.is_err() {
             continue;
@@ -79,15 +83,15 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<String, ExitMsg> {
             && buf.get(len - 1).map_or(false, |v| v == &b'\n')
         {
             // we matched the string, return
-            let s = String::from_utf8(buf);
-            if s.is_err() {
-                return Err(ExitMsg::new(
-                    ExitCode::SerialReadBadData,
-                    "Serial read bad data.".to_owned(),
-                ));
-            }
-            log::debug!("Serial got string {:?}.", s.clone().unwrap().as_bytes());
-            return Ok(s.unwrap());
+            // let s = String::from_utf8(buf);
+            // if s.is_err() {
+            //     return Err(ExitMsg::new(
+            //         ExitCode::SerialReadBadData,
+            //         "Serial read bad data.".to_owned(),
+            //     ));
+            // }
+            // log::debug!("Serial got string {:?}.", s.clone().unwrap().as_bytes());
+            return Ok(buf);
         }
     }
 }
@@ -109,24 +113,28 @@ fn send_bytes(f: &mut Box<dyn SerialPort>, send: &[u8]) -> Result<(), ExitMsg> {
     Ok(())
 }
 
-fn expect_string(f: &mut Box<dyn SerialPort>, expect: &str) -> Result<(), ExitMsg> {
+fn expect_string(f: &mut Box<dyn SerialPort>, expect: &[u8]) -> Result<(), ExitMsg> {
     let s = get_serial_string(f).map_err(|why| {
         ExitMsg::new(
             ExitCode::SerialExpectRecieveError,
             format!("Failed to get message '{:?}', reason: '{}'.", expect, why),
         )
     })?;
-    if s != String::from(expect) {
+
+    let matching = s.iter().zip(expect).filter(|&(a, b)| a == b).count() == s.len();
+
+    if !matching {
+        // TODO: check if s matches RSP_UNKNOWN
         return Err(ExitMsg::new(
             ExitCode::SerialExpectMatchError,
-            format!("Failed to match message '{:?}', got '{}'.", expect, s),
+            format!("Failed to match message '{:?}', got '{:?}'.", expect, s),
         ));
     }
 
     Ok(())
 }
 
-fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &str) -> Result<(), ExitMsg> {
+fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &[u8]) -> Result<(), ExitMsg> {
     send_bytes(f, send)?;
     expect_string(f, expect)?;
     Ok(())
@@ -139,13 +147,13 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, Ex
     send_bytes(f, CMD_GREET)?;
     let resp = get_serial_string(f)?;
 
-    if resp.chars().nth(0).unwrap() != 'L' {
+    if *resp.iter().nth(0).unwrap_or(&0) != b'L' {
         todo!()
     }
 
     let mut firmware_version: Option<_> = None;
     let mut device_uid: Option<_> = None;
-    for (i, s) in resp.split(",").enumerate() {
+    for (i, s) in resp.split(|c| *c == b',').enumerate() {
         if i == 1 {
             firmware_version = Some(s);
         } else if i == 2 {
@@ -158,8 +166,10 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, Ex
     }
 
     Ok(SerialConnectionDetails {
-        firmware_version: firmware_version.unwrap().to_owned(),
-        device_uid: device_uid.unwrap().to_owned(),
+        firmware_version: String::from_utf8(firmware_version.unwrap().to_vec())
+            .unwrap_or("UNKNOWN FIRMWARE".to_string()),
+        device_uid: String::from_utf8(device_uid.unwrap().to_vec())
+            .unwrap_or("UNKNOWN UID".to_string()),
     })
 }
 
@@ -182,29 +192,29 @@ fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Perip
     send_bytes(f, CMD_GET_PERIPHERALS)?;
     let resp = get_serial_string(f)?;
 
-    if resp.chars().nth(0).unwrap() != 'A' {
+    if *resp.iter().nth(0).unwrap_or(&0) != b'A' {
         todo!()
     }
 
     let mut result = HashSet::new();
-    for c in resp.chars() {
+    for c in resp {
         match c {
-            'K' => {
+            PERIPHERAL_ID_KEYBOARD => {
                 result.insert(Peripheral::Keyboard);
             }
-            'N' => {
+            PERIPHERAL_ID_KNOBS_1 => {
                 result.insert(Peripheral::Knobs1);
             }
-            'O' => {
+            PERIPHERAL_ID_KNOBS_2 => {
                 result.insert(Peripheral::Knobs2);
             }
-            'P' => {
+            PERIPHERAL_ID_PEDAL_1 => {
                 result.insert(Peripheral::Pedal1);
             }
-            'E' => {
+            PERIPHERAL_ID_PEDAL_2 => {
                 result.insert(Peripheral::Pedal2);
             }
-            'D' => {
+            PERIPHERAL_ID_PEDAL_3 => {
                 result.insert(Peripheral::Pedal3);
             }
             _ => {}
@@ -277,8 +287,8 @@ pub fn serial_task(
     while let Ok(_) = serialcommand_rx.try_recv() {}
 
     // Greet and link up
-    // TODO: merge greet_host and link_confirm_host and base protocol on firmware version
     let device_info = greet_host(f)?;
+    // TODO: check that firmware version is ok
     serialevent_tx
         .send(SerialEvent::Connected(device_info))
         .expect("failed to send command");

@@ -30,6 +30,10 @@ impl<'timer> LedMod<'timer> {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.led_pin.set_low().unwrap();
+    }
+
     pub fn update(&mut self) {
         if !self.timer.wait().is_ok() {
             return;
