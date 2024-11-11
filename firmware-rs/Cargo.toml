@@ -14,7 +14,7 @@ panic-probe = { version = "0.3", features = ["print-defmt"] }
 rp-pico = "0.9"
 usb-device = "0.3.2"
 # usbd-hid = "0.8.2"
-usbd-human-interface-device = "0.5.0"
+usbd-human-interface-device = { version = "0.5.0" }
 usbd-serial = "0.2.2"
 rp2040-flash = "0.5.1"
 ws2812-pio = "0.8.0"

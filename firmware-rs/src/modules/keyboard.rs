@@ -1,7 +1,5 @@
 //! Keyboard processing module
 
-use crate::util;
-
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 use embedded_hal::timer::CountDown as _;
 use rp_pico::hal::{
@@ -42,7 +40,7 @@ impl<'timer> KeyboardMod<'timer> {
 
         for row in 0..KEY_ROWS {
             self.row_pins[row].set_high().unwrap();
-            util::nop_loop(30);
+            nop_loop(30);
 
             for col in 0..KEY_COLS {
                 if self.col_pins[col].is_high().unwrap() {
@@ -68,5 +66,11 @@ impl<'timer> KeyboardMod<'timer> {
         }
 
         self.update_keys();
+    }
+}
+
+fn nop_loop(n: u8) {
+    for _n in 0..n {
+        cortex_m::asm::nop();
     }
 }

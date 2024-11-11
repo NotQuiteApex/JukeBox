@@ -3,8 +3,8 @@
 #![no_std]
 #![no_main]
 
+mod mutex;
 mod uid;
-mod util;
 mod modules {
     pub mod keyboard;
     pub mod led;
@@ -16,6 +16,7 @@ mod modules {
 use modules::*;
 
 use embedded_hal::timer::CountDown as _;
+use mutex::Mutex;
 use panic_probe as _;
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
@@ -45,7 +46,7 @@ use usbd_serial::SerialPort;
 use defmt::*;
 use defmt_rtt as _;
 
-static mut CORE1_STACK: Stack<4096> = Stack::new();
+static mut CORE1_STACK: Stack<2048> = Stack::new();
 
 #[entry]
 fn main() -> ! {
@@ -80,6 +81,8 @@ fn main() -> ! {
     hid_tick.start(4.millis());
     let mut nkro_tick = timer.count_down();
     nkro_tick.start(1.millis());
+    let mut eso_tick = timer.count_down();
+    eso_tick.start(1000.millis());
 
     // set up usb
     let usb_bus = UsbBusAllocator::new(usb::UsbBus::new(
@@ -104,6 +107,8 @@ fn main() -> ! {
         .build();
 
     // set up inter-core mutexes
+    let mut test_data = 0usize;
+    let mut test_mutex = Mutex::<2, usize>::new(&mut test_data as *mut usize);
 
     // set up modules
     let mut serial_mod = serial::SerialMod::new(timer.count_down());
@@ -166,6 +171,10 @@ fn main() -> ! {
             led_mod.update();
             rgb_mod.update(timer.get_counter());
             screen_mod.update();
+
+            test_mutex.with_mut_lock(|d| {
+                *d += 1;
+            });
         }
     });
 
@@ -209,6 +218,14 @@ fn main() -> ! {
                     core::panic!("Failed to process keyboard tick: {:?}", e)
                 }
             };
+        }
+
+        if eso_tick.wait().is_ok() {
+            test_mutex.with_lock(|d| {
+                // test_mutex.with_lock(|d| info!("blah"));
+                info!("read1: {}", d);
+                info!("read2: {}", d);
+            });
         }
 
         // update usb devices
