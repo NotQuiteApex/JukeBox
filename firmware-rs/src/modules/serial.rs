@@ -8,19 +8,13 @@ use rp_pico::hal::{fugit::ExtU32, timer::CountDown, usb::UsbBus};
 use usbd_serial::SerialPort;
 
 use crate::mutex::Mutex;
-use crate::peripheral::{ConnectedPeripherals, PeripheralsInputs};
+use crate::peripheral::{Connection, JBPeripheralInputs, JBPeripherals};
 
 const BUFFER_SIZE: usize = 2048;
 
 const RSP_HEARTBEAT: &[u8] = b"H\r\n";
 const RSP_UNKNOWN: &[u8] = b"?\r\n";
 const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n";
-
-#[derive(PartialEq, Clone)]
-pub enum SerialState {
-    NotConnected,
-    Connected,
-}
 
 #[derive(defmt::Format)]
 enum Command {
@@ -40,7 +34,7 @@ const KEEPALIVE: u32 = 100;
 
 pub struct SerialMod<'timer> {
     buffer: ConstGenericRingBuffer<u8, BUFFER_SIZE>,
-    state: SerialState,
+    state: Connection,
     keepalive_timer: CountDown<'timer>,
 }
 
@@ -50,7 +44,7 @@ impl<'timer> SerialMod<'timer> {
 
         SerialMod {
             buffer: ConstGenericRingBuffer::new(),
-            state: SerialState::NotConnected,
+            state: Connection::NotConnected,
             keepalive_timer: timer,
         }
     }
@@ -121,19 +115,15 @@ impl<'timer> SerialMod<'timer> {
         res
     }
 
-    pub fn _get_connection_status(&self) -> SerialState {
+    pub fn _get_connection_status(&self) -> Connection {
         self.state.clone()
     }
 
-    fn start_update(
-        &mut self,
-        serial: &mut SerialPort<UsbBus>,
-        update_trigger_mutex: &mut Mutex<2, bool>,
-    ) {
+    fn start_update(&mut self, serial: &mut SerialPort<UsbBus>, update_trigger: &Mutex<2, bool>) {
         info!("Command Update");
         Self::send_response(serial, RSP_DISCONNECTED);
-        self.state = SerialState::NotConnected;
-        update_trigger_mutex.with_mut_lock(|u| {
+        self.state = Connection::NotConnected;
+        update_trigger.with_mut_lock(|u| {
             *u = true;
         });
     }
@@ -143,13 +133,13 @@ impl<'timer> SerialMod<'timer> {
         serial: &mut SerialPort<UsbBus>,
         firmware_version: &str,
         device_uid: &str,
-        connected_peripherals_mutex: &Mutex<0, ConnectedPeripherals>,
-        peripheral_inputs_mutex: &Mutex<1, PeripheralsInputs>,
-        update_trigger_mutex: &mut Mutex<2, bool>,
+        connected_peripherals: &Mutex<0, JBPeripherals>,
+        peripheral_inputs: &Mutex<1, JBPeripheralInputs>,
+        update_trigger: &Mutex<2, bool>,
     ) {
-        if self.state == SerialState::Connected && self.keepalive_timer.wait().is_ok() {
+        if self.state == Connection::Connected && self.keepalive_timer.wait().is_ok() {
             info!("Keepalive triggered.");
-            self.state = SerialState::NotConnected;
+            self.state = Connection::NotConnected;
         }
 
         let mut buf = [0u8; 128];
@@ -176,9 +166,9 @@ impl<'timer> SerialMod<'timer> {
             false
         };
         let valid = match self.state {
-            SerialState::NotConnected => match decode {
+            Connection::NotConnected => match decode {
                 Command::Update => {
-                    self.start_update(serial, update_trigger_mutex);
+                    self.start_update(serial, update_trigger);
                     true
                 }
                 Command::Greeting => {
@@ -188,15 +178,15 @@ impl<'timer> SerialMod<'timer> {
                     let _ = serial.write(device_uid.as_bytes());
                     Self::send_response(serial, b",\r\n");
 
-                    self.state = SerialState::Connected;
+                    self.state = Connection::Connected;
                     info!("Serial Connected");
                     true
                 }
                 _ => unknown(),
             },
-            SerialState::Connected => match decode {
+            Connection::Connected => match decode {
                 Command::Update => {
-                    self.start_update(serial, update_trigger_mutex);
+                    self.start_update(serial, update_trigger);
                     true
                 }
                 Command::Test => {
@@ -211,12 +201,12 @@ impl<'timer> SerialMod<'timer> {
                     info!("Command GetInputKeys");
 
                     // copy peripherals and inputs out
-                    let mut peripherals = ConnectedPeripherals::default();
-                    let mut inputs = PeripheralsInputs::default();
-                    connected_peripherals_mutex.with_lock(|c| {
+                    let mut peripherals = JBPeripherals::default();
+                    let mut inputs = JBPeripheralInputs::default();
+                    connected_peripherals.with_lock(|c| {
                         peripherals = *c;
                     });
-                    peripheral_inputs_mutex.with_lock(|i| {
+                    peripheral_inputs.with_lock(|i| {
                         inputs = *i;
                     });
                     let peripherals = peripherals;
@@ -233,8 +223,8 @@ impl<'timer> SerialMod<'timer> {
                     info!("Command GetPeripherals");
 
                     // copy peripherals out
-                    let mut peripherals = ConnectedPeripherals::default();
-                    connected_peripherals_mutex.with_lock(|c| {
+                    let mut peripherals = JBPeripherals::default();
+                    connected_peripherals.with_lock(|c| {
                         peripherals = *c;
                     });
                     let peripherals = peripherals;
@@ -246,7 +236,7 @@ impl<'timer> SerialMod<'timer> {
                 }
                 Command::Disconnect => {
                     Self::send_response(serial, RSP_DISCONNECTED);
-                    self.state = SerialState::NotConnected;
+                    self.state = Connection::NotConnected;
                     info!("Serial Disconnected");
                     true
                 }

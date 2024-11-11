@@ -52,7 +52,7 @@ impl<'timer> RgbMod<'timer> {
             return;
         }
 
-        let t = ((t.duration_since_epoch().ticks() >> 13) % 360) as f32;
+        let t = ((t.duration_since_epoch().ticks() >> 12) % 360) as f32;
 
         for (i, led) in self.buffer.iter_mut().enumerate() {
             *led = hsv2rgb((t + (10 * (RGB_LEN - i)) as f32) % 360.0, 1.0, 1.0).into();

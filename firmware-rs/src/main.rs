@@ -20,7 +20,7 @@ use mutex::Mutex;
 
 use embedded_hal::timer::CountDown as _;
 use panic_probe as _;
-use peripheral::{ConnectedPeripherals, PeripheralConnection, PeripheralsInputs, SwitchPosition};
+use peripheral::{Connection, JBPeripheralInputs, JBPeripherals, SwitchPosition};
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
@@ -50,6 +50,11 @@ use defmt::*;
 use defmt_rtt as _;
 
 static mut CORE1_STACK: Stack<2048> = Stack::new();
+
+// inter-core mutexes
+static CONNECTED_PERIPHERALS: Mutex<0, JBPeripherals> = Mutex::new(JBPeripherals::default());
+static PERIPHERAL_INPUTS: Mutex<1, JBPeripheralInputs> = Mutex::new(JBPeripheralInputs::default());
+static UPDATE_TRIGGER: Mutex<2, bool> = Mutex::new(false);
 
 #[entry]
 fn main() -> ! {
@@ -107,23 +112,6 @@ fn main() -> ! {
         .composite_with_iads()
         .build();
 
-    // set up inter-core mutexes
-    #[derive(Default)]
-    struct TestStruct {}
-    impl Drop for TestStruct {
-        fn drop(&mut self) {
-            info!("dropped teststruct")
-        }
-    }
-    let test_mutex = mutex!(30, TestStruct);
-    test_mutex.with_lock(|_| {
-        info!("inside");
-    });
-
-    let mut connected_peripherals_mutex = mutex!(0, ConnectedPeripherals);
-    let mut peripheral_inputs_mutex = mutex!(1, PeripheralsInputs);
-    let mut update_trigger_mutex = mutex!(2, bool);
-
     // set up modules
     let mut serial_mod = serial::SerialMod::new(timer.count_down());
 
@@ -167,15 +155,15 @@ fn main() -> ! {
             screen_mod.update();
 
             // update mutexes
-            connected_peripherals_mutex.with_mut_lock(|c| {
-                c.keyboard = PeripheralConnection::Connected;
+            CONNECTED_PERIPHERALS.with_mut_lock(|c| {
+                c.keyboard = Connection::Connected;
             });
-            peripheral_inputs_mutex.with_mut_lock(|i| {
+            PERIPHERAL_INPUTS.with_mut_lock(|i| {
                 i.keyboard.key1 = SwitchPosition::Down;
             });
 
             // check if we need to shutdown "cleanly" for update
-            update_trigger_mutex.with_lock(|u| {
+            UPDATE_TRIGGER.with_lock(|u| {
                 if *u {
                     led_mod.clear();
                     rgb_mod.clear();
@@ -244,9 +232,9 @@ fn main() -> ! {
                 &mut usb_serial,
                 ver,
                 uid,
-                &connected_peripherals_mutex,
-                &peripheral_inputs_mutex,
-                &mut update_trigger_mutex,
+                &CONNECTED_PERIPHERALS,
+                &PERIPHERAL_INPUTS,
+                &UPDATE_TRIGGER,
             );
         }
     }

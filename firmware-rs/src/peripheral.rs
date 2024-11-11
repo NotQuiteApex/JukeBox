@@ -10,35 +10,45 @@ pub const PERIPHERAL_ID_PEDAL_1: u8 = 0b1000_0101;
 pub const PERIPHERAL_ID_PEDAL_2: u8 = 0b1000_0110;
 pub const PERIPHERAL_ID_PEDAL_3: u8 = 0b1000_0111;
 
-#[derive(Clone, Copy)]
-pub enum PeripheralConnection {
+#[derive(PartialEq, Clone, Copy)]
+pub enum Connection {
     NotConnected,
     Connected,
 }
-impl Default for PeripheralConnection {
-    fn default() -> Self {
-        PeripheralConnection::NotConnected
+impl Connection {
+    const fn default() -> Self {
+        Connection::NotConnected
     }
-}
-impl PeripheralConnection {
+
     pub fn connected(&self) -> bool {
         match self {
-            PeripheralConnection::NotConnected => false,
-            PeripheralConnection::Connected => true,
+            Connection::NotConnected => false,
+            Connection::Connected => true,
         }
     }
 }
 
-#[derive(Default, Clone, Copy)]
-pub struct ConnectedPeripherals {
-    pub keyboard: PeripheralConnection,
-    pub knobs1: PeripheralConnection,
-    pub knobs2: PeripheralConnection,
-    pub pedal1: PeripheralConnection,
-    pub pedal2: PeripheralConnection,
-    pub pedal3: PeripheralConnection,
+#[derive(Clone, Copy)]
+pub struct JBPeripherals {
+    pub keyboard: Connection,
+    pub knobs1: Connection,
+    pub knobs2: Connection,
+    pub pedal1: Connection,
+    pub pedal2: Connection,
+    pub pedal3: Connection,
 }
-impl ConnectedPeripherals {
+impl JBPeripherals {
+    pub const fn default() -> Self {
+        JBPeripherals {
+            keyboard: Connection::default(),
+            knobs1: Connection::default(),
+            knobs2: Connection::default(),
+            pedal1: Connection::default(),
+            pedal2: Connection::default(),
+            pedal3: Connection::default(),
+        }
+    }
+
     pub fn write_report(self, serial: &mut SerialPort<UsbBus>) {
         if self.keyboard.connected() {
             let _ = serial.write(&[PERIPHERAL_ID_KEYBOARD]);
@@ -66,12 +76,11 @@ pub enum SwitchPosition {
     Up,
     Down,
 }
-impl Default for SwitchPosition {
-    fn default() -> Self {
+impl SwitchPosition {
+    pub const fn default() -> Self {
         SwitchPosition::Up
     }
-}
-impl SwitchPosition {
+
     pub fn encode(self, pos: u8) -> u8 {
         match self {
             SwitchPosition::Up => 0,
@@ -80,7 +89,7 @@ impl SwitchPosition {
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct KeyboardInputs {
     pub key1: SwitchPosition,
     pub key2: SwitchPosition,
@@ -100,6 +109,27 @@ pub struct KeyboardInputs {
     pub key16: SwitchPosition,
 }
 impl KeyboardInputs {
+    pub const fn default() -> Self {
+        KeyboardInputs {
+            key1: SwitchPosition::default(),
+            key2: SwitchPosition::default(),
+            key3: SwitchPosition::default(),
+            key4: SwitchPosition::default(),
+            key5: SwitchPosition::default(),
+            key6: SwitchPosition::default(),
+            key7: SwitchPosition::default(),
+            key8: SwitchPosition::default(),
+            key9: SwitchPosition::default(),
+            key10: SwitchPosition::default(),
+            key11: SwitchPosition::default(),
+            key12: SwitchPosition::default(),
+            key13: SwitchPosition::default(),
+            key14: SwitchPosition::default(),
+            key15: SwitchPosition::default(),
+            key16: SwitchPosition::default(),
+        }
+    }
+
     pub fn encode(self) -> [u8; 3] {
         let w1 = self.key8.encode(7)
             | self.key7.encode(6)
@@ -127,12 +157,11 @@ pub enum KnobDirection {
     Clockwise,
     CounterClockwise,
 }
-impl Default for KnobDirection {
-    fn default() -> Self {
+impl KnobDirection {
+    pub const fn default() -> Self {
         KnobDirection::None
     }
-}
-impl KnobDirection {
+
     pub fn encode(self, pos: u8) -> u8 {
         match self {
             KnobDirection::None => 0,
@@ -142,7 +171,7 @@ impl KnobDirection {
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct KnobInputs {
     pub knob_left_switch: SwitchPosition,
     pub knob_left_direction: KnobDirection,
@@ -150,6 +179,15 @@ pub struct KnobInputs {
     pub knob_right_direction: KnobDirection,
 }
 impl KnobInputs {
+    pub const fn default() -> Self {
+        KnobInputs {
+            knob_left_switch: SwitchPosition::default(),
+            knob_left_direction: KnobDirection::default(),
+            knob_right_switch: SwitchPosition::default(),
+            knob_right_direction: KnobDirection::default(),
+        }
+    }
+
     fn encode(self, id: u8) -> [u8; 2] {
         let w = self.knob_left_switch.encode(5)
             | self.knob_left_direction.encode(3)
@@ -158,40 +196,53 @@ impl KnobInputs {
 
         [id, w]
     }
+
     pub fn encode_1(self) -> [u8; 2] {
         self.encode(PERIPHERAL_ID_KNOBS_1)
     }
+
     pub fn encode_2(self) -> [u8; 2] {
         self.encode(PERIPHERAL_ID_KNOBS_2)
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct PedalInputs {
     pub pedal_left: SwitchPosition,
     pub pedal_middle: SwitchPosition,
     pub pedal_right: SwitchPosition,
 }
 impl PedalInputs {
+    pub const fn default() -> Self {
+        PedalInputs {
+            pedal_left: SwitchPosition::default(),
+            pedal_middle: SwitchPosition::default(),
+            pedal_right: SwitchPosition::default(),
+        }
+    }
+
     fn encode(self, id: u8) -> [u8; 2] {
         [
             id,
             self.pedal_left.encode(2) | self.pedal_middle.encode(1) | self.pedal_right.encode(0),
         ]
     }
+
     pub fn encode_1(self) -> [u8; 2] {
         self.encode(PERIPHERAL_ID_PEDAL_1)
     }
+
     pub fn encode_2(self) -> [u8; 2] {
         self.encode(PERIPHERAL_ID_PEDAL_2)
     }
+
     pub fn encode_3(self) -> [u8; 2] {
         self.encode(PERIPHERAL_ID_PEDAL_3)
     }
 }
 
-#[derive(Default, Clone, Copy)]
-pub struct PeripheralsInputs {
+#[derive(Clone, Copy)]
+pub struct JBPeripheralInputs {
     pub keyboard: KeyboardInputs,
     pub knobs1: KnobInputs,
     pub knobs2: KnobInputs,
@@ -199,8 +250,19 @@ pub struct PeripheralsInputs {
     pub pedal2: PedalInputs,
     pub pedal3: PedalInputs,
 }
-impl PeripheralsInputs {
-    pub fn write_report(self, peripherals: ConnectedPeripherals, serial: &mut SerialPort<UsbBus>) {
+impl JBPeripheralInputs {
+    pub const fn default() -> Self {
+        JBPeripheralInputs {
+            keyboard: KeyboardInputs::default(),
+            knobs1: KnobInputs::default(),
+            knobs2: KnobInputs::default(),
+            pedal1: PedalInputs::default(),
+            pedal2: PedalInputs::default(),
+            pedal3: PedalInputs::default(),
+        }
+    }
+
+    pub fn write_report(self, peripherals: JBPeripherals, serial: &mut SerialPort<UsbBus>) {
         if peripherals.keyboard.connected() {
             let _ = serial.write(&self.keyboard.encode());
         }
