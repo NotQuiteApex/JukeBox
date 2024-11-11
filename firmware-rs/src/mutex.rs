@@ -32,3 +32,12 @@ where
         cortex_m::asm::dmb();
     }
 }
+
+#[macro_export]
+macro_rules! mutex {
+    ($N:expr, $T:ty) => {{
+        // TODO: might be dangerous? value gets dropped but data remains.
+        let mut i: $T = <$T>::default();
+        Mutex::<$N, $T>::new(&mut i as *mut $T)
+    }};
+}

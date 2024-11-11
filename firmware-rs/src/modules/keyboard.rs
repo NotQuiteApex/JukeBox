@@ -9,8 +9,8 @@ use rp_pico::hal::{
 };
 
 const POLL_RATE: u32 = 5;
-const KEY_ROWS: usize = 3;
-const KEY_COLS: usize = 4;
+pub const KEY_ROWS: usize = 3;
+pub const KEY_COLS: usize = 4;
 
 pub struct KeyboardMod<'timer> {
     col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; KEY_COLS],

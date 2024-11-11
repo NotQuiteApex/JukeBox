@@ -8,10 +8,7 @@ use rp_pico::hal::{fugit::ExtU32, timer::CountDown, usb::UsbBus};
 use usbd_serial::SerialPort;
 
 use crate::mutex::Mutex;
-use crate::peripheral::{
-    ConnectedPeripherals, PeripheralsInputs, PERIPHERAL_ID_KEYBOARD, PERIPHERAL_ID_KNOBS_1,
-    PERIPHERAL_ID_KNOBS_2, PERIPHERAL_ID_PEDAL_1, PERIPHERAL_ID_PEDAL_2, PERIPHERAL_ID_PEDAL_3,
-};
+use crate::peripheral::{ConnectedPeripherals, PeripheralsInputs};
 
 const BUFFER_SIZE: usize = 2048;
 
@@ -227,24 +224,7 @@ impl<'timer> SerialMod<'timer> {
 
                     // write all the inputs out
                     let _ = serial.write(b"I");
-                    if peripherals.keyboard.connected() {
-                        let _ = serial.write(&inputs.keyboard.encode());
-                    }
-                    if peripherals.knobs1.connected() {
-                        let _ = serial.write(&inputs.knobs1.encode_1());
-                    }
-                    if peripherals.knobs2.connected() {
-                        let _ = serial.write(&inputs.knobs2.encode_2());
-                    }
-                    if peripherals.pedal1.connected() {
-                        let _ = serial.write(&inputs.pedal1.encode_1());
-                    }
-                    if peripherals.pedal2.connected() {
-                        let _ = serial.write(&inputs.pedal2.encode_2());
-                    }
-                    if peripherals.pedal3.connected() {
-                        let _ = serial.write(&inputs.pedal3.encode_3());
-                    }
+                    inputs.write_report(peripherals, serial);
                     Self::send_response(serial, b"\r\n");
 
                     true
@@ -260,24 +240,7 @@ impl<'timer> SerialMod<'timer> {
                     let peripherals = peripherals;
 
                     let _ = serial.write(b"A");
-                    if peripherals.keyboard.connected() {
-                        let _ = serial.write(&[PERIPHERAL_ID_KEYBOARD]);
-                    }
-                    if peripherals.knobs1.connected() {
-                        let _ = serial.write(&[PERIPHERAL_ID_KNOBS_1]);
-                    }
-                    if peripherals.knobs2.connected() {
-                        let _ = serial.write(&[PERIPHERAL_ID_KNOBS_2]);
-                    }
-                    if peripherals.pedal1.connected() {
-                        let _ = serial.write(&[PERIPHERAL_ID_PEDAL_1]);
-                    }
-                    if peripherals.pedal2.connected() {
-                        let _ = serial.write(&[PERIPHERAL_ID_PEDAL_2]);
-                    }
-                    if peripherals.pedal3.connected() {
-                        let _ = serial.write(&[PERIPHERAL_ID_PEDAL_3]);
-                    }
+                    peripherals.write_report(serial);
                     Self::send_response(serial, b"\r\n");
                     true
                 }

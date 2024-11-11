@@ -4,7 +4,7 @@ use embedded_hal::timer::CountDown as _;
 use rp_pico::{
     hal::{
         fugit::ExtU32,
-        gpio::{bank0::Gpio2, FunctionPio0, Pin, PullDown},
+        gpio::{DynPinId, FunctionPio0, Pin, PullDown},
         pio::SM0,
         timer::{CountDown, Instant},
     },
@@ -18,7 +18,7 @@ const RGB_LEN: usize = 12;
 const FRAME_TIME: u32 = 33;
 
 pub struct RgbMod<'timer> {
-    ws: Ws2812<PIO0, SM0, CountDown<'timer>, Pin<Gpio2, FunctionPio0, PullDown>>,
+    ws: Ws2812<PIO0, SM0, CountDown<'timer>, Pin<DynPinId, FunctionPio0, PullDown>>,
     brightness: u8,
     buffer: [RGB8; RGB_LEN],
     frame_timer: CountDown<'timer>,
@@ -26,7 +26,7 @@ pub struct RgbMod<'timer> {
 
 impl<'timer> RgbMod<'timer> {
     pub fn new(
-        ws: Ws2812<PIO0, SM0, CountDown<'timer>, Pin<Gpio2, FunctionPio0, PullDown>>,
+        ws: Ws2812<PIO0, SM0, CountDown<'timer>, Pin<DynPinId, FunctionPio0, PullDown>>,
         mut count_down: CountDown<'timer>,
     ) -> Self {
         count_down.start(FRAME_TIME.millis());

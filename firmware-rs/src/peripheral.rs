@@ -1,5 +1,8 @@
 // Peripheral info
 
+use rp_pico::hal::usb::UsbBus;
+use usbd_serial::SerialPort;
+
 pub const PERIPHERAL_ID_KEYBOARD: u8 = 0b1000_0000;
 pub const PERIPHERAL_ID_KNOBS_1: u8 = 0b1000_0010;
 pub const PERIPHERAL_ID_KNOBS_2: u8 = 0b1000_0011;
@@ -34,6 +37,28 @@ pub struct ConnectedPeripherals {
     pub pedal1: PeripheralConnection,
     pub pedal2: PeripheralConnection,
     pub pedal3: PeripheralConnection,
+}
+impl ConnectedPeripherals {
+    pub fn write_report(self, serial: &mut SerialPort<UsbBus>) {
+        if self.keyboard.connected() {
+            let _ = serial.write(&[PERIPHERAL_ID_KEYBOARD]);
+        }
+        if self.knobs1.connected() {
+            let _ = serial.write(&[PERIPHERAL_ID_KNOBS_1]);
+        }
+        if self.knobs2.connected() {
+            let _ = serial.write(&[PERIPHERAL_ID_KNOBS_2]);
+        }
+        if self.pedal1.connected() {
+            let _ = serial.write(&[PERIPHERAL_ID_PEDAL_1]);
+        }
+        if self.pedal2.connected() {
+            let _ = serial.write(&[PERIPHERAL_ID_PEDAL_2]);
+        }
+        if self.pedal3.connected() {
+            let _ = serial.write(&[PERIPHERAL_ID_PEDAL_3]);
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -173,4 +198,26 @@ pub struct PeripheralsInputs {
     pub pedal1: PedalInputs,
     pub pedal2: PedalInputs,
     pub pedal3: PedalInputs,
+}
+impl PeripheralsInputs {
+    pub fn write_report(self, peripherals: ConnectedPeripherals, serial: &mut SerialPort<UsbBus>) {
+        if peripherals.keyboard.connected() {
+            let _ = serial.write(&self.keyboard.encode());
+        }
+        if peripherals.knobs1.connected() {
+            let _ = serial.write(&self.knobs1.encode_1());
+        }
+        if peripherals.knobs2.connected() {
+            let _ = serial.write(&self.knobs2.encode_2());
+        }
+        if peripherals.pedal1.connected() {
+            let _ = serial.write(&self.pedal1.encode_1());
+        }
+        if peripherals.pedal2.connected() {
+            let _ = serial.write(&self.pedal2.encode_2());
+        }
+        if peripherals.pedal3.connected() {
+            let _ = serial.write(&self.pedal3.encode_3());
+        }
+    }
 }

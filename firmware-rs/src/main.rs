@@ -5,6 +5,7 @@
 
 mod mutex;
 mod peripheral;
+mod pins;
 mod uid;
 mod modules {
     pub mod keyboard;
@@ -15,15 +16,14 @@ mod modules {
 }
 
 use modules::*;
+use mutex::Mutex;
 
 use embedded_hal::timer::CountDown as _;
-use mutex::Mutex;
 use panic_probe as _;
 use peripheral::{ConnectedPeripherals, PeripheralConnection, PeripheralsInputs, SwitchPosition};
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
-    gpio::{DynPinId, FunctionSioInput, FunctionSioOutput, Pin, PinState, PullDown},
     multicore::{Multicore, Stack},
     pac::Peripherals,
     pio::PIOExt,
@@ -70,7 +70,6 @@ fn main() -> ! {
         &mut pac.RESETS,
         &mut watchdog,
     )
-    .ok()
     .unwrap();
     let mut sio = Sio::new(pac.SIO);
     let mut mc = Multicore::new(&mut pac.PSM, &mut pac.PPB, &mut sio.fifo);
@@ -98,6 +97,7 @@ fn main() -> ! {
         // .add_device(usbd_hid::device::mouse::WheelMouseConfig::default())
         .build(&usb_bus);
     let mut usb_serial = SerialPort::new(&usb_bus);
+    // let mut usb_serial = SerialPort::new_with_store(&usb_bus, [0u8; 1024], [0u8; 1024]); // TODO ?
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xF20A))
         .strings(&[StringDescriptors::default()
             .manufacturer("FriendTeamInc")
@@ -108,15 +108,21 @@ fn main() -> ! {
         .build();
 
     // set up inter-core mutexes
-    let mut connected_peripherals = ConnectedPeripherals::default();
-    let mut connected_peripherals_mutex = Mutex::<0, ConnectedPeripherals>::new(
-        &mut connected_peripherals as *mut ConnectedPeripherals,
-    );
-    let mut peripheral_inputs = PeripheralsInputs::default();
-    let mut peripheral_inputs_mutex =
-        Mutex::<1, PeripheralsInputs>::new(&mut peripheral_inputs as *mut PeripheralsInputs);
-    let mut update_trigger = false;
-    let mut update_trigger_mutex = Mutex::<2, bool>::new(&mut update_trigger as *mut bool);
+    #[derive(Default)]
+    struct TestStruct {}
+    impl Drop for TestStruct {
+        fn drop(&mut self) {
+            info!("dropped teststruct")
+        }
+    }
+    let test_mutex = mutex!(30, TestStruct);
+    test_mutex.with_lock(|_| {
+        info!("inside");
+    });
+
+    let mut connected_peripherals_mutex = mutex!(0, ConnectedPeripherals);
+    let mut peripheral_inputs_mutex = mutex!(1, PeripheralsInputs);
+    let mut update_trigger_mutex = mutex!(2, bool);
 
     // set up modules
     let mut serial_mod = serial::SerialMod::new(timer.count_down());
@@ -124,8 +130,6 @@ fn main() -> ! {
     // core 1 event loop (GPIO)
     let _ = core1.spawn(unsafe { &mut CORE1_STACK.mem }, move || {
         let mut pac = unsafe { Peripherals::steal() };
-        // let core = unsafe { CorePeripherals::steal() };
-        // let sio = Sio::new(pac.SIO);
         let pins = Pins::new(
             pac.IO_BANK0,
             pac.PADS_BANK0,
@@ -134,29 +138,11 @@ fn main() -> ! {
         );
 
         // set up GPIO
-        let kb_col_pins: [Pin<DynPinId, FunctionSioInput, PullDown>; 4] = [
-            pins.gpio12.into_pull_down_input().into_dyn_pin(),
-            pins.gpio13.into_pull_down_input().into_dyn_pin(),
-            pins.gpio14.into_pull_down_input().into_dyn_pin(),
-            pins.gpio15.into_pull_down_input().into_dyn_pin(),
-        ];
-        let kb_row_pins: [Pin<DynPinId, FunctionSioOutput, PullDown>; 3] = [
-            pins.gpio9
-                .into_push_pull_output_in_state(PinState::Low)
-                .into_dyn_pin(),
-            pins.gpio10
-                .into_push_pull_output_in_state(PinState::Low)
-                .into_dyn_pin(),
-            pins.gpio11
-                .into_push_pull_output_in_state(PinState::Low)
-                .into_dyn_pin(),
-        ];
-
-        let led_pin = pins.led.into_push_pull_output();
+        let (kb_col_pins, kb_row_pins, led_pin, rgb_pin) = pins::configure_gpio(pins);
 
         let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
         let ws = Ws2812::new(
-            pins.gpio2.into_function(),
+            rgb_pin,
             &mut pio,
             sm0,
             clocks.peripheral_clock.freq(),
