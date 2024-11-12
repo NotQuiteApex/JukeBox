@@ -1,17 +1,17 @@
 // Serial communication
 
 use crate::reaction::{InputKey, Peripheral};
-use crate::util::{ExitCode, ExitMsg};
 
 use serialport::SerialPort;
 use std::collections::HashSet;
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread::yield_now;
+use std::thread::{self, yield_now};
 use std::time::{Duration, Instant};
 
 // Utility
 const CMD_GREET: &[u8] = b"\x05\r\n";
 const CMD_HEARTBEAT: &[u8] = b"H\r\n";
+const CMD_NEGATIVE_ACK: &[u8] = b"\x15\r\n";
 
 const CMD_TEST: &[u8] = b"U\x37\r\n";
 const CMD_UPDATE: &[u8] = b"U\x38\r\n";
@@ -26,13 +26,35 @@ const PERIPHERAL_ID_PEDAL_1: u8 = 0b1000_0101;
 const PERIPHERAL_ID_PEDAL_2: u8 = 0b1000_0110;
 const PERIPHERAL_ID_PEDAL_3: u8 = 0b1000_0111;
 
-const RSP_HEARTBEAT: &[u8] = b"H\r\n";
-const RSP_UNKNOWN: &[u8] = b"?\r\n";
-const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n";
+const RSP_HEARTBEAT: &[u8] = b"H\r\n\r\n";
+const RSP_UNKNOWN: &[u8] = b"?\r\n\r\n";
+const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
 // const RSP_DEV1_ACK: &[u8] = b"U\x11\x06\r\n";
 // const RSP_DEV2_ACK: &[u8] = b"U\x12\x06\r\n";
 // const RSP_DEV3_ACK: &[u8] = b"U\x13\x06\r\n";
-const RSP_DEV4_ACK: &[u8] = b"U\x14\x06\r\n";
+const RSP_DEV4_ACK: &[u8] = b"U\x14\x06\r\n\r\n";
+
+#[derive(PartialEq, Debug)]
+pub enum SerialErr {
+    FailedToScanSerialPorts,
+    FailedToFindSerialPort,
+    FailedToOpenSerialPort,
+
+    FailedToWriteMessage,
+    FailedToFlushMessage,
+
+    SerialReadTimeout,
+    SerialExpectMismatch,
+
+    FailedToSendDeviceInfo,
+    FailedToSendPeripheralInfo,
+    FailedToSendInputInfo,
+    FailedToSendDisconnectInfo,
+
+    FailedToParseDeviceInfo,
+    FailedToParsePeripheralInfo,
+    FailedToParseInputInfo,
+}
 
 pub enum SerialCommand {
     GetPeripherals,
@@ -56,18 +78,13 @@ pub enum SerialEvent {
     Disconnected,
 }
 
-// TODO: replace ExitMsg with SerialErr (since serial is not used in the main thread)
-
-fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<Vec<u8>, ExitMsg> {
+fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<Vec<u8>, SerialErr> {
     let timeout = Instant::now() + Duration::from_secs(3);
     let mut buf = Vec::new();
 
     loop {
         if Instant::now() >= timeout {
-            return Err(ExitMsg::new(
-                ExitCode::SerialReadTimeout,
-                "Serial read timeout.".to_owned(),
-            ));
+            return Err(SerialErr::SerialReadTimeout);
         }
 
         let mut b = [0u8; 1];
@@ -78,63 +95,39 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<Vec<u8>, ExitMsg> {
         buf.push(b[0]);
 
         let len = buf.len();
-        if len >= 2
+        if len > 4
+            && buf.get(len - 4).map_or(false, |v| v == &b'\r')
+            && buf.get(len - 3).map_or(false, |v| v == &b'\n')
             && buf.get(len - 2).map_or(false, |v| v == &b'\r')
             && buf.get(len - 1).map_or(false, |v| v == &b'\n')
         {
-            // we matched the string, return
-            // let s = String::from_utf8(buf);
-            // if s.is_err() {
-            //     return Err(ExitMsg::new(
-            //         ExitCode::SerialReadBadData,
-            //         "Serial read bad data.".to_owned(),
-            //     ));
-            // }
-            // log::debug!("Serial got string {:?}.", s.clone().unwrap().as_bytes());
             return Ok(buf);
         }
     }
 }
 
-fn send_bytes(f: &mut Box<dyn SerialPort>, send: &[u8]) -> Result<(), ExitMsg> {
-    f.write_all(send).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialSendMessageError,
-            format!("Failed to send message '{:?}', reason: '{}'.", send, why),
-        )
-    })?;
-    f.flush().map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialSendFlushError,
-            format!("Failed to flush message '{:?}', reason: '{}'.", send, why),
-        )
-    })?;
+fn send_bytes(f: &mut Box<dyn SerialPort>, bytes: &[u8]) -> Result<(), SerialErr> {
+    f.write_all(bytes)
+        .map_err(|_| SerialErr::FailedToWriteMessage)?;
+    f.flush().map_err(|_| SerialErr::FailedToFlushMessage)?;
 
     Ok(())
 }
 
-fn expect_string(f: &mut Box<dyn SerialPort>, expect: &[u8]) -> Result<(), ExitMsg> {
-    let s = get_serial_string(f).map_err(|why| {
-        ExitMsg::new(
-            ExitCode::SerialExpectRecieveError,
-            format!("Failed to get message '{:?}', reason: '{}'.", expect, why),
-        )
-    })?;
+fn expect_string(f: &mut Box<dyn SerialPort>, expect: &[u8]) -> Result<(), SerialErr> {
+    let s = get_serial_string(f)?;
 
     let matching = s.iter().zip(expect).filter(|&(a, b)| a == b).count() == s.len();
 
     if !matching {
         // TODO: check if s matches RSP_UNKNOWN
-        return Err(ExitMsg::new(
-            ExitCode::SerialExpectMatchError,
-            format!("Failed to match message '{:?}', got '{:?}'.", expect, s),
-        ));
+        return Err(SerialErr::SerialExpectMismatch);
     }
 
     Ok(())
 }
 
-fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &[u8]) -> Result<(), ExitMsg> {
+fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &[u8]) -> Result<(), SerialErr> {
     send_bytes(f, send)?;
     expect_string(f, expect)?;
     Ok(())
@@ -142,13 +135,19 @@ fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &[u8]) -> Resul
 
 // Tasks
 
-fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, ExitMsg> {
+fn send_negative_ack(f: &mut Box<dyn SerialPort>) -> Result<(), SerialErr> {
+    send_bytes(f, CMD_NEGATIVE_ACK)?;
+    Ok(())
+}
+
+fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, SerialErr> {
     // Host confirms protocol is good, recieves "link established" with some info about the device
     send_bytes(f, CMD_GREET)?;
     let resp = get_serial_string(f)?;
 
     if *resp.iter().nth(0).unwrap_or(&0) != b'L' {
-        todo!()
+        send_negative_ack(f)?;
+        return Err(SerialErr::FailedToParseDeviceInfo);
     }
 
     let mut firmware_version: Option<_> = None;
@@ -162,25 +161,44 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, Ex
     }
 
     if firmware_version.is_none() || device_uid.is_none() {
-        todo!()
+        send_negative_ack(f)?;
+        return Err(SerialErr::FailedToParseDeviceInfo);
     }
 
+    let firmware_version = match String::from_utf8(firmware_version.unwrap().to_vec()) {
+        Ok(s) => s,
+        Err(_) => {
+            send_negative_ack(f)?;
+            return Err(SerialErr::FailedToParseDeviceInfo);
+        }
+    };
+    let device_uid = match String::from_utf8(device_uid.unwrap().to_vec()) {
+        Ok(s) => s,
+        Err(_) => {
+            send_negative_ack(f)?;
+            return Err(SerialErr::FailedToParseDeviceInfo);
+        }
+    };
+
     Ok(SerialConnectionDetails {
-        firmware_version: String::from_utf8(firmware_version.unwrap().to_vec())
-            .unwrap_or("UNKNOWN FIRMWARE".to_string()),
-        device_uid: String::from_utf8(device_uid.unwrap().to_vec())
-            .unwrap_or("UNKNOWN UID".to_string()),
+        firmware_version: firmware_version,
+        device_uid: device_uid,
     })
 }
 
-fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), SerialErr> {
     // confirm the device is still alive
     send_expect(f, CMD_HEARTBEAT, RSP_HEARTBEAT)
 }
 
-fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputKey>, ExitMsg> {
+fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputKey>, SerialErr> {
     send_bytes(f, CMD_GET_INPUT_KEYS)?;
-    let _resp = get_serial_string(f)?;
+    let resp = get_serial_string(f)?;
+
+    if *resp.iter().nth(0).unwrap_or(&0) != b'I' {
+        send_negative_ack(f)?;
+        return Err(SerialErr::FailedToParseInputInfo);
+    }
 
     let mut result = HashSet::new();
     result.insert(InputKey::KeyboardSwitch1);
@@ -188,12 +206,13 @@ fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputK
     Ok(result)
 }
 
-fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Peripheral>, ExitMsg> {
+fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Peripheral>, SerialErr> {
     send_bytes(f, CMD_GET_PERIPHERALS)?;
     let resp = get_serial_string(f)?;
 
     if *resp.iter().nth(0).unwrap_or(&0) != b'A' {
-        todo!()
+        send_negative_ack(f)?;
+        return Err(SerialErr::FailedToParsePeripheralInfo);
     }
 
     let mut result = HashSet::new();
@@ -224,27 +243,22 @@ fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Perip
     Ok(result)
 }
 
-fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<(), SerialErr> {
     // tell the device to reboot for updating
     send_expect(f, CMD_UPDATE, RSP_DISCONNECTED)
 }
 
-fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<(), SerialErr> {
     // tell the device to disconnect cleanly
     send_expect(f, CMD_DISCONNECT, RSP_DISCONNECTED)
 }
 
-fn transmit_test_signal(f: &mut Box<dyn SerialPort>) -> Result<(), ExitMsg> {
+fn transmit_test_signal(f: &mut Box<dyn SerialPort>) -> Result<(), SerialErr> {
     send_expect(f, CMD_TEST, RSP_DEV4_ACK)
 }
 
-pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
-    let ports = serialport::available_ports().map_err(|why| {
-        ExitMsg::new(
-            ExitCode::GenericError,
-            format!("Failed to enumerate serial ports, reason: \"{}\".", why),
-        )
-    })?;
+pub fn serial_get_device() -> Result<Box<dyn SerialPort>, SerialErr> {
+    let ports = serialport::available_ports().map_err(|_| SerialErr::FailedToScanSerialPorts)?;
     let ports: Vec<_> = ports
         .iter()
         .filter(|p| match &p.port_type {
@@ -252,37 +266,29 @@ pub fn serial_get_device() -> Result<Box<dyn SerialPort>, ExitMsg> {
             _ => false,
         })
         .collect();
-    log::info!(
-        "Found ports: {:?}",
-        ports
-            .iter()
-            .map(|f| f.port_name.clone())
-            .collect::<Vec<_>>()
-    );
+    // log::info!(
+    //     "Found ports: {:?}",
+    //     ports
+    //         .iter()
+    //         .map(|f| f.port_name.clone())
+    //         .collect::<Vec<_>>()
+    // );
     if ports.len() == 0 {
-        return Err(ExitMsg::new(
-            ExitCode::GenericError,
-            format!("Failed to find JukeBox serial port."),
-        ));
+        return Err(SerialErr::FailedToFindSerialPort);
     }
     let port = ports.get(0).unwrap(); // TODO: provide an argument to choose from this vector
 
     Ok(serialport::new(port.port_name.clone(), 115200)
         .timeout(std::time::Duration::from_millis(10))
         .open()
-        .map_err(|why| {
-            ExitMsg::new(
-                ExitCode::GenericError,
-                format!("Failed to open serial port, reason: \"{}\".", why),
-            )
-        })?)
+        .map_err(|_| SerialErr::FailedToOpenSerialPort)?)
 }
 
-pub fn serial_task(
+pub fn serial_comms(
     f: &mut Box<dyn SerialPort>,
     serialcommand_rx: &Receiver<SerialCommand>,
     serialevent_tx: &Sender<SerialEvent>,
-) -> Result<(), ExitMsg> {
+) -> Result<(), SerialErr> {
     // Flush serial command queue
     while let Ok(_) = serialcommand_rx.try_recv() {}
 
@@ -291,12 +297,12 @@ pub fn serial_task(
     // TODO: check that firmware version is ok
     serialevent_tx
         .send(SerialEvent::Connected(device_info))
-        .expect("failed to send command");
+        .map_err(|_| SerialErr::FailedToSendDeviceInfo)?;
 
     let peripherals = transmit_get_peripherals(f)?;
     serialevent_tx
         .send(SerialEvent::GetPeripherals(peripherals))
-        .expect("failed to send command");
+        .map_err(|_| SerialErr::FailedToSendPeripheralInfo)?;
 
     let mut timer = Instant::now();
     'forv: loop {
@@ -307,34 +313,32 @@ pub fn serial_task(
         }
         timer = Instant::now() + Duration::from_millis(5);
 
-        transmit_heartbeat(f)?; // TODO: replace with get input keys
-
-        // TODO: query device for pressed buttons
         // let keys = transmit_get_input_keys(f)?;
         // if let Err(_e) = serialevent_tx.send(SerialEvent::GetInputKeys(keys)) {
         //     todo!();
         // }
+        transmit_heartbeat(f)?; // TODO: replace with get input keys
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
                 SerialCommand::GetPeripherals => {
                     let peripherals = transmit_get_peripherals(f)?;
-                    if let Err(_e) = serialevent_tx.send(SerialEvent::GetPeripherals(peripherals)) {
-                        todo!();
-                    }
+                    serialevent_tx
+                        .send(SerialEvent::GetPeripherals(peripherals))
+                        .map_err(|_| SerialErr::FailedToSendPeripheralInfo)?;
                 }
                 SerialCommand::UpdateDevice => {
                     transmit_update_signal(f)?;
-                    if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
-                        log::warn!("Disconnect event signal failed, reason: `{}`", e);
-                    }
+                    serialevent_tx
+                        .send(SerialEvent::Disconnected)
+                        .map_err(|_| SerialErr::FailedToSendDisconnectInfo)?;
                     break 'forv; // The device has disconnected, we should too.
                 }
                 SerialCommand::DisconnectDevice => {
                     transmit_disconnect_signal(f)?;
-                    if let Err(e) = serialevent_tx.send(SerialEvent::Disconnected) {
-                        log::warn!("Disconnect event signal failed, reason: `{}`", e);
-                    }
+                    serialevent_tx
+                        .send(SerialEvent::Disconnected)
+                        .map_err(|_| SerialErr::FailedToSendDisconnectInfo)?;
                     break 'forv; // The device has disconnected, we should too.
                 }
                 SerialCommand::TestFunction => {
@@ -345,4 +349,48 @@ pub fn serial_task(
     }
 
     Ok(())
+}
+
+pub fn serial_task(
+    brkr_rx: &Receiver<bool>,
+    s_cmd_rx: &Receiver<SerialCommand>,
+    s_evnt_tx: &Sender<SerialEvent>,
+) {
+    // TODO: check application cpu usage when device is connected
+    loop {
+        if let Ok(_) = brkr_rx.try_recv() {
+            break;
+        }
+
+        let mut f = match serial_get_device() {
+            Err(_) => {
+                thread::sleep(Duration::from_secs(1));
+                continue;
+            }
+            Ok(f) => f,
+        };
+
+        match serial_comms(&mut f, &s_cmd_rx, &s_evnt_tx) {
+            Err(e) => {
+                match e {
+                    SerialErr::FailedToSendDeviceInfo
+                    | SerialErr::FailedToSendPeripheralInfo
+                    | SerialErr::FailedToSendInputInfo
+                    | SerialErr::FailedToSendDisconnectInfo => {
+                        log::error!("Failed to send info to GUI thread (`{:?}`)", e);
+                        log::error!("Serial thread exiting...");
+                        break;
+                    }
+                    _ => log::warn!("Serial device error: `{:?}`", e),
+                }
+                if let Err(_) = s_evnt_tx.send(SerialEvent::LostConnection) {
+                    log::error!("Failed to send LostConnection to GUI thread");
+                    log::error!("Serial thread exiting...");
+                    break;
+                }
+                thread::sleep(Duration::from_secs(1));
+            }
+            Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
+        };
+    }
 }

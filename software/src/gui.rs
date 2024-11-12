@@ -15,9 +15,7 @@ use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::reaction::{InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
-use crate::serial::{
-    serial_get_device, serial_task, SerialCommand, SerialConnectionDetails, SerialEvent,
-};
+use crate::serial::{serial_task, SerialCommand, SerialConnectionDetails, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
 
 #[derive(PartialEq)]
@@ -113,32 +111,7 @@ impl JukeBoxGui {
         let s_cmd_tx2 = s_cmd_tx.clone();
 
         // serial comms thread
-        let serialcomms = thread::spawn(move || {
-            // TODO: check application cpu usage when device is connected
-            loop {
-                if let Ok(_) = brkr_rx.try_recv() {
-                    break;
-                }
-
-                let f = serial_get_device();
-                if let Err(_) = f {
-                    // log::error!("Failed to get serial device. Error: `{}`.", e);
-                    thread::sleep(Duration::from_secs(1));
-                    continue;
-                }
-                let mut f = f.unwrap();
-
-                match serial_task(&mut f, &s_cmd_rx, &s_evnt_tx) {
-                    Err(e) => {
-                        log::warn!("Serial device error: `{}`", e);
-                        if let Err(e) = s_evnt_tx.send(SerialEvent::LostConnection) {
-                            log::warn!("LostConnection event signal failed, reason: `{}`", e);
-                        }
-                    }
-                    Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
-                };
-            }
-        });
+        let serialcomms = thread::spawn(move || serial_task(&brkr_rx, &s_cmd_rx, &s_evnt_tx));
 
         let options = eframe::NativeOptions {
             viewport: ViewportBuilder::default()

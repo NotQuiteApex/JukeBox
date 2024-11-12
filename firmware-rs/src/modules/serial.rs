@@ -12,9 +12,9 @@ use crate::peripheral::{Connection, JBPeripheralInputs, JBPeripherals};
 
 const BUFFER_SIZE: usize = 2048;
 
-const RSP_HEARTBEAT: &[u8] = b"H\r\n";
-const RSP_UNKNOWN: &[u8] = b"?\r\n";
-const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n";
+const RSP_HEARTBEAT: &[u8] = b"H\r\n\r\n";
+const RSP_UNKNOWN: &[u8] = b"?\r\n\r\n";
+const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
 
 #[derive(defmt::Format)]
 enum Command {
@@ -26,6 +26,7 @@ enum Command {
 
     Update,
     Disconnect,
+    NegativeAck,
     Test,
     Unknown,
 }
@@ -74,7 +75,7 @@ impl<'timer> SerialMod<'timer> {
         // we parse the command strings into tokens here
         // null characters are placeholders for errors or missing characters
         // (there are exceptions to this rule, but only for the desktop parser)
-        // the character string "\r\n" indicates the end of a command
+        // the character string "\r\n\r\n" indicates the end of a response
         // its unlikely we'd run into the end of the buffer due to check_cmd()
         // but we use unwrap_or() anyway for safety
 
@@ -97,6 +98,7 @@ impl<'timer> SerialMod<'timer> {
                     _ => Command::Unknown,
                 }
             }
+            b'\x15' => Command::NegativeAck,
             _ => Command::Unknown,
         };
 
@@ -176,7 +178,7 @@ impl<'timer> SerialMod<'timer> {
                     let _ = serial.write(firmware_version.as_bytes());
                     let _ = serial.write(b",");
                     let _ = serial.write(device_uid.as_bytes());
-                    Self::send_response(serial, b",\r\n");
+                    Self::send_response(serial, b",\r\n\r\n");
 
                     self.state = Connection::Connected;
                     info!("Serial Connected");
@@ -215,7 +217,7 @@ impl<'timer> SerialMod<'timer> {
                     // write all the inputs out
                     let _ = serial.write(b"I");
                     inputs.write_report(peripherals, serial);
-                    Self::send_response(serial, b"\r\n");
+                    Self::send_response(serial, b"\r\n\r\n");
 
                     true
                 }
@@ -231,8 +233,14 @@ impl<'timer> SerialMod<'timer> {
 
                     let _ = serial.write(b"A");
                     peripherals.write_report(serial);
-                    Self::send_response(serial, b"\r\n");
+                    Self::send_response(serial, b"\r\n\r\n");
                     true
+                }
+                Command::NegativeAck => {
+                    // we sent something in error, better bail
+                    self.state = Connection::NotConnected;
+                    info!("Serial NegativeAck'd");
+                    false
                 }
                 Command::Disconnect => {
                     Self::send_response(serial, RSP_DISCONNECTED);

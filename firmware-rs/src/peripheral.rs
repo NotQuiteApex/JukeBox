@@ -131,14 +131,6 @@ impl KeyboardInputs {
     }
 
     pub fn encode(self) -> [u8; 3] {
-        let w1 = self.key8.encode(7)
-            | self.key7.encode(6)
-            | self.key6.encode(5)
-            | self.key5.encode(4)
-            | self.key4.encode(3)
-            | self.key3.encode(2)
-            | self.key2.encode(1)
-            | self.key1.encode(0);
         let w2 = self.key16.encode(7)
             | self.key15.encode(6)
             | self.key14.encode(5)
@@ -147,6 +139,14 @@ impl KeyboardInputs {
             | self.key11.encode(2)
             | self.key10.encode(1)
             | self.key9.encode(0);
+        let w1 = self.key8.encode(7)
+            | self.key7.encode(6)
+            | self.key6.encode(5)
+            | self.key5.encode(4)
+            | self.key4.encode(3)
+            | self.key3.encode(2)
+            | self.key2.encode(1)
+            | self.key1.encode(0);
         [PERIPHERAL_ID_KEYBOARD, w2, w1]
     }
 }
