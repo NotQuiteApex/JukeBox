@@ -4,8 +4,10 @@ use crate::reaction::{InputKey, Peripheral};
 
 use serialport::SerialPort;
 use std::collections::HashSet;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Receiver, Sender};
-use std::thread::{self, yield_now};
+use std::sync::Arc;
+use std::thread::{sleep, yield_now};
 use std::time::{Duration, Instant};
 
 // Utility
@@ -365,11 +367,10 @@ pub fn serial_comms(
         timer = Instant::now() + Duration::from_millis(50);
 
         let keys = transmit_get_input_keys(f)?;
-        log::info!("keys {:?}", keys);
+        // log::info!("keys {:?}", keys);
         serialevent_tx
             .send(SerialEvent::GetInputKeys(keys))
             .map_err(|_| SerialErr::FailedToSendInputInfo)?;
-        // transmit_heartbeat(f)?; // TODO: replace with get input keys
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
@@ -404,19 +405,19 @@ pub fn serial_comms(
 }
 
 pub fn serial_task(
-    brkr_rx: &Receiver<bool>,
+    brkr: Arc<AtomicBool>,
     s_cmd_rx: &Receiver<SerialCommand>,
     s_evnt_tx: &Sender<SerialEvent>,
 ) {
     // TODO: check application cpu usage when device is connected
     loop {
-        if let Ok(_) = brkr_rx.try_recv() {
+        if brkr.load(std::sync::atomic::Ordering::Relaxed) {
             break;
         }
 
         let mut f = match serial_get_device() {
             Err(_) => {
-                thread::sleep(Duration::from_secs(1));
+                sleep(Duration::from_secs(1));
                 continue;
             }
             Ok(f) => f,
@@ -424,23 +425,13 @@ pub fn serial_task(
 
         match serial_comms(&mut f, &s_cmd_rx, &s_evnt_tx) {
             Err(e) => {
-                match e {
-                    SerialErr::FailedToSendDeviceInfo
-                    | SerialErr::FailedToSendPeripheralInfo
-                    | SerialErr::FailedToSendInputInfo
-                    | SerialErr::FailedToSendDisconnectInfo => {
-                        log::error!("Failed to send info to GUI thread (`{:?}`)", e);
-                        log::error!("Serial thread exiting...");
-                        break;
-                    }
-                    _ => log::warn!("Serial device error: `{:?}`", e),
-                }
+                log::warn!("Serial device error: `{:?}`", e);
                 if let Err(_) = s_evnt_tx.send(SerialEvent::LostConnection) {
                     log::error!("Failed to send LostConnection to GUI thread");
                     log::error!("Serial thread exiting...");
                     break;
                 }
-                thread::sleep(Duration::from_secs(1));
+                sleep(Duration::from_secs(1));
             }
             Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
         };

@@ -1,7 +1,9 @@
 // Graphical User Interface (pronounced like GIF)
 
 use std::collections::{HashMap, HashSet};
-use std::sync::mpsc::{channel, Sender};
+use std::sync::atomic::AtomicBool;
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -17,6 +19,8 @@ use serde::{Deserialize, Serialize};
 use crate::reaction::{InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
 use crate::serial::{serial_task, SerialCommand, SerialConnectionDetails, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
+
+const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(PartialEq)]
 enum GuiTab {
@@ -47,8 +51,6 @@ struct JukeBoxConfig {
     current_profile: String,
     profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
 }
-
-const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 struct JukeBoxGui {
     splash_timer: Instant,
@@ -109,11 +111,12 @@ impl JukeBoxGui {
         // channels cannot be a part of Self due to partial move errors
         let (s_evnt_tx, s_evnt_rx) = channel::<SerialEvent>(); // serialcomms thread sends events to gui thread
         let (s_cmd_tx, s_cmd_rx) = channel::<SerialCommand>(); // gui thread sends commands to serialcomms thread
-        let (brkr_tx, brkr_rx) = channel::<bool>(); // ends serialcomms thread from gui
+        let brkr = Arc::new(AtomicBool::new(false)); // ends serialcomms thread from gui
+        let brkr1 = brkr.clone();
         let s_cmd_tx2 = s_cmd_tx.clone();
 
         // serial comms thread
-        let serialcomms = thread::spawn(move || serial_task(&brkr_rx, &s_cmd_rx, &s_evnt_tx));
+        let serialcomms = thread::spawn(move || serial_task(brkr1, &s_cmd_rx, &s_evnt_tx));
 
         let options = eframe::NativeOptions {
             viewport: ViewportBuilder::default()
@@ -137,36 +140,7 @@ impl JukeBoxGui {
             ctx.set_fonts(fonts);
             ctx.set_zoom_factor(2.0);
 
-            while let Ok(event) = s_evnt_rx.try_recv() {
-                match event {
-                    SerialEvent::Connected(d) => {
-                        self.conn_status = ConnectionStatus::Connected;
-                        self.device_info = Some(d);
-                    }
-                    SerialEvent::LostConnection => {
-                        self.conn_status = ConnectionStatus::LostConnection;
-                        self.device_tab = GuiDeviceTab::None;
-                        self.device_peripherals.clear();
-                        self.device_info = None;
-                    }
-                    SerialEvent::Disconnected => {
-                        self.conn_status = ConnectionStatus::Disconnected;
-                        self.device_tab = GuiDeviceTab::None;
-                        self.device_peripherals.clear();
-                        self.device_info = None;
-                    }
-                    SerialEvent::GetPeripherals(p) => {
-                        self.device_peripherals = p;
-                        if self.device_peripherals.contains(&Peripheral::Keyboard) {
-                            self.device_tab = GuiDeviceTab::Keyboard;
-                        } else {
-                            self.device_tab = GuiDeviceTab::None;
-                        }
-                    }
-                    SerialEvent::GetInputKeys(k) => self.device_inputs = k,
-                    // _ => todo!(),
-                }
-            }
+            self.handle_serial_events(&s_evnt_rx);
 
             CentralPanel::default().show(ctx, |ui| {
                 ui.horizontal(|ui| {
@@ -177,33 +151,8 @@ impl JukeBoxGui {
                 ui.separator();
 
                 ui.allocate_ui(vec2(464.0, 252.0), |ui| match self.gui_tab {
-                    GuiTab::Device => {
-                        match self.device_tab {
-                            GuiDeviceTab::Keyboard => {
-                                self.draw_keyboard(ui);
-                            }
-                            GuiDeviceTab::Knobs1 | GuiDeviceTab::Knobs2 => {
-                                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
-                            }
-                            GuiDeviceTab::Pedal1 | GuiDeviceTab::Pedal2 | GuiDeviceTab::Pedal3 => {
-                                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
-                            }
-                            GuiDeviceTab::None => {
-                                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
-                            }
-                        }
-
-                        self.draw_peripheral_tabs(ui, &s_cmd_tx);
-                    }
-                    GuiTab::Settings => {
-                        self.draw_jukebox_logo(ui);
-                        ui.label("");
-                        ui.label("");
-                        self.draw_update_button(ui, &s_cmd_tx);
-                        ui.label("");
-                        self.draw_testfunc_button(ui, &s_cmd_tx);
-                        self.draw_settings_bottom(ui);
-                    }
+                    GuiTab::Device => self.draw_device_page(ui, &s_cmd_tx),
+                    GuiTab::Settings => self.draw_settings_page(ui, &s_cmd_tx),
                 });
 
                 ui.separator();
@@ -218,7 +167,7 @@ impl JukeBoxGui {
         })
         .expect("eframe error");
 
-        brkr_tx.send(true).expect("could not send breaker 2 signal");
+        brkr.store(true, std::sync::atomic::Ordering::Relaxed);
 
         s_cmd_tx2
             .send(SerialCommand::DisconnectDevice)
@@ -227,6 +176,71 @@ impl JukeBoxGui {
         serialcomms
             .join()
             .expect("could not rejoin serialcomms thread");
+    }
+
+    fn handle_serial_events(&mut self, s_evnt_rx: &Receiver<SerialEvent>) {
+        while let Ok(event) = s_evnt_rx.try_recv() {
+            match event {
+                SerialEvent::Connected(d) => {
+                    self.conn_status = ConnectionStatus::Connected;
+                    self.device_info = Some(d);
+                }
+                SerialEvent::LostConnection => {
+                    self.conn_status = ConnectionStatus::LostConnection;
+                    self.device_tab = GuiDeviceTab::None;
+                    self.device_peripherals.clear();
+                    self.device_info = None;
+                }
+                SerialEvent::Disconnected => {
+                    self.conn_status = ConnectionStatus::Disconnected;
+                    self.device_tab = GuiDeviceTab::None;
+                    self.device_peripherals.clear();
+                    self.device_info = None;
+                }
+                SerialEvent::GetPeripherals(p) => {
+                    self.device_peripherals = p;
+                    if self.device_peripherals.contains(&Peripheral::Keyboard) {
+                        self.device_tab = GuiDeviceTab::Keyboard;
+                    } else {
+                        self.device_tab = GuiDeviceTab::None;
+                    }
+                }
+                SerialEvent::GetInputKeys(k) => {
+                    self.device_inputs = k
+                    // TODO: run all config.profiles[config.current_profile] actions
+                }
+                // _ => todo!(),
+            }
+        }
+    }
+
+    fn draw_device_page(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
+        match self.device_tab {
+            GuiDeviceTab::Keyboard => {
+                self.draw_keyboard(ui);
+            }
+            GuiDeviceTab::Knobs1 | GuiDeviceTab::Knobs2 => {
+                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+            }
+            GuiDeviceTab::Pedal1 | GuiDeviceTab::Pedal2 | GuiDeviceTab::Pedal3 => {
+                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+            }
+            GuiDeviceTab::None => {
+                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+            }
+        }
+
+        self.draw_peripheral_tabs(ui, &s_cmd_tx);
+    }
+
+    fn draw_settings_page(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
+        self.draw_jukebox_logo(ui);
+        ui.label("");
+        ui.label("");
+        self.draw_update_button(ui, &s_cmd_tx);
+        ui.label("");
+        self.draw_testfunc_button(ui, &s_cmd_tx);
+        self.draw_settings_bottom(ui);
     }
 
     fn draw_profile_management(&mut self, ui: &mut Ui) {
@@ -363,14 +377,44 @@ impl JukeBoxGui {
         ui.horizontal(|ui| {
             ui.allocate_exact_size([62.0, 0.0].into(), s);
             Grid::new("KBGrid").show(ui, |ui| {
-                let col = 4;
-                let row = 3;
-                for y in 0..row {
-                    for x in 0..col {
-                        let btn = Button::new(format!("F{}", 12 + x + y * col + 1));
-                        let btn = ui.add_sized([75.0, 75.0], btn);
+                let keys = [
+                    [
+                        InputKey::KeyboardSwitch1,
+                        InputKey::KeyboardSwitch2,
+                        InputKey::KeyboardSwitch3,
+                        InputKey::KeyboardSwitch4,
+                    ],
+                    [
+                        InputKey::KeyboardSwitch5,
+                        InputKey::KeyboardSwitch6,
+                        InputKey::KeyboardSwitch7,
+                        InputKey::KeyboardSwitch8,
+                    ],
+                    [
+                        InputKey::KeyboardSwitch9,
+                        InputKey::KeyboardSwitch10,
+                        InputKey::KeyboardSwitch11,
+                        InputKey::KeyboardSwitch12,
+                    ],
+                    // [
+                    //     InputKey::KeyboardSwitch13,
+                    //     InputKey::KeyboardSwitch14,
+                    //     InputKey::KeyboardSwitch15,
+                    //     InputKey::KeyboardSwitch16,
+                    // ],
+                ];
+                for (y, k) in keys.iter().enumerate() {
+                    for (x, k) in k.iter().enumerate() {
+                        let s = format!("F{}", 12 + x + y * 4 + 1);
+                        let rt = RichText::new(s).heading();
+                        let mut btn = ui.add_sized([75.0, 75.0], Button::new(rt));
+
+                        if self.device_inputs.contains(k) {
+                            btn = btn.highlight();
+                        }
+
                         if btn.clicked() {
-                            log::info!("({}, {}) clicked", x + 1, y + 1);
+                            log::info!("F{} clicked", 12 + x + y * 4 + 1);
                             // TODO: add config menu when button is clicked
                             // TODO: highlight button when press signal is recieved
                             // TODO: display some better text in the buttons
