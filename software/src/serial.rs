@@ -10,7 +10,6 @@ use std::time::{Duration, Instant};
 
 // Utility
 const CMD_GREET: &[u8] = b"\x05\r\n";
-const CMD_HEARTBEAT: &[u8] = b"H\r\n";
 const CMD_NEGATIVE_ACK: &[u8] = b"\x15\r\n";
 
 const CMD_TEST: &[u8] = b"U\x37\r\n";
@@ -26,7 +25,6 @@ const PERIPHERAL_ID_PEDAL_1: u8 = 0b1000_0101;
 const PERIPHERAL_ID_PEDAL_2: u8 = 0b1000_0110;
 const PERIPHERAL_ID_PEDAL_3: u8 = 0b1000_0111;
 
-const RSP_HEARTBEAT: &[u8] = b"H\r\n\r\n";
 const RSP_UNKNOWN: &[u8] = b"?\r\n\r\n";
 const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
 // const RSP_DEV1_ACK: &[u8] = b"U\x11\x06\r\n";
@@ -45,6 +43,7 @@ pub enum SerialErr {
 
     SerialReadTimeout,
     SerialExpectMismatch,
+    SerialDeviceDidNotUnderstand,
 
     FailedToSendDeviceInfo,
     FailedToSendPeripheralInfo,
@@ -121,6 +120,12 @@ fn expect_string(f: &mut Box<dyn SerialPort>, expect: &[u8]) -> Result<(), Seria
 
     if !matching {
         // TODO: check if s matches RSP_UNKNOWN
+        let matches_unknown = s.iter().zip(RSP_UNKNOWN).filter(|&(a, b)| a == b).count() == s.len();
+        if matches_unknown {
+            send_negative_ack(f)?;
+            return Err(SerialErr::SerialDeviceDidNotUnderstand);
+        }
+
         return Err(SerialErr::SerialExpectMismatch);
     }
 
@@ -186,11 +191,6 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails, Se
     })
 }
 
-fn transmit_heartbeat(f: &mut Box<dyn SerialPort>) -> Result<(), SerialErr> {
-    // confirm the device is still alive
-    send_expect(f, CMD_HEARTBEAT, RSP_HEARTBEAT)
-}
-
 fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputKey>, SerialErr> {
     send_bytes(f, CMD_GET_INPUT_KEYS)?;
     let resp = get_serial_string(f)?;
@@ -201,7 +201,58 @@ fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputK
     }
 
     let mut result = HashSet::new();
-    result.insert(InputKey::KeyboardSwitch1);
+    let mut i = resp.iter();
+    loop {
+        match i.next() {
+            Some(c) => match *c {
+                PERIPHERAL_ID_KEYBOARD => {
+                    let w2 = i.next();
+                    let w1 = i.next();
+                    if w2.is_none() || w1.is_none() {
+                        return Err(SerialErr::FailedToParseInputInfo);
+                    }
+                    result.extend(InputKey::decode_keyboard(*w2.unwrap(), *w1.unwrap()));
+                }
+                PERIPHERAL_ID_KNOBS_1 => {
+                    let w = i.next();
+                    if w.is_none() {
+                        return Err(SerialErr::FailedToParseInputInfo);
+                    }
+                    result.extend(InputKey::decode_knobs1(*w.unwrap()));
+                }
+                PERIPHERAL_ID_KNOBS_2 => {
+                    let w = i.next();
+                    if w.is_none() {
+                        return Err(SerialErr::FailedToParseInputInfo);
+                    }
+                    result.extend(InputKey::decode_knobs2(*w.unwrap()));
+                }
+                PERIPHERAL_ID_PEDAL_1 => {
+                    let w = i.next();
+                    if w.is_none() {
+                        return Err(SerialErr::FailedToParseInputInfo);
+                    }
+                    result.extend(InputKey::decode_pedal1(*w.unwrap()));
+                }
+                PERIPHERAL_ID_PEDAL_2 => {
+                    let w = i.next();
+                    if w.is_none() {
+                        return Err(SerialErr::FailedToParseInputInfo);
+                    }
+                    result.extend(InputKey::decode_pedal2(*w.unwrap()));
+                }
+                PERIPHERAL_ID_PEDAL_3 => {
+                    let w = i.next();
+                    if w.is_none() {
+                        return Err(SerialErr::FailedToParseInputInfo);
+                    }
+                    result.extend(InputKey::decode_pedal3(*w.unwrap()));
+                }
+                _ => {}
+            },
+            None => break,
+        }
+    }
 
     Ok(result)
 }
@@ -311,13 +362,14 @@ pub fn serial_comms(
             yield_now();
             continue;
         }
-        timer = Instant::now() + Duration::from_millis(5);
+        timer = Instant::now() + Duration::from_millis(50);
 
-        // let keys = transmit_get_input_keys(f)?;
-        // if let Err(_e) = serialevent_tx.send(SerialEvent::GetInputKeys(keys)) {
-        //     todo!();
-        // }
-        transmit_heartbeat(f)?; // TODO: replace with get input keys
+        let keys = transmit_get_input_keys(f)?;
+        log::info!("keys {:?}", keys);
+        serialevent_tx
+            .send(SerialEvent::GetInputKeys(keys))
+            .map_err(|_| SerialErr::FailedToSendInputInfo)?;
+        // transmit_heartbeat(f)?; // TODO: replace with get input keys
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {

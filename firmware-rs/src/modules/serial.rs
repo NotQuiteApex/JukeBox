@@ -1,6 +1,8 @@
 //! Serial processing module
 
 use defmt::info;
+use defmt::warn;
+use embedded_hal::timer::Cancel as _;
 use embedded_hal::timer::CountDown as _;
 use itertools::Itertools;
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
@@ -12,14 +14,12 @@ use crate::peripheral::{Connection, JBPeripheralInputs, JBPeripherals};
 
 const BUFFER_SIZE: usize = 2048;
 
-const RSP_HEARTBEAT: &[u8] = b"H\r\n\r\n";
 const RSP_UNKNOWN: &[u8] = b"?\r\n\r\n";
 const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
 
 #[derive(defmt::Format)]
 enum Command {
     Greeting,
-    Heartbeat,
 
     GetInputKeys,
     GetPeripherals,
@@ -31,7 +31,7 @@ enum Command {
     Unknown,
 }
 
-const KEEPALIVE: u32 = 100;
+const KEEPALIVE: u32 = 250;
 
 pub struct SerialMod<'timer> {
     buffer: ConstGenericRingBuffer<u8, BUFFER_SIZE>,
@@ -67,7 +67,7 @@ impl<'timer> SerialMod<'timer> {
         // we should probably handle that before we take on larger communications.
         let _ = match serial.write(rsp) {
             Err(_) => todo!(),
-            Ok(_) => serial.flush(),
+            Ok(_) => {}
         };
     }
 
@@ -82,7 +82,6 @@ impl<'timer> SerialMod<'timer> {
         let mut depth = 1;
         let res = match self.buffer.get(0).unwrap_or(&b'\0') {
             b'\x05' => Command::Greeting,
-            b'H' => Command::Heartbeat,
             b'U' => {
                 let p2 = self.buffer.get(1).unwrap_or(&b'\0');
                 depth = 2;
@@ -140,7 +139,7 @@ impl<'timer> SerialMod<'timer> {
         update_trigger: &Mutex<2, bool>,
     ) {
         if self.state == Connection::Connected && self.keepalive_timer.wait().is_ok() {
-            info!("Keepalive triggered.");
+            warn!("Keepalive triggered, disconnecting.");
             self.state = Connection::NotConnected;
         }
 
@@ -195,12 +194,8 @@ impl<'timer> SerialMod<'timer> {
                     info!("Command Test");
                     true
                 }
-                Command::Heartbeat => {
-                    Self::send_response(serial, RSP_HEARTBEAT);
-                    true
-                }
                 Command::GetInputKeys => {
-                    info!("Command GetInputKeys");
+                    // info!("Command GetInputKeys");
 
                     // copy peripherals and inputs out
                     let mut peripherals = JBPeripherals::default();
@@ -253,6 +248,8 @@ impl<'timer> SerialMod<'timer> {
         };
 
         if valid {
+            // info!("restarting keepalive");
+            let _ = self.keepalive_timer.cancel();
             self.keepalive_timer.start(KEEPALIVE.millis()); // restart keepalive timer with valid command
         }
     }

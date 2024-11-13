@@ -236,6 +236,12 @@ fn main() -> ! {
                 &PERIPHERAL_INPUTS,
                 &UPDATE_TRIGGER,
             );
+            match usb_serial.flush() {
+                Ok(_) => {}
+                Err(_) => {
+                    // warn!("flush failed!")
+                }
+            }
         }
     }
 }

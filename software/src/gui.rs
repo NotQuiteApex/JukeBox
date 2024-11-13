@@ -61,6 +61,7 @@ struct JukeBoxGui {
 
     device_info: Option<SerialConnectionDetails>,
     device_peripherals: HashSet<Peripheral>,
+    device_inputs: HashSet<InputKey>,
 
     config: JukeBoxConfig,
     config_renaming_profile: bool,
@@ -96,6 +97,7 @@ impl JukeBoxGui {
             gui_tab: GuiTab::Device,
             device_tab: GuiDeviceTab::None,
             device_peripherals: HashSet::new(),
+            device_inputs: HashSet::new(),
             device_info: None,
             config: config,
             config_renaming_profile: false,
@@ -161,7 +163,8 @@ impl JukeBoxGui {
                             self.device_tab = GuiDeviceTab::None;
                         }
                     }
-                    _ => todo!(),
+                    SerialEvent::GetInputKeys(k) => self.device_inputs = k,
+                    // _ => todo!(),
                 }
             }
 

@@ -14,8 +14,10 @@ pub enum Peripheral {
     Pedal3,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Hash)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Hash, Clone, Copy)]
 pub enum InputKey {
+    UnknownKey,
+
     KeyboardSwitch1,
     KeyboardSwitch2,
     KeyboardSwitch3,
@@ -60,58 +62,48 @@ pub enum InputKey {
     Pedal3Switch3,
 }
 impl InputKey {
+    fn decode_word(w: u8, d: &[Self]) -> HashSet<Self> {
+        let mut o = HashSet::new();
+
+        for (i, k) in d.iter().enumerate() {
+            if (w & (1 << i)) != 0 {
+                o.insert(k.clone());
+            }
+        }
+
+        o
+    }
+
     pub fn decode_keyboard(w2: u8, w1: u8) -> HashSet<Self> {
         let mut i = HashSet::new();
 
-        if (w2 & (1 << 7)) != 0 {
-            i.insert(Self::KeyboardSwitch16);
-        }
-        if (w2 & (1 << 6)) != 0 {
-            i.insert(Self::KeyboardSwitch15);
-        }
-        if (w2 & (1 << 5)) != 0 {
-            i.insert(Self::KeyboardSwitch14);
-        }
-        if (w2 & (1 << 4)) != 0 {
-            i.insert(Self::KeyboardSwitch13);
-        }
-        if (w2 & (1 << 3)) != 0 {
-            i.insert(Self::KeyboardSwitch12);
-        }
-        if (w2 & (1 << 2)) != 0 {
-            i.insert(Self::KeyboardSwitch11);
-        }
-        if (w2 & (1 << 1)) != 0 {
-            i.insert(Self::KeyboardSwitch10);
-        }
-        if (w2 & (1 << 0)) != 0 {
-            i.insert(Self::KeyboardSwitch9);
-        }
+        i.extend(Self::decode_word(
+            w2,
+            &[
+                Self::KeyboardSwitch9,
+                Self::KeyboardSwitch10,
+                Self::KeyboardSwitch11,
+                Self::KeyboardSwitch12,
+                Self::KeyboardSwitch13,
+                Self::KeyboardSwitch14,
+                Self::KeyboardSwitch15,
+                Self::KeyboardSwitch16,
+            ],
+        ));
 
-        if (w1 & (1 << 7)) != 0 {
-            i.insert(Self::KeyboardSwitch8);
-        }
-        if (w1 & (1 << 6)) != 0 {
-            i.insert(Self::KeyboardSwitch7);
-        }
-        if (w1 & (1 << 5)) != 0 {
-            i.insert(Self::KeyboardSwitch6);
-        }
-        if (w1 & (1 << 4)) != 0 {
-            i.insert(Self::KeyboardSwitch5);
-        }
-        if (w1 & (1 << 3)) != 0 {
-            i.insert(Self::KeyboardSwitch4);
-        }
-        if (w1 & (1 << 2)) != 0 {
-            i.insert(Self::KeyboardSwitch3);
-        }
-        if (w1 & (1 << 1)) != 0 {
-            i.insert(Self::KeyboardSwitch2);
-        }
-        if (w1 & (1 << 0)) != 0 {
-            i.insert(Self::KeyboardSwitch1);
-        }
+        i.extend(Self::decode_word(
+            w1,
+            &[
+                Self::KeyboardSwitch1,
+                Self::KeyboardSwitch2,
+                Self::KeyboardSwitch3,
+                Self::KeyboardSwitch4,
+                Self::KeyboardSwitch5,
+                Self::KeyboardSwitch6,
+                Self::KeyboardSwitch7,
+                Self::KeyboardSwitch8,
+            ],
+        ));
 
         i
     }
@@ -201,15 +193,7 @@ impl InputKey {
     fn decode_pedal(w: u8, k3: Self, k2: Self, k1: Self) -> HashSet<Self> {
         let mut i = HashSet::new();
 
-        if (w & (1 << 2)) != 0 {
-            i.insert(k3);
-        }
-        if (w & (1 << 1)) != 0 {
-            i.insert(k2);
-        }
-        if (w & (1 << 0)) != 0 {
-            i.insert(k1);
-        }
+        i.extend(Self::decode_word(w, &[k1, k2, k3]));
 
         i
     }
