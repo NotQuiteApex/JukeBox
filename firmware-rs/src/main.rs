@@ -159,7 +159,19 @@ fn main() -> ! {
                 c.keyboard = Connection::Connected;
             });
             PERIPHERAL_INPUTS.with_mut_lock(|i| {
-                i.keyboard.key1 = SwitchPosition::Down;
+                let keys = keyboard_mod.get_pressed_keys();
+                i.keyboard.key1 = keys[0].into();
+                i.keyboard.key2 = keys[1].into();
+                i.keyboard.key3 = keys[2].into();
+                i.keyboard.key4 = keys[3].into();
+                i.keyboard.key5 = keys[4].into();
+                i.keyboard.key6 = keys[5].into();
+                i.keyboard.key7 = keys[6].into();
+                i.keyboard.key8 = keys[7].into();
+                i.keyboard.key9 = keys[8].into();
+                i.keyboard.key10 = keys[9].into();
+                i.keyboard.key11 = keys[10].into();
+                i.keyboard.key12 = keys[11].into();
             });
 
             // check if we need to shutdown "cleanly" for update

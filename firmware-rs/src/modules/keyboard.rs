@@ -35,7 +35,7 @@ impl<'timer> KeyboardMod<'timer> {
         }
     }
 
-    fn check_pressed_keys(&mut self) -> [bool; 12] {
+    fn check_pressed_keys(&mut self) {
         let mut keys = [false; 12];
 
         for row in 0..KEY_ROWS {
@@ -52,12 +52,7 @@ impl<'timer> KeyboardMod<'timer> {
             self.row_pins[row].set_low().unwrap();
         }
 
-        keys
-    }
-
-    fn update_keys(&mut self) {
-        let new_keys = self.check_pressed_keys();
-        self.pressed_keys = new_keys;
+        self.pressed_keys = keys;
     }
 
     pub fn update(&mut self) {
@@ -65,7 +60,11 @@ impl<'timer> KeyboardMod<'timer> {
             return;
         }
 
-        self.update_keys();
+        self.check_pressed_keys();
+    }
+
+    pub fn get_pressed_keys(&self) -> [bool; 12] {
+        self.pressed_keys
     }
 }
 

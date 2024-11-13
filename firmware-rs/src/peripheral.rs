@@ -88,6 +88,14 @@ impl SwitchPosition {
         }
     }
 }
+impl Into<SwitchPosition> for bool {
+    fn into(self) -> SwitchPosition {
+        match self {
+            true => SwitchPosition::Down,
+            false => SwitchPosition::Up,
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct KeyboardInputs {

@@ -8,8 +8,8 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use eframe::egui::{
-    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, SelectableLabel,
-    Sense, TextBuffer, TextEdit, Ui, ViewportBuilder,
+    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, Rounding,
+    SelectableLabel, Sense, TextBuffer, TextEdit, Ui, ViewportBuilder,
 };
 use egui_phosphor::regular as phos;
 
@@ -173,7 +173,7 @@ impl JukeBoxGui {
             .send(SerialCommand::DisconnectDevice)
             .expect("could not send disconnect signal");
 
-        serialcomms
+        let _ = serialcomms
             .join()
             .expect("could not rejoin serialcomms thread");
     }
@@ -208,8 +208,7 @@ impl JukeBoxGui {
                 SerialEvent::GetInputKeys(k) => {
                     self.device_inputs = k
                     // TODO: run all config.profiles[config.current_profile] actions
-                }
-                // _ => todo!(),
+                } // _ => todo!(),
             }
         }
     }
@@ -407,11 +406,17 @@ impl JukeBoxGui {
                     for (x, k) in k.iter().enumerate() {
                         let s = format!("F{}", 12 + x + y * 4 + 1);
                         let rt = RichText::new(s).heading();
-                        let mut btn = ui.add_sized([75.0, 75.0], Button::new(rt));
-
+                        let mut b = Button::new(rt);
                         if self.device_inputs.contains(k) {
-                            btn = btn.highlight();
+                            let r = 20.0;
+                            b = b.rounding(Rounding {
+                                nw: r,
+                                ne: r,
+                                sw: r,
+                                se: r,
+                            });
                         }
+                        let btn = ui.add_sized([75.0, 75.0], b);
 
                         if btn.clicked() {
                             log::info!("F{} clicked", 12 + x + y * 4 + 1);
