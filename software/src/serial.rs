@@ -66,13 +66,13 @@ pub enum SerialCommand {
     TestFunction,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct SerialConnectionDetails {
     pub firmware_version: String,
     pub device_uid: String,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum SerialEvent {
     Connected(SerialConnectionDetails),
     GetInputKeys(HashSet<InputKey>),
@@ -348,12 +348,12 @@ pub fn serial_comms(
     // TODO: check that firmware version is ok
     serialevent_tx
         .send(SerialEvent::Connected(device_info))
-        .context("failed to send device info to gui")?;
+        .context("failed to send device info")?;
 
     let peripherals = transmit_get_peripherals(f)?;
     serialevent_tx
         .send(SerialEvent::GetPeripherals(peripherals))
-        .context("failed to send peripheral info to gui")?;
+        .context("failed to send peripheral info")?;
 
     let mut timer = Instant::now();
     'forv: loop {
@@ -362,13 +362,13 @@ pub fn serial_comms(
             yield_now();
             continue;
         }
-        timer = Instant::now() + Duration::from_millis(50);
+        timer = Instant::now() + Duration::from_millis(25);
 
         let keys = transmit_get_input_keys(f)?;
         // log::info!("keys {:?}", keys);
         serialevent_tx
             .send(SerialEvent::GetInputKeys(keys))
-            .context("failed to send input info to gui")?;
+            .context("failed to send input info")?;
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
@@ -376,20 +376,20 @@ pub fn serial_comms(
                     let peripherals = transmit_get_peripherals(f)?;
                     serialevent_tx
                         .send(SerialEvent::GetPeripherals(peripherals))
-                        .context("failed to send peripheral info to gui")?;
+                        .context("failed to send peripheral info")?;
                 }
                 SerialCommand::UpdateDevice => {
                     transmit_update_signal(f)?;
                     serialevent_tx
                         .send(SerialEvent::Disconnected)
-                        .context("failed to send disconnect info to gui")?;
+                        .context("failed to send disconnect info")?;
                     break 'forv; // The device has disconnected, we should too.
                 }
                 SerialCommand::DisconnectDevice => {
                     transmit_disconnect_signal(f)?;
                     serialevent_tx
                         .send(SerialEvent::Disconnected)
-                        .context("failed to send disconnect info to gui")?;
+                        .context("failed to send disconnect info")?;
                     break 'forv; // The device has disconnected, we should too.
                 }
                 SerialCommand::TestFunction => {
@@ -404,8 +404,8 @@ pub fn serial_comms(
 
 pub fn serial_task(
     brkr: Arc<AtomicBool>,
-    s_cmd_rx: &Receiver<SerialCommand>,
-    s_evnt_tx: &Sender<SerialEvent>,
+    s_cmd_rx: Receiver<SerialCommand>,
+    s_evnt_tx: Sender<SerialEvent>,
 ) -> Result<()> {
     // TODO: check application cpu usage when device is connected
     loop {
@@ -426,7 +426,7 @@ pub fn serial_task(
                 log::warn!("Serial device error: {:?}", e);
                 s_evnt_tx
                     .send(SerialEvent::LostConnection)
-                    .context("failed to send lost connection to gui")?;
+                    .context("failed to send lost connection")?;
             }
             Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
         };

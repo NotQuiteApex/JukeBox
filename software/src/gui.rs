@@ -3,20 +3,20 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use eframe::egui::{
-    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, Rounding,
-    SelectableLabel, Sense, TextBuffer, TextEdit, Ui, ViewportBuilder,
+    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, Rounding, Sense,
+    TextBuffer, TextEdit, Ui, ViewportBuilder,
 };
 use egui_phosphor::regular as phos;
 
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::reaction::{InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
+use crate::reaction::{reaction_task, InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
 use crate::serial::{serial_task, SerialCommand, SerialConnectionDetails, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
 
@@ -46,10 +46,10 @@ enum ConnectionStatus {
     Disconnected,
 }
 
-#[derive(Serialize, Deserialize)]
-struct JukeBoxConfig {
-    current_profile: String,
-    profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct JukeBoxConfig {
+    pub current_profile: String,
+    pub profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
 }
 
 struct JukeBoxGui {
@@ -65,7 +65,7 @@ struct JukeBoxGui {
     device_peripherals: HashSet<Peripheral>,
     device_inputs: HashSet<InputKey>,
 
-    config: JukeBoxConfig,
+    config: Arc<Mutex<JukeBoxConfig>>,
     config_renaming_profile: bool,
     config_profile_name_entry: String,
 }
@@ -92,6 +92,8 @@ impl JukeBoxGui {
             ]),
         };
 
+        let config = Arc::new(Mutex::new(config));
+
         JukeBoxGui {
             splash_timer: Instant::now(),
             splash_index: 0usize,
@@ -109,14 +111,27 @@ impl JukeBoxGui {
 
     fn run(mut self) {
         // channels cannot be a part of Self due to partial move errors
-        let (s_evnt_tx, s_evnt_rx) = channel::<SerialEvent>(); // serialcomms thread sends events to gui thread
-        let (s_cmd_tx, s_cmd_rx) = channel::<SerialCommand>(); // gui thread sends commands to serialcomms thread
-        let brkr = Arc::new(AtomicBool::new(false)); // ends serialcomms thread from gui
-        let brkr1 = brkr.clone();
+        let (s_evnt_tx, s_evnt_rx) = channel::<SerialEvent>(); // serial thread sends events to reaction thread
+        let (r_evnt_tx, r_evnt_rx) = channel::<SerialEvent>(); // reaction thread sends events to gui thread
+        let (s_cmd_tx, s_cmd_rx) = channel::<SerialCommand>(); // gui thread sends commands to serial thread
+
+        let brkr = Arc::new(AtomicBool::new(false)); // ends other threads from gui
+        let brkr_serial = brkr.clone();
+        let brkr_reaction = brkr.clone();
+
+        let s_evnt_tx_serial = s_evnt_tx.clone();
         let s_cmd_tx2 = s_cmd_tx.clone();
 
+        let config_reaction = self.config.clone();
+
         // serial comms thread
-        let serialcomms = thread::spawn(move || serial_task(brkr1, &s_cmd_rx, &s_evnt_tx));
+        let serialcomms =
+            thread::spawn(move || serial_task(brkr_serial, s_cmd_rx, s_evnt_tx_serial));
+
+        // reaction comms thread
+        let reactioncomms = thread::spawn(move || {
+            reaction_task(brkr_reaction, s_evnt_rx, r_evnt_tx, config_reaction)
+        });
 
         let options = eframe::NativeOptions {
             viewport: ViewportBuilder::default()
@@ -135,12 +150,12 @@ impl JukeBoxGui {
         };
 
         eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
+            ctx.set_zoom_factor(2.0);
             let mut fonts = eframe::egui::FontDefinitions::default();
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             ctx.set_fonts(fonts);
-            ctx.set_zoom_factor(2.0);
 
-            self.handle_serial_events(&s_evnt_rx);
+            self.handle_serial_events(&r_evnt_rx);
 
             CentralPanel::default().show(ctx, |ui| {
                 ui.horizontal(|ui| {
@@ -176,6 +191,10 @@ impl JukeBoxGui {
         let _ = serialcomms
             .join()
             .expect("could not rejoin serialcomms thread");
+
+        let _ = reactioncomms
+            .join()
+            .expect("could not rejoin reactioncomms thread");
     }
 
     fn handle_serial_events(&mut self, s_evnt_rx: &Receiver<SerialEvent>) {
@@ -260,33 +279,30 @@ impl JukeBoxGui {
                 );
                 if edit.lost_focus() && self.config_profile_name_entry.len() > 0 {
                     self.config_renaming_profile = false;
-                    let c = self
-                        .config
-                        .profiles
-                        .remove(&self.config.current_profile)
-                        .expect("");
-                    self.config
-                        .profiles
+                    let mut conf = self.config.lock().unwrap();
+
+                    let p = conf.current_profile.clone();
+                    let c = conf.profiles.remove(&p).expect("");
+                    conf.profiles
                         .insert(self.config_profile_name_entry.to_string(), c);
-                    self.config
-                        .current_profile
+                    conf.current_profile
                         .replace_range(.., &self.config_profile_name_entry);
                 }
                 if !edit.has_focus() {
                     edit.request_focus();
                 }
             } else {
+                let mut conf = self.config.lock().unwrap();
+                let profiles = conf.profiles.clone();
+                let current = conf.current_profile.clone();
                 ComboBox::from_id_salt("ProfileSelect")
-                    .selected_text(self.config.current_profile.clone()) // TODO: show current profile name here
+                    .selected_text(conf.current_profile.clone()) // TODO: show current profile name here
                     .width(150.0)
                     .show_ui(ui, |ui| {
-                        for (k, _) in &self.config.profiles {
-                            let u = ui.add(SelectableLabel::new(
-                                *k == self.config.current_profile.clone(),
-                                &*k.clone(),
-                            ));
+                        for (k, _) in &profiles {
+                            let u = ui.selectable_label(*k == current, &*k.clone());
                             if u.clicked() {
-                                self.config.current_profile = k.to_string();
+                                conf.current_profile = k.to_string();
                             }
                         }
                     })
@@ -304,11 +320,12 @@ impl JukeBoxGui {
                     .button(RichText::new(phos::PLUS_CIRCLE))
                     .on_hover_text_at_pointer("New Profile");
                 if new_btn.clicked() {
-                    let mut idx = self.config.profiles.keys().len() + 1;
+                    let mut conf = self.config.lock().unwrap();
+                    let mut idx = conf.profiles.keys().len() + 1;
                     loop {
                         let name = format!("Profile {}", idx);
-                        if !self.config.profiles.contains_key(&name) {
-                            self.config.profiles.insert(name, HashMap::new());
+                        if !conf.profiles.contains_key(&name) {
+                            conf.profiles.insert(name, HashMap::new());
                             // TODO: immediately save config to file
                             break;
                         }
@@ -326,18 +343,21 @@ impl JukeBoxGui {
                     .button(RichText::new(phos::NOTE_PENCIL))
                     .on_hover_text_at_pointer("Edit Profile Name");
                 if edit_btn.clicked() {
+                    let conf = self.config.lock().unwrap();
                     self.config_renaming_profile = true;
                     self.config_profile_name_entry
-                        .replace_with(&self.config.current_profile);
+                        .replace_with(&conf.current_profile);
                 }
             });
 
             ui.scope(|ui| {
+                let mut conf = self.config.lock().unwrap();
+
                 if self.config_renaming_profile {
                     ui.disable();
                 }
 
-                if self.config.profiles.keys().len() <= 1 {
+                if conf.profiles.keys().len() <= 1 {
                     ui.disable();
                 }
                 let delete_btn = ui
@@ -345,9 +365,9 @@ impl JukeBoxGui {
                     .on_hover_text_at_pointer("Delete Profile");
                 if delete_btn.clicked() {
                     // TODO: check other profiles and make sure they dont rely on this profile
-                    self.config.profiles.remove(&self.config.current_profile);
-                    self.config.current_profile =
-                        self.config.profiles.keys().next().expect("").to_string();
+                    let p = conf.current_profile.clone();
+                    conf.profiles.remove(&p);
+                    conf.current_profile = conf.profiles.keys().next().expect("").to_string();
                     // TODO: immediately save config to file
                 }
             });

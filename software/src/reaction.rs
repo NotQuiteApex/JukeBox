@@ -1,10 +1,22 @@
 // Defining reactions to perform when actions happen (key pressed, knob turned, etc.)
 
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    sync::{
+        atomic::AtomicBool,
+        mpsc::{Receiver, Sender},
+        Arc, Mutex,
+    },
+    thread::yield_now,
+    time::{Duration, Instant},
+};
 
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-#[derive(Eq, PartialEq, Debug, Hash)]
+use crate::{gui::JukeBoxConfig, serial::SerialEvent};
+
+#[derive(Eq, PartialEq, Debug, Hash, Clone)]
 pub enum Peripheral {
     Keyboard,
     Knobs1,
@@ -205,7 +217,7 @@ pub trait Reaction {
     fn on_release(&self, key: InputKey);
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum ReactionConfig {
     // Meta
     MetaTest(ReactionMetaTest),
@@ -237,7 +249,7 @@ pub enum ReactionConfig {
     // OBS
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ReactionMetaTest {}
 impl Reaction for ReactionMetaTest {
     fn on_press(&self, key: InputKey) -> () {
@@ -247,4 +259,58 @@ impl Reaction for ReactionMetaTest {
     fn on_release(&self, key: InputKey) -> () {
         log::info!("Released {:?} !", key);
     }
+}
+
+fn run_key(rc: &ReactionConfig, k: InputKey) {
+    // we cannot allow any panics to proceed past this point.
+    // TODO: figure out how to do that
+
+    match rc {
+        ReactionConfig::MetaTest(v) => v.on_press(k),
+        _ => todo!(),
+    }
+}
+
+pub fn reaction_task(
+    brkr: Arc<AtomicBool>,
+    s_evnt_rx: Receiver<SerialEvent>,
+    r_evnt_tx: Sender<SerialEvent>,
+    config: Arc<Mutex<JukeBoxConfig>>,
+) -> Result<()> {
+    let mut timer = Instant::now();
+    loop {
+        // TODO: Despite yielding, this can still lead to high CPU usage, and should probably be fixed.
+        if Instant::now() < timer {
+            yield_now();
+            continue;
+        }
+        timer = Instant::now() + Duration::from_millis(1);
+
+        if brkr.load(std::sync::atomic::Ordering::Relaxed) {
+            break;
+        }
+
+        while let Ok(evnt) = s_evnt_rx.try_recv() {
+            r_evnt_tx
+                .send(evnt.clone())
+                .context("failed to send event to gui")?;
+            match evnt {
+                SerialEvent::GetInputKeys(keys) => {
+                    let c = config.lock().unwrap();
+                    let conf = c.clone();
+                    drop(c);
+
+                    for k in keys {
+                        let c = conf.profiles.get(&conf.current_profile).unwrap();
+                        if let Some(r) = c.get(&k) {
+                            let _ = run_key(r, k);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    Ok(())
 }
