@@ -261,12 +261,15 @@ impl Reaction for ReactionMetaTest {
     }
 }
 
-fn run_key(rc: &ReactionConfig, k: InputKey) {
+fn run_key(reaction_config: &ReactionConfig, key: InputKey, pressed: bool) {
     // we cannot allow any panics to proceed past this point.
     // TODO: figure out how to do that
 
-    match rc {
-        ReactionConfig::MetaTest(v) => v.on_press(k),
+    match reaction_config {
+        ReactionConfig::MetaTest(v) => match pressed {
+            true => v.on_press(key),
+            false => v.on_release(key),
+        },
         _ => todo!(),
     }
 }
@@ -277,9 +280,10 @@ pub fn reaction_task(
     r_evnt_tx: Sender<SerialEvent>,
     config: Arc<Mutex<JukeBoxConfig>>,
 ) -> Result<()> {
+    let mut prevkeys = HashSet::<InputKey>::new();
+
     let mut timer = Instant::now();
     loop {
-        // TODO: Despite yielding, this can still lead to high CPU usage, and should probably be fixed.
         if Instant::now() < timer {
             yield_now();
             continue;
@@ -297,15 +301,28 @@ pub fn reaction_task(
             match evnt {
                 SerialEvent::GetInputKeys(keys) => {
                     let c = config.lock().unwrap();
-                    let conf = c.clone();
+                    let profiles = c.profiles.clone();
+                    let current = c.current_profile.clone();
                     drop(c);
 
-                    for k in keys {
-                        let c = conf.profiles.get(&conf.current_profile).unwrap();
-                        if let Some(r) = c.get(&k) {
-                            let _ = run_key(r, k);
+                    let pressed = keys.difference(&prevkeys);
+                    let released = prevkeys.difference(&keys);
+
+                    for p in pressed {
+                        let c = profiles.get(&current).unwrap();
+                        if let Some(r) = c.get(&p) {
+                            let _ = run_key(r, *p, true);
                         }
                     }
+
+                    for p in released {
+                        let c = profiles.get(&current).unwrap();
+                        if let Some(r) = c.get(&p) {
+                            let _ = run_key(r, *p, false);
+                        }
+                    }
+
+                    prevkeys = keys;
                 }
                 _ => {}
             }

@@ -73,23 +73,20 @@ impl JukeBoxGui {
     fn new() -> Self {
         // TODO: rework later for file configs
         let config: JukeBoxConfig = JukeBoxConfig {
-            current_profile: "Profile 1".to_string(),
-            profiles: HashMap::from([
-                (
-                    "Profile 1".to_string(),
-                    HashMap::from([(
+            current_profile: "Default".to_string(),
+            profiles: HashMap::from([(
+                "Default".to_string(),
+                HashMap::from([
+                    (
                         InputKey::KeyboardSwitch1,
                         ReactionConfig::MetaTest(ReactionMetaTest {}),
-                    )]),
-                ),
-                (
-                    "Profile 3".to_string(),
-                    HashMap::from([(
-                        InputKey::KeyboardSwitch12,
+                    ),
+                    (
+                        InputKey::KeyboardSwitch2,
                         ReactionConfig::MetaTest(ReactionMetaTest {}),
-                    )]),
-                ),
-            ]),
+                    ),
+                ]),
+            )]),
         };
 
         let config = Arc::new(Mutex::new(config));
@@ -455,7 +452,10 @@ impl JukeBoxGui {
     fn draw_peripheral_tabs(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
         ui.horizontal(|ui| {
             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                if ui.button(RichText::new(phos::ARROW_CLOCKWISE)).clicked() {
+                let b = ui
+                    .button(RichText::new(phos::ARROW_CLOCKWISE))
+                    .on_hover_text_at_pointer("Refresh Peripherals");
+                if b.clicked() {
                     s_cmd_tx
                         .send(SerialCommand::GetPeripherals)
                         .expect("failed to send get peripherals command");

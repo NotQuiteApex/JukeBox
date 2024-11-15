@@ -357,7 +357,6 @@ pub fn serial_comms(
 
     let mut timer = Instant::now();
     'forv: loop {
-        // TODO: Despite yielding, this can still lead to high CPU usage, and should probably be fixed.
         if Instant::now() < timer {
             yield_now();
             continue;

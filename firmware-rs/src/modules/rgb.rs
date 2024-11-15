@@ -33,7 +33,7 @@ impl<'timer> RgbMod<'timer> {
 
         RgbMod {
             ws: ws,
-            brightness: 32,
+            brightness: 10,
             buffer: [(0, 0, 0).into(); RGB_LEN],
             frame_timer: count_down,
         }
