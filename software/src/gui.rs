@@ -1,6 +1,8 @@
 // Graphical User Interface (pronounced like GIF)
 
 use std::collections::{HashMap, HashSet};
+use std::fs::{create_dir_all, File};
+use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
@@ -12,11 +14,10 @@ use eframe::egui::{
     TextBuffer, TextEdit, Ui, ViewportBuilder,
 };
 use egui_phosphor::regular as phos;
-
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::reaction::{reaction_task, InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
+use crate::reaction::{reaction_task, InputKey, Peripheral, ReactionConfig};
 use crate::serial::{serial_task, SerialCommand, SerialConnectionDetails, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
 
@@ -51,6 +52,50 @@ pub struct JukeBoxConfig {
     pub current_profile: String,
     pub profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
 }
+impl Default for JukeBoxConfig {
+    fn default() -> Self {
+        JukeBoxConfig {
+            current_profile: "Default".to_string(),
+            profiles: HashMap::from([("Default".to_string(), HashMap::new())]),
+        }
+    }
+}
+impl JukeBoxConfig {
+    fn get_path() -> PathBuf {
+        let mut p = dirs::config_dir().expect("failed to find config directory");
+        p.push("JukeBoxDesktop");
+        create_dir_all(&p).expect("failed to create config directory");
+        p.push("config.json");
+        p
+    }
+
+    pub fn load() -> Self {
+        let path = Self::get_path();
+        let file = match File::open(path) {
+            Err(_) => {
+                return JukeBoxConfig::default();
+            }
+            Ok(f) => f,
+        };
+
+        let conf = match serde_json::from_reader(file) {
+            Err(_) => {
+                return JukeBoxConfig::default();
+            }
+            Ok(c) => c,
+        };
+
+        // TODO: serde_validate the config?
+
+        conf
+    }
+
+    pub fn save(&self) {
+        let path = Self::get_path();
+        let file = File::create(path).expect("failed to create config file");
+        serde_json::to_writer(file, &self).expect("failed to write config file");
+    }
+}
 
 struct JukeBoxGui {
     splash_timer: Instant,
@@ -72,24 +117,9 @@ struct JukeBoxGui {
 impl JukeBoxGui {
     fn new() -> Self {
         // TODO: rework later for file configs
-        let config: JukeBoxConfig = JukeBoxConfig {
-            current_profile: "Default".to_string(),
-            profiles: HashMap::from([(
-                "Default".to_string(),
-                HashMap::from([
-                    (
-                        InputKey::KeyboardSwitch1,
-                        ReactionConfig::MetaTest(ReactionMetaTest {}),
-                    ),
-                    (
-                        InputKey::KeyboardSwitch2,
-                        ReactionConfig::MetaTest(ReactionMetaTest {}),
-                    ),
-                ]),
-            )]),
-        };
-
-        let config = Arc::new(Mutex::new(config));
+        let config = JukeBoxConfig::load();
+        config.save();
+        let config = Arc::new(Mutex::new(JukeBoxConfig::load()));
 
         JukeBoxGui {
             splash_timer: Instant::now(),

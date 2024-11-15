@@ -36,29 +36,6 @@ const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
 // const RSP_DEV3_ACK: &[u8] = b"U\x13\x06\r\n";
 const RSP_DEV4_ACK: &[u8] = b"U\x14\x06\r\n\r\n";
 
-// #[derive(PartialEq, Debug)]
-// pub enum SerialErr {
-//     FailedToScanSerialPorts,
-//     FailedToFindSerialPort,
-//     FailedToOpenSerialPort,
-
-//     FailedToWriteMessage,
-//     FailedToFlushMessage,
-
-//     SerialReadTimeout,
-//     SerialExpectMismatch,
-//     SerialDeviceDidNotUnderstand,
-
-//     FailedToSendDeviceInfo,
-//     FailedToSendPeripheralInfo,
-//     FailedToSendInputInfo,
-//     FailedToSendDisconnectInfo,
-
-//     FailedToParseDeviceInfo,
-//     FailedToParsePeripheralInfo,
-//     FailedToParseInputInfo,
-// }
-
 pub enum SerialCommand {
     GetPeripherals,
     UpdateDevice,
@@ -364,7 +341,6 @@ pub fn serial_comms(
         timer = Instant::now() + Duration::from_millis(25);
 
         let keys = transmit_get_input_keys(f)?;
-        // log::info!("keys {:?}", keys);
         serialevent_tx
             .send(SerialEvent::GetInputKeys(keys))
             .context("failed to send input info")?;
