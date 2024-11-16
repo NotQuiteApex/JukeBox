@@ -18,6 +18,8 @@ jobs:
         with:
           toolchain: stable
           target: thumbv6m-none-eabi
+      - name: "Install Cargo Dependencies"
+        run: cargo install flip-link
       - name: "Build Debug with Cargo"
         run: cd firmware/ && cargo build
       - name: "Build Release with Cargo"
