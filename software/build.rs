@@ -6,20 +6,8 @@ extern crate winres;
 
 fn main() {
     if cfg!(target_os = "windows") {
-        // Generate applogo ico
-        Command::new("magick")
-            .args([
-                "../assets/applogo.png",
-                "-define",
-                "icon:auto-resize=16,32,64,128,256",
-                "../assets/applogo.ico",
-            ])
-            .output()
-            .expect("Failed to run ImageMagick 7.0 to generate applogo.ico");
-
-        let mut res = winres::WindowsResource::new();
-
         // add icon
+        let mut res = winres::WindowsResource::new();
         res.set_icon("../assets/applogo.ico");
 
         // require admin perms (necessary for CPU temp)

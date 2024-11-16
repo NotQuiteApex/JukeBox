@@ -18,19 +18,19 @@ jobs:
         with:
           toolchain: stable
           target: thumbv6m-none-eabi
-      - name: "Install Cargo Dependencies"
+      - name: "Install Cargo dependencies"
         run: cargo install flip-link
-      - name: "Build Debug with Cargo"
+      - name: "Build debug binary with Cargo"
         run: cd firmware/ && cargo build
-      - name: "Build Release with Cargo"
+      - name: "Build release binary with Cargo"
         run: cd firmware/ && cargo build --release
-      - name: "Upload Debug Artifact"
+      - name: "Upload debug binary artifact"
         uses: actions/upload-artifact@v4
         with:
           name: jb_firmware_debug
           path: firmware/target/thumbv6m-none-eabi/debug/jukebox_firmware
           retention-days: 90
-      - name: "Upload Debug Artifact"
+      - name: "Upload release binary artifact"
         uses: actions/upload-artifact@v4
         with:
           name: jb_firmware_release
