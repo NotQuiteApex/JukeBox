@@ -1,11 +1,11 @@
 // build.rs
 
-extern crate winres;
+extern crate winresource;
 
 fn main() {
-    if cfg!(target_os = "windows") {
+    if cfg!(target_family = "windows") {
         // add icon
-        let mut res = winres::WindowsResource::new();
+        let mut res = winresource::WindowsResource::new();
         res.set_icon("../assets/applogo.ico");
 
         // require admin perms (necessary for CPU temp)

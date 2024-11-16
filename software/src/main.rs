@@ -1,6 +1,6 @@
 // A desktop application for interfacing with a JukeBox over serial.
 
-// #![windows_subsystem = "windows"] // disables console spawning for release build
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // disables console spawning for release build
 
 mod gui;
 mod reaction;
