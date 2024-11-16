@@ -1,2 +1,7 @@
-[build.x86_64-pc-windows-gnu.env]
-volumes = ["ASSETS=../assets"]
+[build.x86_64-pc-windows-gnu]
+pre-build = [
+    "dpkg --add-architecture $CROSS_DEB_ARCH",
+    "apt-get update",
+    "apt-get install --assume-yes libudev-dev:$CROSS_DEB_ARCH"
+]
+env.volumes = ["ASSETS=../assets"]
