@@ -22,7 +22,7 @@ jobs:
       - name: "Install cargo-binstall"
         uses: cargo-bins/cargo-binstall@v1.10.12
       - name: "Install cross-rs"
-        uses: cargo binstall cross
+        run: cargo binstall cross
 
       - name: "Build software (Linux)"
         run: cd software/ && cargo build --release
