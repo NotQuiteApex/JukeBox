@@ -6,7 +6,7 @@ on:
       - ".github/workflows/build-software.yaml"
 
 jobs:
-  build-software:
+  build-software-linux:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout repo"
@@ -19,11 +19,6 @@ jobs:
           packages: libudev-dev
       - name: "Update Rust"
         uses: dtolnay/rust-toolchain@stable
-      - name: "Install cargo-binstall"
-        uses: cargo-bins/cargo-binstall@v1.10.12
-      - name: "Install cross-rs"
-        run: cargo binstall cross
-
       - name: "Build software (Linux)"
         run: cd software/ && cargo build --release
       - name: "Upload artifact (Linux)"
@@ -32,7 +27,18 @@ jobs:
           name: jb-software-linux
           path: software/target/release/jukebox_desktop
           retention-days: 90
-      
+
+  build-software-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repo"
+        uses: actions/checkout@v4
+      - name: "Update Rust"
+        uses: dtolnay/rust-toolchain@stable
+      - name: "Install cargo-binstall"
+        uses: cargo-bins/cargo-binstall@v1.10.12
+      - name: "Install cross-rs"
+        run: cargo binstall cross
       - name: "Build software (Windows)"
         run: cd software/ && cross build --release
       - name: "Upload artifact (Windows)"
