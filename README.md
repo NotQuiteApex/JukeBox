@@ -19,7 +19,7 @@ Each component of the project is built as it is updated. You can grab the latest
 | - | - | - | - | - |
 
 # License
-Copyright (c) 2020-2024 Logan "NotQuiteApex" Hickok-Dickson
+Copyright (c) 2020-2025 Logan "NotQuiteApex" Hickok-Dickson
 
 All programming files, found in [`firmware/`](firmware/), [`software/`](software/), and [`hardware-case/`](hardware-case), are licensed under the [MIT license](https://mit-license.org/). All CAD files, found in [`hardware-pcb/`](hardware-pcb/), unless otherwise provided by an external source such as footprints or 3D models, are licesned under the [CC BY-NC-SA license](https://creativecommons.org/licenses/by-nc-sa/4.0/). Both licenses can be found with the given links or as files in the root of this repostiory.
 
