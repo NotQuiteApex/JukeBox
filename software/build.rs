@@ -1,7 +1,5 @@
 // build.rs
 
-use std::process::Command;
-
 extern crate winres;
 
 fn main() {
