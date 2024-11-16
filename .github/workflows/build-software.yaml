@@ -40,7 +40,7 @@ jobs:
       - name: "Install cross-rs"
         run: cargo binstall cross
       - name: "Build software (Windows)"
-        run: cd software/ && cross build --release --target x86_64-pc-windows-gnu
+        run: cd software/ && cross build --target x86_64-pc-windows-gnu --release
       - name: "Upload artifact (Windows)"
         uses: actions/upload-artifact@v4
         with:
