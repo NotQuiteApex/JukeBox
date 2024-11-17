@@ -15,12 +15,13 @@ mod modules {
     pub mod serial;
 }
 
+use keyboard::KeyboardMod;
 use modules::*;
 use mutex::Mutex;
 
 use embedded_hal::timer::CountDown as _;
 use panic_probe as _;
-use peripheral::{Connection, JBPeripheralInputs, JBPeripherals, SwitchPosition};
+use peripheral::{Connection, JBPeripheralInputs, JBPeripherals};
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
@@ -143,16 +144,11 @@ fn main() -> ! {
 
         let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
         let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
-        let mut screen_mod = screen::ScreenMod::new();
+        let mut screen_mod = screen::ScreenMod::new(timer.count_down());
 
         loop {
             // update input devices
             keyboard_mod.update();
-
-            // update accessories
-            led_mod.update();
-            rgb_mod.update(timer.get_counter());
-            screen_mod.update();
 
             // update mutexes
             CONNECTED_PERIPHERALS.with_mut_lock(|c| {
@@ -187,11 +183,13 @@ fn main() -> ! {
                     }
 
                     reset_to_usb_boot(0, 0);
-                    // TODO: schedule a reset_to_usb_boot call,
-                    // make sure to cleanly stop all other modules and clear screen and rgb.
-                    core::todo!()
                 }
             });
+
+            // update accessories
+            led_mod.update();
+            rgb_mod.update(timer.get_counter());
+            screen_mod.update();
         }
     });
 
@@ -200,9 +198,14 @@ fn main() -> ! {
         // tick for hid devices
         if hid_tick.wait().is_ok() {
             // handle keyboard
+            let pressed = KeyboardMod::get_keyboard_keys(
+                serial_mod.get_connection_status().connected(),
+                &PERIPHERAL_INPUTS,
+            );
+
             match usb_hid
                 .device::<NKROBootKeyboard<'_, _>, _>()
-                .write_report([usbd_hid::page::Keyboard::NoEventIndicated; 12])
+                .write_report(pressed)
             {
                 Ok(_) => {}
                 Err(UsbHidError::Duplicate) => {}
@@ -250,9 +253,7 @@ fn main() -> ! {
             );
             match usb_serial.flush() {
                 Ok(_) => {}
-                Err(_) => {
-                    // warn!("flush failed!")
-                }
+                Err(_) => {}
             }
         }
     }

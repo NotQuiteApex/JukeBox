@@ -65,7 +65,7 @@ impl<'timer> SerialMod<'timer> {
     fn send_response(serial: &mut SerialPort<UsbBus>, rsp: &[u8]) {
         // TODO: its possible for write to drop some characters, if we're not careful.
         // we should probably handle that before we take on larger communications.
-        let _ = match serial.write(rsp) {
+        match serial.write(rsp) {
             Err(_) => todo!(),
             Ok(_) => {}
         };
@@ -116,7 +116,7 @@ impl<'timer> SerialMod<'timer> {
         res
     }
 
-    pub fn _get_connection_status(&self) -> Connection {
+    pub fn get_connection_status(&self) -> Connection {
         self.state.clone()
     }
 
@@ -173,10 +173,10 @@ impl<'timer> SerialMod<'timer> {
                     true
                 }
                 Command::Greeting => {
-                    let _ = serial.write(b"L,");
-                    let _ = serial.write(firmware_version.as_bytes());
-                    let _ = serial.write(b",");
-                    let _ = serial.write(device_uid.as_bytes());
+                    Self::send_response(serial, b"L,");
+                    Self::send_response(serial, firmware_version.as_bytes());
+                    Self::send_response(serial, b",");
+                    Self::send_response(serial, device_uid.as_bytes());
                     Self::send_response(serial, b",\r\n\r\n");
 
                     self.state = Connection::Connected;
@@ -210,7 +210,7 @@ impl<'timer> SerialMod<'timer> {
                     let inputs = inputs;
 
                     // write all the inputs out
-                    let _ = serial.write(b"I");
+                    Self::send_response(serial, b"I");
                     inputs.write_report(peripherals, serial);
                     Self::send_response(serial, b"\r\n\r\n");
 
@@ -226,7 +226,7 @@ impl<'timer> SerialMod<'timer> {
                     });
                     let peripherals = peripherals;
 
-                    let _ = serial.write(b"A");
+                    Self::send_response(serial, b"A");
                     peripherals.write_report(serial);
                     Self::send_response(serial, b"\r\n\r\n");
                     true
