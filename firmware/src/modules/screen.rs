@@ -39,9 +39,9 @@ impl<'timer> ScreenMod<'timer> {
     }
 
     pub fn clear(&mut self) {
+        self.st.backlight_off();
         self.st.clear_framebuffer();
         self.st.push_framebuffer();
-        self.st.backlight_off();
     }
 
     pub fn update(&mut self, t: Instant, timer: &Timer) {
@@ -49,18 +49,18 @@ impl<'timer> ScreenMod<'timer> {
             return;
         }
 
-        let t = ((t.duration_since_epoch().ticks() >> 15) % 360) as f32;
+        let t = ((t.duration_since_epoch().ticks() >> 14) % 360) as f32;
         let rgb = hsv2rgb(t, 1.0, 1.0);
         let rgb = rgb565(rgb.0, rgb.1, rgb.2);
 
-        // let time_start = timer.get_counter();
+        let time_start = timer.get_counter();
         self.st.fill_framebuffer(rgb);
-        // let elapse1 = (timer.get_counter() - time_start).to_micros();
+        let elapse1 = (timer.get_counter() - time_start).to_micros();
 
-        // let time_start = timer.get_counter();
+        let time_start = timer.get_counter();
         self.st.push_framebuffer();
-        // let elapse2 = (timer.get_counter() - time_start).to_micros();
+        let elapse2 = (timer.get_counter() - time_start).to_micros();
 
-        // info!("times: fill-fb={}us, write-fb={}us", elapse1, elapse2);
+        info!("times: fill-fb={}us, write-fb={}us", elapse1, elapse2);
     }
 }

@@ -192,12 +192,12 @@ fn main() -> ! {
                 // check if we need to shutdown "cleanly" for update
                 UPDATE_TRIGGER.with_lock(|u| {
                     if *u {
+                        screen_mod.clear();
                         led_mod.clear();
                         rgb_mod.clear();
-                        screen_mod.clear();
 
                         // wait a few cycles for the IO to finish
-                        for _ in 0..200 {
+                        for _ in 0..2000 {
                             cortex_m::asm::nop();
                         }
 
