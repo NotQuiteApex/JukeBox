@@ -13,7 +13,6 @@ defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 rp-pico = "0.9"
 usb-device = "0.3.2"
-# usbd-hid = "0.8.2"
 usbd-human-interface-device = { version = "0.5.0" }
 usbd-serial = "0.2.2"
 rp2040-flash = "0.5.1"
@@ -22,6 +21,8 @@ smart-leds = "0.4.0"
 smart-leds-trait = "0.2.1"
 itertools = { version = "0.13.0", default-features = false }
 ringbuffer = { version = "0.15.0", default-features = false }
+pio = "0.2.1"
+nb = "1.1.0"
 
 
 # cargo build/run

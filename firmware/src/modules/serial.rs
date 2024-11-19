@@ -1,7 +1,6 @@
 //! Serial processing module
 
-use defmt::info;
-use defmt::warn;
+use defmt::{info, warn};
 use embedded_hal::timer::Cancel as _;
 use embedded_hal::timer::CountDown as _;
 use itertools::Itertools;

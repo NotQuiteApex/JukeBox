@@ -3,9 +3,11 @@
 #![no_std]
 #![no_main]
 
+mod color;
 mod mutex;
 mod peripheral;
 mod pins;
+mod st7789;
 mod uid;
 mod modules {
     pub mod keyboard;
@@ -35,6 +37,7 @@ use rp_pico::hal::{
     Clock, Timer,
 };
 use rp_pico::{entry, Pins};
+use st7789::St7789;
 use ws2812_pio::Ws2812;
 
 use usb_device::{class_prelude::*, prelude::*};
@@ -50,7 +53,7 @@ use usbd_serial::SerialPort;
 use defmt::*;
 use defmt_rtt as _;
 
-static mut CORE1_STACK: Stack<2048> = Stack::new();
+static mut CORE1_STACK: Stack<8192> = Stack::new();
 
 // inter-core mutexes
 static CONNECTED_PERIPHERALS: Mutex<0, JBPeripherals> = Mutex::new(JBPeripherals::default());
@@ -117,84 +120,102 @@ fn main() -> ! {
     let mut serial_mod = serial::SerialMod::new(timer.count_down());
 
     // core 1 event loop (GPIO)
-    let _ = core1.spawn(unsafe { &mut CORE1_STACK.mem }, move || {
-        let mut pac = unsafe { Peripherals::steal() };
-        let pins = Pins::new(
-            pac.IO_BANK0,
-            pac.PADS_BANK0,
-            sio.gpio_bank0,
-            &mut pac.RESETS,
-        );
+    core1
+        .spawn(unsafe { &mut CORE1_STACK.mem }, move || {
+            let mut pac = unsafe { Peripherals::steal() };
+            let pins = Pins::new(
+                pac.IO_BANK0,
+                pac.PADS_BANK0,
+                sio.gpio_bank0,
+                &mut pac.RESETS,
+            );
 
-        // set up GPIO
-        let (kb_col_pins, kb_row_pins, led_pin, rgb_pin) = pins::configure_gpio(pins);
+            // set up GPIO
+            let (kb_col_pins, kb_row_pins, led_pin, rgb_pin, screen_pins) =
+                pins::configure_gpio(pins);
 
-        let (mut pio, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
-        let ws = Ws2812::new(
-            rgb_pin,
-            &mut pio,
-            sm0,
-            clocks.peripheral_clock.freq(),
-            timer.count_down(),
-        );
+            let (mut pio0, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
+            let ws = Ws2812::new(
+                rgb_pin,
+                &mut pio0,
+                sm0,
+                clocks.peripheral_clock.freq(),
+                timer.count_down(),
+            );
 
-        // set up modules
-        let mut keyboard_mod =
-            keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
+            let (mut pio1, _, sm1, _, _) = pac.PIO1.split(&mut pac.RESETS);
+            let mut st = St7789::new(
+                &mut pio1,
+                sm1,
+                screen_pins.0,
+                screen_pins.1,
+                screen_pins.2,
+                screen_pins.3,
+                screen_pins.4,
+                screen_pins.5,
+                timer.count_down(),
+            );
+            st.init();
 
-        let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
-        let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
-        let mut screen_mod = screen::ScreenMod::new(timer.count_down());
+            // set up modules
+            let mut keyboard_mod =
+                keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
 
-        loop {
-            // update input devices
-            keyboard_mod.update();
+            let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
+            let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
+            let mut screen_mod = screen::ScreenMod::new(st, timer.count_down());
 
-            // update mutexes
-            CONNECTED_PERIPHERALS.with_mut_lock(|c| {
-                c.keyboard = Connection::Connected;
-            });
-            PERIPHERAL_INPUTS.with_mut_lock(|i| {
-                let keys = keyboard_mod.get_pressed_keys();
-                i.keyboard.key1 = keys[0].into();
-                i.keyboard.key2 = keys[1].into();
-                i.keyboard.key3 = keys[2].into();
-                i.keyboard.key4 = keys[3].into();
-                i.keyboard.key5 = keys[4].into();
-                i.keyboard.key6 = keys[5].into();
-                i.keyboard.key7 = keys[6].into();
-                i.keyboard.key8 = keys[7].into();
-                i.keyboard.key9 = keys[8].into();
-                i.keyboard.key10 = keys[9].into();
-                i.keyboard.key11 = keys[10].into();
-                i.keyboard.key12 = keys[11].into();
-            });
+            loop {
+                // update input devices
+                keyboard_mod.update();
 
-            // check if we need to shutdown "cleanly" for update
-            UPDATE_TRIGGER.with_lock(|u| {
-                if *u {
-                    led_mod.clear();
-                    rgb_mod.clear();
-                    screen_mod.clear();
+                // update mutexes
+                CONNECTED_PERIPHERALS.with_mut_lock(|c| {
+                    c.keyboard = Connection::Connected;
+                });
+                PERIPHERAL_INPUTS.with_mut_lock(|i| {
+                    let keys = keyboard_mod.get_pressed_keys();
+                    i.keyboard.key1 = keys[0].into();
+                    i.keyboard.key2 = keys[1].into();
+                    i.keyboard.key3 = keys[2].into();
+                    i.keyboard.key4 = keys[3].into();
+                    i.keyboard.key5 = keys[4].into();
+                    i.keyboard.key6 = keys[5].into();
+                    i.keyboard.key7 = keys[6].into();
+                    i.keyboard.key8 = keys[7].into();
+                    i.keyboard.key9 = keys[8].into();
+                    i.keyboard.key10 = keys[9].into();
+                    i.keyboard.key11 = keys[10].into();
+                    i.keyboard.key12 = keys[11].into();
+                });
 
-                    // wait a few cycles for the IO to finish
-                    for _ in 0..100 {
-                        cortex_m::asm::nop();
+                // check if we need to shutdown "cleanly" for update
+                UPDATE_TRIGGER.with_lock(|u| {
+                    if *u {
+                        led_mod.clear();
+                        rgb_mod.clear();
+                        screen_mod.clear();
+
+                        // wait a few cycles for the IO to finish
+                        for _ in 0..200 {
+                            cortex_m::asm::nop();
+                        }
+
+                        reset_to_usb_boot(0, 0);
                     }
+                });
 
-                    reset_to_usb_boot(0, 0);
-                }
-            });
-
-            // update accessories
-            led_mod.update();
-            rgb_mod.update(timer.get_counter());
-            screen_mod.update();
-        }
-    });
+                // update accessories
+                led_mod.update();
+                rgb_mod.update(timer.get_counter());
+                screen_mod.update(timer.get_counter(), &timer);
+            }
+        })
+        .expect("failed to start core1");
 
     // main event loop (USB comms)
     loop {
+        // info!("help 0");
         // tick for hid devices
         if hid_tick.wait().is_ok() {
             // handle keyboard
