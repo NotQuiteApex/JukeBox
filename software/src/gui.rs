@@ -1,23 +1,27 @@
 // Graphical User Interface (pronounced like GIF)
 
-use std::collections::HashMap;
-use std::sync::mpsc::{channel, Sender};
+use std::collections::{HashMap, HashSet};
+use std::fs::{create_dir_all, File};
+use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use eframe::egui::ahash::{HashSet, HashSetExt};
 use eframe::egui::{
-    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, SelectableLabel,
-    Sense, TextBuffer, TextEdit, Ui, ViewportBuilder,
+    vec2, Align, Button, CentralPanel, Color32, ComboBox, Grid, Layout, RichText, Rounding, Sense,
+    TextBuffer, TextEdit, Ui, ViewportBuilder,
 };
 use egui_phosphor::regular as phos;
-
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::reaction::{InputKey, Peripheral, ReactionConfig, ReactionMetaTest};
-use crate::serial::{serial_get_device, serial_task, SerialCommand, SerialEvent};
+use crate::reaction::{reaction_task, InputKey, Peripheral, ReactionConfig};
+use crate::serial::{serial_task, SerialCommand, SerialConnectionDetails, SerialEvent};
 use crate::splash::SPLASH_MESSAGES;
+
+const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(PartialEq)]
 enum GuiTab {
@@ -36,59 +40,96 @@ enum GuiDeviceTab {
     Pedal3,
 }
 
-#[derive(Serialize, Deserialize)]
-struct JukeBoxConfig {
-    current_profile: String,
-    profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
+#[derive(PartialEq)]
+enum ConnectionStatus {
+    Connected,
+    LostConnection,
+    Disconnected,
 }
 
-const APP_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+#[derive(Serialize, Deserialize, Clone)]
+pub struct JukeBoxConfig {
+    pub current_profile: String,
+    pub profiles: HashMap<String, HashMap<InputKey, ReactionConfig>>,
+}
+impl Default for JukeBoxConfig {
+    fn default() -> Self {
+        JukeBoxConfig {
+            current_profile: "Default".to_string(),
+            profiles: HashMap::from([("Default".to_string(), HashMap::new())]),
+        }
+    }
+}
+impl JukeBoxConfig {
+    fn get_path() -> PathBuf {
+        let mut p = dirs::config_dir().expect("failed to find config directory");
+        p.push("JukeBoxDesktop");
+        create_dir_all(&p).expect("failed to create config directory");
+        p.push("config.json");
+        p
+    }
+
+    pub fn load() -> Self {
+        let path = Self::get_path();
+        let file = match File::open(path) {
+            Err(_) => {
+                return JukeBoxConfig::default();
+            }
+            Ok(f) => f,
+        };
+
+        let conf = match serde_json::from_reader(file) {
+            Err(_) => {
+                return JukeBoxConfig::default();
+            }
+            Ok(c) => c,
+        };
+
+        // TODO: serde_validate the config?
+
+        conf
+    }
+
+    pub fn save(&self) {
+        let path = Self::get_path();
+        let file = File::create(path).expect("failed to create config file");
+        serde_json::to_writer(file, &self).expect("failed to write config file");
+    }
+}
 
 struct JukeBoxGui {
     splash_timer: Instant,
     splash_index: usize,
 
-    conn_status: SerialEvent,
+    conn_status: ConnectionStatus,
 
     gui_tab: GuiTab,
     device_tab: GuiDeviceTab,
 
+    device_info: Option<SerialConnectionDetails>,
     device_peripherals: HashSet<Peripheral>,
+    device_inputs: HashSet<InputKey>,
 
-    config: JukeBoxConfig,
+    config: Arc<Mutex<JukeBoxConfig>>,
     config_renaming_profile: bool,
     config_profile_name_entry: String,
 }
 impl JukeBoxGui {
     fn new() -> Self {
         // TODO: rework later for file configs
-        let config: JukeBoxConfig = JukeBoxConfig {
-            current_profile: "Profile 1".to_string(),
-            profiles: HashMap::from([
-                (
-                    "Profile 1".to_string(),
-                    HashMap::from([(
-                        InputKey::KeyboardSwitch1,
-                        ReactionConfig::MetaTest(ReactionMetaTest {}),
-                    )]),
-                ),
-                (
-                    "Profile 3".to_string(),
-                    HashMap::from([(
-                        InputKey::KeyboardSwitch12,
-                        ReactionConfig::MetaTest(ReactionMetaTest {}),
-                    )]),
-                ),
-            ]),
-        };
+        let config = JukeBoxConfig::load();
+        config.save();
+        let config = Arc::new(Mutex::new(JukeBoxConfig::load()));
 
         JukeBoxGui {
             splash_timer: Instant::now(),
             splash_index: 0usize,
-            conn_status: SerialEvent::Disconnected,
+            conn_status: ConnectionStatus::Disconnected,
             gui_tab: GuiTab::Device,
             device_tab: GuiDeviceTab::None,
             device_peripherals: HashSet::new(),
+            device_inputs: HashSet::new(),
+            device_info: None,
             config: config,
             config_renaming_profile: false,
             config_profile_name_entry: String::new(),
@@ -97,37 +138,26 @@ impl JukeBoxGui {
 
     fn run(mut self) {
         // channels cannot be a part of Self due to partial move errors
-        let (s_evnt_tx, s_evnt_rx) = channel::<SerialEvent>(); // serialcomms thread sends events to gui thread
-        let (s_cmd_tx, s_cmd_rx) = channel::<SerialCommand>(); // gui thread sends commands to serialcomms thread
-        let (brkr_tx, brkr_rx) = channel::<bool>(); // ends serialcomms thread from gui
+        let (s_evnt_tx, s_evnt_rx) = channel::<SerialEvent>(); // serial thread sends events to reaction thread
+        let (r_evnt_tx, r_evnt_rx) = channel::<SerialEvent>(); // reaction thread sends events to gui thread
+        let (s_cmd_tx, s_cmd_rx) = channel::<SerialCommand>(); // gui thread sends commands to serial thread
+
+        let brkr = Arc::new(AtomicBool::new(false)); // ends other threads from gui
+        let brkr_serial = brkr.clone();
+        let brkr_reaction = brkr.clone();
+
+        let s_evnt_tx_serial = s_evnt_tx.clone();
         let s_cmd_tx2 = s_cmd_tx.clone();
 
+        let config_reaction = self.config.clone();
+
         // serial comms thread
-        let serialcomms = thread::spawn(move || {
-            // TODO: check application cpu usage when device is connected
-            loop {
-                if let Ok(_) = brkr_rx.try_recv() {
-                    break;
-                }
+        let serialcomms =
+            thread::spawn(move || serial_task(brkr_serial, s_cmd_rx, s_evnt_tx_serial));
 
-                let f = serial_get_device();
-                if let Err(_) = f {
-                    // log::error!("Failed to get serial device. Error: `{}`.", e);
-                    thread::sleep(Duration::from_secs(1));
-                    continue;
-                }
-                let mut f = f.unwrap();
-
-                match serial_task(&mut f, &s_cmd_rx, &s_evnt_tx) {
-                    Err(e) => {
-                        log::warn!("Serial device error: `{}`", e);
-                        if let Err(e) = s_evnt_tx.send(SerialEvent::LostConnection) {
-                            log::warn!("LostConnection event signal failed, reason: `{}`", e);
-                        }
-                    }
-                    Ok(_) => log::info!("Serial device successfully disconnected. Looping..."),
-                };
-            }
+        // reaction comms thread
+        let reactioncomms = thread::spawn(move || {
+            reaction_task(brkr_reaction, s_evnt_rx, r_evnt_tx, config_reaction)
         });
 
         let options = eframe::NativeOptions {
@@ -147,19 +177,12 @@ impl JukeBoxGui {
         };
 
         eframe::run_simple_native("JukeBox Desktop", options, move |ctx, _frame| {
+            ctx.set_zoom_factor(2.0);
             let mut fonts = eframe::egui::FontDefinitions::default();
             egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
             ctx.set_fonts(fonts);
-            ctx.set_zoom_factor(2.0);
 
-            while let Ok(event) = s_evnt_rx.try_recv() {
-                match event {
-                    SerialEvent::Connected => self.conn_status = SerialEvent::Connected,
-                    SerialEvent::LostConnection => self.conn_status = SerialEvent::LostConnection,
-                    SerialEvent::Disconnected => self.conn_status = SerialEvent::Disconnected,
-                    _ => todo!(),
-                }
-            }
+            self.handle_serial_events(&r_evnt_rx);
 
             CentralPanel::default().show(ctx, |ui| {
                 ui.horizontal(|ui| {
@@ -170,33 +193,8 @@ impl JukeBoxGui {
                 ui.separator();
 
                 ui.allocate_ui(vec2(464.0, 252.0), |ui| match self.gui_tab {
-                    GuiTab::Device => {
-                        match self.device_tab {
-                            GuiDeviceTab::Keyboard => {
-                                self.draw_keyboard(ui);
-                            }
-                            GuiDeviceTab::Knobs1 | GuiDeviceTab::Knobs2 => {
-                                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
-                            }
-                            GuiDeviceTab::Pedal1 | GuiDeviceTab::Pedal2 | GuiDeviceTab::Pedal3 => {
-                                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
-                            }
-                            GuiDeviceTab::None => {
-                                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
-                            }
-                        }
-
-                        self.draw_peripheral_tabs(ui, &s_cmd_tx);
-                    }
-                    GuiTab::Settings => {
-                        self.draw_jukebox_logo(ui);
-                        ui.label("");
-                        ui.label("");
-                        self.draw_update_button(ui, &s_cmd_tx);
-                        ui.label("");
-                        self.draw_testfunc_button(ui, &s_cmd_tx);
-                        self.draw_settings_bottom(ui);
-                    }
+                    GuiTab::Device => self.draw_device_page(ui, &s_cmd_tx),
+                    GuiTab::Settings => self.draw_settings_page(ui, &s_cmd_tx),
                 });
 
                 ui.separator();
@@ -211,15 +209,83 @@ impl JukeBoxGui {
         })
         .expect("eframe error");
 
-        brkr_tx.send(true).expect("could not send breaker 2 signal");
+        brkr.store(true, std::sync::atomic::Ordering::Relaxed);
 
         s_cmd_tx2
             .send(SerialCommand::DisconnectDevice)
             .expect("could not send disconnect signal");
 
-        serialcomms
+        let _ = serialcomms
             .join()
             .expect("could not rejoin serialcomms thread");
+
+        let _ = reactioncomms
+            .join()
+            .expect("could not rejoin reactioncomms thread");
+    }
+
+    fn handle_serial_events(&mut self, s_evnt_rx: &Receiver<SerialEvent>) {
+        while let Ok(event) = s_evnt_rx.try_recv() {
+            match event {
+                SerialEvent::Connected(d) => {
+                    self.conn_status = ConnectionStatus::Connected;
+                    self.device_info = Some(d);
+                }
+                SerialEvent::LostConnection => {
+                    self.conn_status = ConnectionStatus::LostConnection;
+                    self.device_tab = GuiDeviceTab::None;
+                    self.device_peripherals.clear();
+                    self.device_info = None;
+                }
+                SerialEvent::Disconnected => {
+                    self.conn_status = ConnectionStatus::Disconnected;
+                    self.device_tab = GuiDeviceTab::None;
+                    self.device_peripherals.clear();
+                    self.device_info = None;
+                }
+                SerialEvent::GetPeripherals(p) => {
+                    self.device_peripherals = p;
+                    if self.device_peripherals.contains(&Peripheral::Keyboard) {
+                        self.device_tab = GuiDeviceTab::Keyboard;
+                    } else {
+                        self.device_tab = GuiDeviceTab::None;
+                    }
+                }
+                SerialEvent::GetInputKeys(k) => {
+                    self.device_inputs = k
+                    // TODO: run all config.profiles[config.current_profile] actions
+                } // _ => todo!(),
+            }
+        }
+    }
+
+    fn draw_device_page(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
+        match self.device_tab {
+            GuiDeviceTab::Keyboard => {
+                self.draw_keyboard(ui);
+            }
+            GuiDeviceTab::Knobs1 | GuiDeviceTab::Knobs2 => {
+                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+            }
+            GuiDeviceTab::Pedal1 | GuiDeviceTab::Pedal2 | GuiDeviceTab::Pedal3 => {
+                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+            }
+            GuiDeviceTab::None => {
+                ui.allocate_exact_size(vec2(324.0, 231.0), Sense::hover());
+            }
+        }
+
+        self.draw_peripheral_tabs(ui, &s_cmd_tx);
+    }
+
+    fn draw_settings_page(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
+        self.draw_jukebox_logo(ui);
+        ui.label("");
+        ui.label("");
+        self.draw_update_button(ui, &s_cmd_tx);
+        ui.label("");
+        self.draw_testfunc_button(ui, &s_cmd_tx);
+        self.draw_settings_bottom(ui);
     }
 
     fn draw_profile_management(&mut self, ui: &mut Ui) {
@@ -240,33 +306,30 @@ impl JukeBoxGui {
                 );
                 if edit.lost_focus() && self.config_profile_name_entry.len() > 0 {
                     self.config_renaming_profile = false;
-                    let c = self
-                        .config
-                        .profiles
-                        .remove(&self.config.current_profile)
-                        .expect("");
-                    self.config
-                        .profiles
+                    let mut conf = self.config.lock().unwrap();
+
+                    let p = conf.current_profile.clone();
+                    let c = conf.profiles.remove(&p).expect("");
+                    conf.profiles
                         .insert(self.config_profile_name_entry.to_string(), c);
-                    self.config
-                        .current_profile
+                    conf.current_profile
                         .replace_range(.., &self.config_profile_name_entry);
                 }
                 if !edit.has_focus() {
                     edit.request_focus();
                 }
             } else {
+                let mut conf = self.config.lock().unwrap();
+                let profiles = conf.profiles.clone();
+                let current = conf.current_profile.clone();
                 ComboBox::from_id_salt("ProfileSelect")
-                    .selected_text(self.config.current_profile.clone()) // TODO: show current profile name here
+                    .selected_text(conf.current_profile.clone()) // TODO: show current profile name here
                     .width(150.0)
                     .show_ui(ui, |ui| {
-                        for (k, _) in &self.config.profiles {
-                            let u = ui.add(SelectableLabel::new(
-                                *k == self.config.current_profile.clone(),
-                                &*k.clone(),
-                            ));
+                        for (k, _) in &profiles {
+                            let u = ui.selectable_label(*k == current, &*k.clone());
                             if u.clicked() {
-                                self.config.current_profile = k.to_string();
+                                conf.current_profile = k.to_string();
                             }
                         }
                     })
@@ -284,11 +347,12 @@ impl JukeBoxGui {
                     .button(RichText::new(phos::PLUS_CIRCLE))
                     .on_hover_text_at_pointer("New Profile");
                 if new_btn.clicked() {
-                    let mut idx = self.config.profiles.keys().len() + 1;
+                    let mut conf = self.config.lock().unwrap();
+                    let mut idx = conf.profiles.keys().len() + 1;
                     loop {
                         let name = format!("Profile {}", idx);
-                        if !self.config.profiles.contains_key(&name) {
-                            self.config.profiles.insert(name, HashMap::new());
+                        if !conf.profiles.contains_key(&name) {
+                            conf.profiles.insert(name, HashMap::new());
                             // TODO: immediately save config to file
                             break;
                         }
@@ -306,18 +370,21 @@ impl JukeBoxGui {
                     .button(RichText::new(phos::NOTE_PENCIL))
                     .on_hover_text_at_pointer("Edit Profile Name");
                 if edit_btn.clicked() {
+                    let conf = self.config.lock().unwrap();
                     self.config_renaming_profile = true;
                     self.config_profile_name_entry
-                        .replace_with(&self.config.current_profile);
+                        .replace_with(&conf.current_profile);
                 }
             });
 
             ui.scope(|ui| {
+                let mut conf = self.config.lock().unwrap();
+
                 if self.config_renaming_profile {
                     ui.disable();
                 }
 
-                if self.config.profiles.keys().len() <= 1 {
+                if conf.profiles.keys().len() <= 1 {
                     ui.disable();
                 }
                 let delete_btn = ui
@@ -325,9 +392,9 @@ impl JukeBoxGui {
                     .on_hover_text_at_pointer("Delete Profile");
                 if delete_btn.clicked() {
                     // TODO: check other profiles and make sure they dont rely on this profile
-                    self.config.profiles.remove(&self.config.current_profile);
-                    self.config.current_profile =
-                        self.config.profiles.keys().next().expect("").to_string();
+                    let p = conf.current_profile.clone();
+                    conf.profiles.remove(&p);
+                    conf.current_profile = conf.profiles.keys().next().expect("").to_string();
                     // TODO: immediately save config to file
                 }
             });
@@ -356,14 +423,50 @@ impl JukeBoxGui {
         ui.horizontal(|ui| {
             ui.allocate_exact_size([62.0, 0.0].into(), s);
             Grid::new("KBGrid").show(ui, |ui| {
-                let col = 4;
-                let row = 3;
-                for y in 0..row {
-                    for x in 0..col {
-                        let btn = Button::new(format!("F{}", 12 + x + y * col + 1));
-                        let btn = ui.add_sized([75.0, 75.0], btn);
+                let keys = [
+                    [
+                        InputKey::KeyboardSwitch1,
+                        InputKey::KeyboardSwitch2,
+                        InputKey::KeyboardSwitch3,
+                        InputKey::KeyboardSwitch4,
+                    ],
+                    [
+                        InputKey::KeyboardSwitch5,
+                        InputKey::KeyboardSwitch6,
+                        InputKey::KeyboardSwitch7,
+                        InputKey::KeyboardSwitch8,
+                    ],
+                    [
+                        InputKey::KeyboardSwitch9,
+                        InputKey::KeyboardSwitch10,
+                        InputKey::KeyboardSwitch11,
+                        InputKey::KeyboardSwitch12,
+                    ],
+                    // [
+                    //     InputKey::KeyboardSwitch13,
+                    //     InputKey::KeyboardSwitch14,
+                    //     InputKey::KeyboardSwitch15,
+                    //     InputKey::KeyboardSwitch16,
+                    // ],
+                ];
+                for (y, k) in keys.iter().enumerate() {
+                    for (x, k) in k.iter().enumerate() {
+                        let s = format!("F{}", 12 + x + y * 4 + 1);
+                        let rt = RichText::new(s).heading();
+                        let mut b = Button::new(rt);
+                        if self.device_inputs.contains(k) {
+                            let r = 20.0;
+                            b = b.rounding(Rounding {
+                                nw: r,
+                                ne: r,
+                                sw: r,
+                                se: r,
+                            });
+                        }
+                        let btn = ui.add_sized([75.0, 75.0], b);
+
                         if btn.clicked() {
-                            log::info!("({}, {}) clicked", x + 1, y + 1);
+                            log::info!("F{} clicked", 12 + x + y * 4 + 1);
                             // TODO: add config menu when button is clicked
                             // TODO: highlight button when press signal is recieved
                             // TODO: display some better text in the buttons
@@ -379,24 +482,26 @@ impl JukeBoxGui {
     fn draw_peripheral_tabs(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
         ui.horizontal(|ui| {
             ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
-                if ui.button(RichText::new(phos::ARROW_CLOCKWISE)).clicked() {
+                let b = ui
+                    .button(RichText::new(phos::ARROW_CLOCKWISE))
+                    .on_hover_text_at_pointer("Refresh Peripherals");
+                if b.clicked() {
                     s_cmd_tx
                         .send(SerialCommand::GetPeripherals)
                         .expect("failed to send get peripherals command");
                 }
 
-                // TODO: may be out of order, we don't want that
-                for p in self.device_peripherals.iter() {
-                    let p = match p {
-                        Peripheral::Keyboard => (GuiDeviceTab::Keyboard, "Keyboard"),
-                        Peripheral::Knobs1 => (GuiDeviceTab::Knobs1, "Knobs 1"),
-                        Peripheral::Knobs2 => (GuiDeviceTab::Knobs2, "Knobs 2"),
-                        Peripheral::Pedal1 => (GuiDeviceTab::Pedal1, "Pedal 1"),
-                        Peripheral::Pedal2 => (GuiDeviceTab::Pedal2, "Pedal 2"),
-                        Peripheral::Pedal3 => (GuiDeviceTab::Pedal3, "Pedal 3"),
-                    };
-                    ui.selectable_value(&mut self.device_tab, p.0, p.1);
-                }
+                let mut f = |t1, t2, s: &str| {
+                    if self.device_peripherals.contains(t1) {
+                        ui.selectable_value(&mut self.device_tab, t2, s);
+                    }
+                };
+                f(&Peripheral::Pedal3, GuiDeviceTab::Pedal3, "Pedal 3");
+                f(&Peripheral::Pedal2, GuiDeviceTab::Pedal2, "Pedal 2");
+                f(&Peripheral::Pedal1, GuiDeviceTab::Pedal1, "Pedal 1");
+                f(&Peripheral::Knobs2, GuiDeviceTab::Knobs2, "Knobs 2");
+                f(&Peripheral::Knobs1, GuiDeviceTab::Knobs1, "Knobs 1");
+                f(&Peripheral::Keyboard, GuiDeviceTab::Keyboard, "Keyboard");
             });
         });
     }
@@ -411,14 +516,13 @@ impl JukeBoxGui {
             ui.label(format!("-  v{}", APP_VERSION));
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 let res = match self.conn_status {
-                    SerialEvent::Connected => ("Connected.", Color32::from_rgb(50, 200, 50)),
-                    SerialEvent::Disconnected => {
+                    ConnectionStatus::Connected => ("Connected.", Color32::from_rgb(50, 200, 50)),
+                    ConnectionStatus::Disconnected => {
                         ("Not connected.", Color32::from_rgb(200, 200, 50))
                     }
-                    SerialEvent::LostConnection => {
+                    ConnectionStatus::LostConnection => {
                         ("Lost connection!", Color32::from_rgb(200, 50, 50))
                     }
-                    _ => panic!("Bad Connection State!"),
                 };
 
                 ui.label(RichText::new(res.0).color(res.1));
@@ -428,7 +532,7 @@ impl JukeBoxGui {
 
     fn draw_update_button(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
         ui.horizontal(|ui| {
-            if self.conn_status != SerialEvent::Connected {
+            if self.conn_status != ConnectionStatus::Connected {
                 ui.disable();
             }
             if ui.button("Update JukeBox").clicked() {
@@ -443,7 +547,7 @@ impl JukeBoxGui {
 
     fn draw_testfunc_button(&mut self, ui: &mut Ui, s_cmd_tx: &Sender<SerialCommand>) {
         ui.horizontal(|ui| {
-            if self.conn_status != SerialEvent::Connected {
+            if self.conn_status != ConnectionStatus::Connected {
                 ui.disable();
             }
             if ui.button("Debug Signal").clicked() {
@@ -459,14 +563,20 @@ impl JukeBoxGui {
     fn draw_settings_bottom(&mut self, ui: &mut Ui) {
         ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
             ui.horizontal(|ui| {
-                ui.label("Firmware Version: TODO");
+                if let Some(i) = &self.device_info {
+                    ui.label(format!("Firmware Version: {}", i.firmware_version));
+                }
+
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.label("Made w/ <3 by Friend Team Inc. (c) 2024");
                 });
             });
 
             ui.horizontal(|ui| {
-                ui.label("Serial ID: TODO");
+                if let Some(i) = &self.device_info {
+                    ui.label(format!("Device UID: {}", i.device_uid));
+                }
+
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.hyperlink_to("Donate", "https://www.youtube.com/watch?v=dQw4w9WgXcQ");
                     ui.label(" - ");

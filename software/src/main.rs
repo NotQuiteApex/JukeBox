@@ -1,27 +1,18 @@
-// An application for interfacing with a JukeBox over serial.
+// A desktop application for interfacing with a JukeBox over serial.
 
-// #![windows_subsystem = "windows"] // disables console spawning for release build
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // disables console spawning for release build
 
 mod gui;
 mod reaction;
 mod serial;
 mod splash;
-mod util;
 
-fn deffered_main() -> Result<(), util::ExitMsg> {
+use anyhow::Result;
+
+fn main() -> Result<()> {
     env_logger::init();
 
     gui::basic_gui();
 
     Ok(())
-}
-
-fn main() {
-    std::process::exit(deffered_main().map_or_else(
-        |err| {
-            log::error!("{}", err);
-            err.code as i32
-        },
-        |_| 0,
-    ))
 }

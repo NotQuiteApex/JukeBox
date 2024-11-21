@@ -9,26 +9,30 @@ jobs:
   build-firmware:
     runs-on: ubuntu-latest
     steps:
-      - name: "Get dependencies"
-        # TOFIX: This doesn't appear to work due to issues with 'nosys.specs'
-        # uses: awalsh128/cache-apt-pkgs-action@v1
-        # with:
-        #   version: 1
-        #   execute_install_scripts: true
-        #   packages: cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
-        run: sudo apt-get -y install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
-        # TOFIX: cache the submodules?
       - name: "Checkout repo"
         uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: "CMake setup"
-        run: cd firmware/ && mkdir build/ && cd build/ && cmake ..
-      - name: "Build with make"
-        run: cd firmware/build/ && make -j2
-      - name: "Upload artifact"
+      - name: "Update Rust"
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          target: thumbv6m-none-eabi
+      - name: "Install Cargo dependencies"
+        run: cargo install flip-link
+      - name: "Build debug binary with Cargo"
+        run: cd firmware/ && cargo build
+      - name: "Build release binary with Cargo"
+        run: cd firmware/ && cargo build --release
+      - name: "Upload debug binary artifact"
         uses: actions/upload-artifact@v4
         with:
-          name: jb-firmware
-          path: firmware/build/jukebox_firmware.uf2
+          name: jb_firmware_debug
+          path: firmware/target/thumbv6m-none-eabi/debug/jukebox_firmware
+          retention-days: 90
+      - name: "Upload release binary artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: jb_firmware_release
+          path: firmware/target/thumbv6m-none-eabi/release/jukebox_firmware
           retention-days: 90
