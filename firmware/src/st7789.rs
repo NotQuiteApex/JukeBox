@@ -137,7 +137,8 @@ where
     }
 
     fn write(&mut self, word: u16) {
-        while !self.tx.write((word as u32) << 16) {
+        let w = (word as u32) << 16;
+        while !self.tx.write(w) {
             cortex_m::asm::nop();
         }
     }

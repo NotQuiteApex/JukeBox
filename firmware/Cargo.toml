@@ -23,6 +23,7 @@ itertools = { version = "0.13.0", default-features = false }
 ringbuffer = { version = "0.15.0", default-features = false }
 pio = "0.2.1"
 nb = "1.1.0"
+rp2040-boot2 = "0.3.0"
 
 
 # cargo build/run

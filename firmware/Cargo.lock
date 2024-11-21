@@ -322,6 +322,7 @@ dependencies = [
  "pio",
  "ringbuffer",
  "rp-pico",
+ "rp2040-boot2",
  "rp2040-flash",
  "smart-leds",
  "smart-leds-trait 0.2.1",
