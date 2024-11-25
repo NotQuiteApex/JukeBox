@@ -5,6 +5,7 @@ version = "0.1.0"
 license = "MIT"
 
 [dependencies]
+jukebox_util = { path = "../software/jukebox_util" }
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
 embedded-hal = "0.2.7"
@@ -22,8 +23,14 @@ smart-leds-trait = "0.2.1"
 itertools = { version = "0.13.0", default-features = false }
 ringbuffer = { version = "0.15.0", default-features = false }
 pio = "0.2.1"
-nb = "1.1.0"
 rp2040-boot2 = "0.3.0"
+mutually_exclusive_features = "0.1.0"
+
+[features]
+default = ["keypad"]
+keypad = []
+knobpad = []
+pedalpad = []
 
 
 # cargo build/run

@@ -1,0 +1,7 @@
+[package]
+name = "jukebox_util"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bitmatch = "0.1.1"

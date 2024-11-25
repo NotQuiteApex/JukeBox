@@ -12,202 +12,113 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use jukebox_util::peripheral::{KeyInputs, KnobInputs, PedalInputs};
 use serde::{Deserialize, Serialize};
 
 use crate::{gui::JukeBoxConfig, serial::SerialEvent};
-
-#[derive(Eq, PartialEq, Debug, Hash, Clone)]
-pub enum Peripheral {
-    Keyboard,
-    Knobs1,
-    Knobs2,
-    Pedal1,
-    Pedal2,
-    Pedal3,
-}
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Hash, Clone, Copy)]
 pub enum InputKey {
     UnknownKey,
 
-    KeyboardSwitch1,
-    KeyboardSwitch2,
-    KeyboardSwitch3,
-    KeyboardSwitch4,
-    KeyboardSwitch5,
-    KeyboardSwitch6,
-    KeyboardSwitch7,
-    KeyboardSwitch8,
-    KeyboardSwitch9,
-    KeyboardSwitch10,
-    KeyboardSwitch11,
-    KeyboardSwitch12,
-    KeyboardSwitch13,
-    KeyboardSwitch14,
-    KeyboardSwitch15,
-    KeyboardSwitch16,
+    KeySwitch1,
+    KeySwitch2,
+    KeySwitch3,
+    KeySwitch4,
+    KeySwitch5,
+    KeySwitch6,
+    KeySwitch7,
+    KeySwitch8,
+    KeySwitch9,
+    KeySwitch10,
+    KeySwitch11,
+    KeySwitch12,
+    KeySwitch13,
+    KeySwitch14,
+    KeySwitch15,
+    KeySwitch16,
 
-    Knob1LeftClockwise,
-    Knob1LeftCounterclockwise,
-    Knob1LeftSwitch,
-    Knob1RightClockwise,
-    Knob1RightCounterclockwise,
-    Knob1RightSwitch,
+    KnobLeftSwitch,
+    KnobLeftClockwise,
+    KnobLeftCounterClockwise,
+    KnobRightSwitch,
+    KnobRightClockwise,
+    KnobRightCounterClockwise,
 
-    Knob2LeftClockwise,
-    Knob2LeftCounterclockwise,
-    Knob2LeftSwitch,
-    Knob2RightClockwise,
-    Knob2RightCounterclockwise,
-    Knob2RightSwitch,
-
-    Pedal1Switch1,
-    Pedal1Switch2,
-    Pedal1Switch3,
-
-    Pedal2Switch1,
-    Pedal2Switch2,
-    Pedal2Switch3,
-
-    Pedal3Switch1,
-    Pedal3Switch2,
-    Pedal3Switch3,
+    PedalLeft,
+    PedalMiddle,
+    PedalRight,
 }
 impl InputKey {
-    fn decode_word(w: u8, d: &[Self]) -> HashSet<Self> {
-        let mut o = HashSet::new();
+    pub fn trans_keys(i: KeyInputs) -> HashSet<Self> {
+        let mut res = HashSet::new();
 
-        for (i, k) in d.iter().enumerate() {
-            if (w & (1 << i)) != 0 {
-                o.insert(k.clone());
+        let mut doif = |c, f| {
+            if c {
+                res.insert(f);
             }
-        }
-
-        o
-    }
-
-    pub fn decode_keyboard(w2: u8, w1: u8) -> HashSet<Self> {
-        let mut i = HashSet::new();
-
-        i.extend(Self::decode_word(
-            w2,
-            &[
-                Self::KeyboardSwitch9,
-                Self::KeyboardSwitch10,
-                Self::KeyboardSwitch11,
-                Self::KeyboardSwitch12,
-                Self::KeyboardSwitch13,
-                Self::KeyboardSwitch14,
-                Self::KeyboardSwitch15,
-                Self::KeyboardSwitch16,
-            ],
-        ));
-
-        i.extend(Self::decode_word(
-            w1,
-            &[
-                Self::KeyboardSwitch1,
-                Self::KeyboardSwitch2,
-                Self::KeyboardSwitch3,
-                Self::KeyboardSwitch4,
-                Self::KeyboardSwitch5,
-                Self::KeyboardSwitch6,
-                Self::KeyboardSwitch7,
-                Self::KeyboardSwitch8,
-            ],
-        ));
-
-        i
-    }
-
-    pub fn decode_knobs1(w: u8) -> HashSet<Self> {
-        Self::decode_knob(
-            w,
-            Self::Knob1RightClockwise,
-            Self::Knob1RightCounterclockwise,
-            Self::Knob1RightSwitch,
-            Self::Knob1LeftClockwise,
-            Self::Knob1LeftCounterclockwise,
-            Self::Knob1LeftSwitch,
-        )
-    }
-
-    pub fn decode_knobs2(w: u8) -> HashSet<Self> {
-        Self::decode_knob(
-            w,
-            Self::Knob2RightClockwise,
-            Self::Knob2RightCounterclockwise,
-            Self::Knob2RightSwitch,
-            Self::Knob2LeftClockwise,
-            Self::Knob2LeftCounterclockwise,
-            Self::Knob2LeftSwitch,
-        )
-    }
-
-    fn decode_knob(
-        w: u8,
-        rcw: Self,
-        rccw: Self,
-        rsw: Self,
-        lcw: Self,
-        lccw: Self,
-        lsw: Self,
-    ) -> HashSet<Self> {
-        let mut i = HashSet::new();
-
-        match w & 0b0000_0011 {
-            0b01 => i.insert(rcw),
-            0b10 => i.insert(rccw),
-            _ => false,
         };
-        if (w & 0b0000_0100) != 0 {
-            i.insert(rsw);
-        }
-        match (w & 0b0001_1000) >> 3 {
-            0b01 => i.insert(lcw),
-            0b10 => i.insert(lccw),
-            _ => false,
+
+        doif(i.key1.is_down(), Self::KeySwitch1);
+        doif(i.key2.is_down(), Self::KeySwitch2);
+        doif(i.key3.is_down(), Self::KeySwitch3);
+        doif(i.key4.is_down(), Self::KeySwitch4);
+        doif(i.key5.is_down(), Self::KeySwitch5);
+        doif(i.key6.is_down(), Self::KeySwitch6);
+        doif(i.key7.is_down(), Self::KeySwitch7);
+        doif(i.key8.is_down(), Self::KeySwitch8);
+        doif(i.key9.is_down(), Self::KeySwitch9);
+        doif(i.key10.is_down(), Self::KeySwitch10);
+        doif(i.key11.is_down(), Self::KeySwitch11);
+        doif(i.key12.is_down(), Self::KeySwitch12);
+        doif(i.key13.is_down(), Self::KeySwitch13);
+        doif(i.key14.is_down(), Self::KeySwitch14);
+        doif(i.key15.is_down(), Self::KeySwitch15);
+        doif(i.key16.is_down(), Self::KeySwitch16);
+
+        res
+    }
+
+    pub fn trans_knob(i: KnobInputs) -> HashSet<Self> {
+        let mut res = HashSet::new();
+
+        let mut doif = |c, f| {
+            if c {
+                res.insert(f);
+            }
         };
-        if (w & 0b0010_0000) != 0 {
-            i.insert(lsw);
-        }
 
-        i
+        doif(i.left_switch.is_down(), Self::KnobLeftSwitch);
+        doif(i.left_direction.is_clockwise(), Self::KnobLeftClockwise);
+        doif(
+            i.left_direction.is_counter_clockwise(),
+            Self::KnobLeftCounterClockwise,
+        );
+
+        doif(i.right_switch.is_down(), Self::KnobRightSwitch);
+        doif(i.right_direction.is_clockwise(), Self::KnobRightClockwise);
+        doif(
+            i.right_direction.is_counter_clockwise(),
+            Self::KnobRightCounterClockwise,
+        );
+
+        res
     }
 
-    pub fn decode_pedal1(w: u8) -> HashSet<Self> {
-        Self::decode_pedal(
-            w,
-            Self::Pedal1Switch3,
-            Self::Pedal1Switch2,
-            Self::Pedal1Switch1,
-        )
-    }
+    pub fn trans_pedals(i: PedalInputs) -> HashSet<Self> {
+        let mut res = HashSet::new();
 
-    pub fn decode_pedal2(w: u8) -> HashSet<Self> {
-        Self::decode_pedal(
-            w,
-            Self::Pedal2Switch3,
-            Self::Pedal2Switch2,
-            Self::Pedal2Switch1,
-        )
-    }
+        let mut doif = |c, f| {
+            if c {
+                res.insert(f);
+            }
+        };
 
-    pub fn decode_pedal3(w: u8) -> HashSet<Self> {
-        Self::decode_pedal(
-            w,
-            Self::Pedal3Switch3,
-            Self::Pedal3Switch2,
-            Self::Pedal3Switch1,
-        )
-    }
+        doif(i.left.is_down(), Self::PedalLeft);
+        doif(i.middle.is_down(), Self::PedalMiddle);
+        doif(i.right.is_down(), Self::PedalRight);
 
-    fn decode_pedal(w: u8, k3: Self, k2: Self, k1: Self) -> HashSet<Self> {
-        let mut i = HashSet::new();
-
-        i.extend(Self::decode_word(w, &[k1, k2, k3]));
-
-        i
+        res
     }
 }
 

@@ -1,59 +1,45 @@
 // Serial communication
 
-use crate::reaction::{InputKey, Peripheral};
+use crate::reaction::InputKey;
 
 use std::collections::HashSet;
+use std::io::Read;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread::{sleep, yield_now};
 use std::time::{Duration, Instant};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
+use jukebox_util::peripheral::{
+    KeyInputs, KnobInputs, PedalInputs, IDENT_KEY_INPUT, IDENT_KNOB_INPUT, IDENT_PEDAL_INPUT,
+    IDENT_UNKNOWN_INPUT,
+};
+use jukebox_util::protocol::{
+    CMD_DISCONNECT, CMD_END, CMD_GET_INPUT_KEYS, CMD_GREET, CMD_NEGATIVE_ACK, CMD_UPDATE,
+    RSP_DISCONNECTED, RSP_END, RSP_INPUT_HEADER, RSP_LINK_DELIMITER, RSP_LINK_HEADER, RSP_UNKNOWN,
+};
 use serialport::SerialPort;
-
-// Utility
-const CMD_GREET: &[u8] = b"\x05\r\n";
-const CMD_NEGATIVE_ACK: &[u8] = b"\x15\r\n";
-
-const CMD_TEST: &[u8] = b"U\x37\r\n";
-const CMD_UPDATE: &[u8] = b"U\x38\r\n";
-const CMD_DISCONNECT: &[u8] = b"U\x39\r\n";
-
-const CMD_GET_INPUT_KEYS: &[u8] = b"U\x30\r\n";
-const CMD_GET_PERIPHERALS: &[u8] = b"U\x31\r\n";
-const PERIPHERAL_ID_KEYBOARD: u8 = 0b1000_0000;
-const PERIPHERAL_ID_KNOBS_1: u8 = 0b1000_0010;
-const PERIPHERAL_ID_KNOBS_2: u8 = 0b1000_0011;
-const PERIPHERAL_ID_PEDAL_1: u8 = 0b1000_0101;
-const PERIPHERAL_ID_PEDAL_2: u8 = 0b1000_0110;
-const PERIPHERAL_ID_PEDAL_3: u8 = 0b1000_0111;
-
-const RSP_UNKNOWN: &[u8] = b"?\r\n\r\n";
-const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
-// const RSP_DEV1_ACK: &[u8] = b"U\x11\x06\r\n";
-// const RSP_DEV2_ACK: &[u8] = b"U\x12\x06\r\n";
-// const RSP_DEV3_ACK: &[u8] = b"U\x13\x06\r\n";
-const RSP_DEV4_ACK: &[u8] = b"U\x14\x06\r\n\r\n";
-
-pub enum SerialCommand {
-    GetPeripherals,
-    UpdateDevice,
-    DisconnectDevice,
-    TestFunction,
-}
 
 #[derive(PartialEq, Clone)]
 pub struct SerialConnectionDetails {
+    pub input_identifier: u8,
     pub firmware_version: String,
     pub device_uid: String,
+}
+
+pub enum SerialCommand {
+    // GetPeripherals,
+    UpdateDevice,
+    DisconnectDevice,
+    // TestFunction,
 }
 
 #[derive(PartialEq, Clone)]
 pub enum SerialEvent {
     Connected(SerialConnectionDetails),
     GetInputKeys(HashSet<InputKey>),
-    GetPeripherals(HashSet<Peripheral>),
+    // GetPeripherals(HashSet<Peripheral>),
     LostConnection,
     Disconnected,
 }
@@ -74,16 +60,20 @@ fn get_serial_string(f: &mut Box<dyn SerialPort>) -> Result<Vec<u8>> {
         }
         buf.push(b[0]);
 
-        let len = buf.len();
-        if len > 4
-            && buf.get(len - 4).map_or(false, |v| v == &b'\r')
-            && buf.get(len - 3).map_or(false, |v| v == &b'\n')
-            && buf.get(len - 2).map_or(false, |v| v == &b'\r')
-            && buf.get(len - 1).map_or(false, |v| v == &b'\n')
-        {
-            return Ok(buf);
+        if buf.len() > RSP_END.len() {
+            let s = &buf[(buf.len() - RSP_END.len())..buf.len()];
+            let c = s.iter().zip(RSP_END).all(|(a, b)| a == b);
+            if c {
+                return Ok(buf);
+            }
         }
     }
+}
+
+fn send_cmd(f: &mut Box<dyn SerialPort>, c: u8) -> Result<()> {
+    let mut cmd = vec![c];
+    cmd.extend_from_slice(CMD_END);
+    send_bytes(f, cmd.as_slice()).with_context(|| format!("failed to send cmd {}", c))
 }
 
 fn send_bytes(f: &mut Box<dyn SerialPort>, bytes: &[u8]) -> Result<()> {
@@ -100,8 +90,12 @@ fn expect_string(f: &mut Box<dyn SerialPort>, expect: &[u8]) -> Result<()> {
     let matching = s.iter().zip(expect).filter(|&(a, b)| a == b).count() == s.len();
 
     if !matching {
-        // TODO: check if s matches RSP_UNKNOWN
-        let matches_unknown = s.iter().zip(RSP_UNKNOWN).filter(|&(a, b)| a == b).count() == s.len();
+        let matches_unknown = s
+            .iter()
+            .zip([RSP_UNKNOWN].iter().chain(RSP_END).collect::<Vec<_>>())
+            .filter(|&(a, b)| a == b)
+            .count()
+            == s.len();
         if matches_unknown {
             send_negative_ack(f)?;
             bail!("device did not understand command");
@@ -122,33 +116,36 @@ fn send_expect(f: &mut Box<dyn SerialPort>, send: &[u8], expect: &[u8]) -> Resul
 // Tasks
 
 fn send_negative_ack(f: &mut Box<dyn SerialPort>) -> Result<()> {
-    send_bytes(f, CMD_NEGATIVE_ACK).context("failed to send nack")?;
+    send_cmd(f, CMD_NEGATIVE_ACK).context("failed to send nack")?;
     Ok(())
 }
 
 fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails> {
     // Host confirms protocol is good, recieves "link established" with some info about the device
-    send_bytes(f, CMD_GREET)?;
+    send_cmd(f, CMD_GREET).context("failed to send greet")?;
     let resp = get_serial_string(f)?;
 
-    if *resp.iter().nth(0).unwrap_or(&0) != b'L' {
+    if *resp.iter().nth(0).unwrap_or(&0) != RSP_LINK_HEADER {
         send_negative_ack(f)?;
         bail!("failed to parse device info (command character mismatch)");
     }
 
-    let mut firmware_version: Option<_> = None;
-    let mut device_uid: Option<_> = None;
-    for (i, s) in resp.split(|c| *c == b',').enumerate() {
+    let mut input_identifier = None;
+    let mut firmware_version = None;
+    let mut device_uid = None;
+    for (i, s) in resp.split(|c| *c == RSP_LINK_DELIMITER).enumerate() {
         if i == 1 {
-            firmware_version = Some(s);
+            input_identifier = Some(s.get(0).unwrap_or(&IDENT_UNKNOWN_INPUT));
         } else if i == 2 {
+            firmware_version = Some(s);
+        } else if i == 3 {
             device_uid = Some(s);
         }
     }
 
-    if firmware_version.is_none() || device_uid.is_none() {
+    if input_identifier.is_none() || firmware_version.is_none() || device_uid.is_none() {
         send_negative_ack(f)?;
-        bail!("failed to parse device info (missing firmware version or device uid)");
+        bail!("failed to parse device info (missing input identifier, firmware version, or device uid)");
     }
 
     let firmware_version = match String::from_utf8(firmware_version.unwrap().to_vec()) {
@@ -167,16 +164,18 @@ fn greet_host(f: &mut Box<dyn SerialPort>) -> Result<SerialConnectionDetails> {
     };
 
     Ok(SerialConnectionDetails {
+        input_identifier: *input_identifier.unwrap(),
         firmware_version: firmware_version,
         device_uid: device_uid,
     })
 }
 
 fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputKey>> {
-    send_bytes(f, CMD_GET_INPUT_KEYS)?;
+    send_cmd(f, CMD_GET_INPUT_KEYS).context("failed to send get input keys")?;
     let resp = get_serial_string(f)?;
 
-    if *resp.iter().nth(0).unwrap_or(&0) != b'I' {
+    if *resp.iter().nth(0).unwrap_or(&0) != RSP_INPUT_HEADER {
+        log::info!("rsp input: {:?}", resp);
         send_negative_ack(f)?;
         bail!("failed to parse input keys (command character mismatch)");
     }
@@ -186,48 +185,33 @@ fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputK
     loop {
         match i.next() {
             Some(c) => match *c {
-                PERIPHERAL_ID_KEYBOARD => {
+                IDENT_KEY_INPUT => {
                     let w2 = i.next();
                     let w1 = i.next();
                     if w2.is_none() || w1.is_none() {
                         bail!("failed to parse input keys (missing keyboard words)");
                     }
-                    result.extend(InputKey::decode_keyboard(*w2.unwrap(), *w1.unwrap()));
+                    let keypad = KeyInputs::decode(&[*c, *w2.unwrap(), *w1.unwrap()])
+                        .map_err(|_| anyhow!("failed to decode key inputs"))?;
+                    result.extend(InputKey::trans_keys(keypad));
                 }
-                PERIPHERAL_ID_KNOBS_1 => {
+                IDENT_KNOB_INPUT => {
                     let w = i.next();
                     if w.is_none() {
                         bail!("failed to parse input keys (missing knob 1 word)");
                     }
-                    result.extend(InputKey::decode_knobs1(*w.unwrap()));
+                    let knobpad = KnobInputs::decode(&[*c, *w.unwrap()])
+                        .map_err(|_| anyhow!("failed to decode knob inputs"))?;
+                    result.extend(InputKey::trans_knob(knobpad));
                 }
-                PERIPHERAL_ID_KNOBS_2 => {
-                    let w = i.next();
-                    if w.is_none() {
-                        bail!("failed to parse input keys (missing knob 2 word)");
-                    }
-                    result.extend(InputKey::decode_knobs2(*w.unwrap()));
-                }
-                PERIPHERAL_ID_PEDAL_1 => {
+                IDENT_PEDAL_INPUT => {
                     let w = i.next();
                     if w.is_none() {
                         bail!("failed to parse input keys (missing pedal 1 word)");
                     }
-                    result.extend(InputKey::decode_pedal1(*w.unwrap()));
-                }
-                PERIPHERAL_ID_PEDAL_2 => {
-                    let w = i.next();
-                    if w.is_none() {
-                        bail!("failed to parse input keys (missing pedal 2 word)");
-                    }
-                    result.extend(InputKey::decode_pedal2(*w.unwrap()));
-                }
-                PERIPHERAL_ID_PEDAL_3 => {
-                    let w = i.next();
-                    if w.is_none() {
-                        bail!("failed to parse input keys (missing pedal 3 word)");
-                    }
-                    result.extend(InputKey::decode_pedal3(*w.unwrap()));
+                    let pedalpad = PedalInputs::decode(&[*c, *w.unwrap()])
+                        .map_err(|_| anyhow!("failed to decode pedal inputs"))?;
+                    result.extend(InputKey::trans_pedals(pedalpad));
                 }
                 _ => {}
             },
@@ -238,55 +222,24 @@ fn transmit_get_input_keys(f: &mut Box<dyn SerialPort>) -> Result<HashSet<InputK
     Ok(result)
 }
 
-fn transmit_get_peripherals(f: &mut Box<dyn SerialPort>) -> Result<HashSet<Peripheral>> {
-    send_bytes(f, CMD_GET_PERIPHERALS)?;
-    let resp = get_serial_string(f)?;
-
-    if *resp.iter().nth(0).unwrap_or(&0) != b'A' {
-        send_negative_ack(f)?;
-        bail!("failed to parse get peripherals (command character mismatch)");
-    }
-
-    let mut result = HashSet::new();
-    for c in resp {
-        match c {
-            PERIPHERAL_ID_KEYBOARD => {
-                result.insert(Peripheral::Keyboard);
-            }
-            PERIPHERAL_ID_KNOBS_1 => {
-                result.insert(Peripheral::Knobs1);
-            }
-            PERIPHERAL_ID_KNOBS_2 => {
-                result.insert(Peripheral::Knobs2);
-            }
-            PERIPHERAL_ID_PEDAL_1 => {
-                result.insert(Peripheral::Pedal1);
-            }
-            PERIPHERAL_ID_PEDAL_2 => {
-                result.insert(Peripheral::Pedal2);
-            }
-            PERIPHERAL_ID_PEDAL_3 => {
-                result.insert(Peripheral::Pedal3);
-            }
-            _ => {}
-        }
-    }
-
-    Ok(result)
-}
-
 fn transmit_update_signal(f: &mut Box<dyn SerialPort>) -> Result<()> {
     // tell the device to reboot for updating
-    send_expect(f, CMD_UPDATE, RSP_DISCONNECTED)
+    let mut cmd = vec![CMD_UPDATE];
+    cmd.extend_from_slice(CMD_END);
+    let mut rsp = vec![RSP_DISCONNECTED];
+    rsp.extend_from_slice(RSP_END);
+
+    send_expect(f, &cmd, &rsp)
 }
 
 fn transmit_disconnect_signal(f: &mut Box<dyn SerialPort>) -> Result<()> {
     // tell the device to disconnect cleanly
-    send_expect(f, CMD_DISCONNECT, RSP_DISCONNECTED)
-}
+    let mut cmd = vec![CMD_DISCONNECT];
+    cmd.extend_from_slice(CMD_END);
+    let mut rsp = vec![RSP_DISCONNECTED];
+    rsp.extend_from_slice(RSP_END);
 
-fn transmit_test_signal(f: &mut Box<dyn SerialPort>) -> Result<()> {
-    send_expect(f, CMD_TEST, RSP_DEV4_ACK)
+    send_expect(f, &cmd, &rsp)
 }
 
 pub fn serial_get_device() -> Result<Box<dyn SerialPort>> {
@@ -327,11 +280,6 @@ pub fn serial_comms(
         .send(SerialEvent::Connected(device_info))
         .context("failed to send device info")?;
 
-    let peripherals = transmit_get_peripherals(f)?;
-    serialevent_tx
-        .send(SerialEvent::GetPeripherals(peripherals))
-        .context("failed to send peripheral info")?;
-
     let mut timer = Instant::now();
     'forv: loop {
         if Instant::now() < timer {
@@ -347,12 +295,6 @@ pub fn serial_comms(
 
         while let Ok(cmd) = serialcommand_rx.try_recv() {
             match cmd {
-                SerialCommand::GetPeripherals => {
-                    let peripherals = transmit_get_peripherals(f)?;
-                    serialevent_tx
-                        .send(SerialEvent::GetPeripherals(peripherals))
-                        .context("failed to send peripheral info")?;
-                }
                 SerialCommand::UpdateDevice => {
                     transmit_update_signal(f)?;
                     serialevent_tx
@@ -366,9 +308,6 @@ pub fn serial_comms(
                         .send(SerialEvent::Disconnected)
                         .context("failed to send disconnect info")?;
                     break 'forv; // The device has disconnected, we should too.
-                }
-                SerialCommand::TestFunction => {
-                    transmit_test_signal(f)?;
                 }
             }
         }
@@ -398,7 +337,7 @@ pub fn serial_task(
 
         match serial_comms(&mut f, &s_cmd_rx, &s_evnt_tx) {
             Err(e) => {
-                log::warn!("Serial device error: {:?}", e);
+                log::warn!("Serial device error: {}", e);
                 s_evnt_tx
                     .send(SerialEvent::LostConnection)
                     .context("failed to send lost connection")?;

@@ -5,6 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [dependencies]
+jukebox_util = { path = "./jukebox_util" }
 anyhow = "1.0.93"
 dirs = "5.0.1"
 eframe = "0.29.1"

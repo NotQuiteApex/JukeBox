@@ -3,31 +3,34 @@
 #![no_std]
 #![no_main]
 
+use jukebox_util::peripheral::JBInputs;
+use mutually_exclusive_features::exactly_one_of;
+exactly_one_of!("keypad", "knobpad", "pedalpad");
+
 #[link_section = ".boot_loader"]
 #[used]
 pub static BOOT_LOADER: [u8; 256] = rp2040_boot2::BOOT_LOADER_GENERIC_03H;
 
-mod color;
 mod mutex;
 mod peripheral;
-mod pins;
 mod st7789;
 mod uid;
 mod modules {
+    #[cfg(feature = "keypad")]
     pub mod keyboard;
     pub mod led;
     pub mod rgb;
+    #[cfg(feature = "keypad")]
     pub mod screen;
     pub mod serial;
 }
 
-use keyboard::KeyboardMod;
 use modules::*;
 use mutex::Mutex;
 
 use embedded_hal::timer::CountDown as _;
 use panic_probe as _;
-use peripheral::{Connection, JBPeripheralInputs, JBPeripherals};
+use peripheral::inputs_default;
 use rp_pico::hal::{
     clocks::init_clocks_and_plls,
     fugit::ExtU32,
@@ -41,14 +44,8 @@ use rp_pico::hal::{
     Clock, Timer,
 };
 use rp_pico::{entry, Pins};
-use st7789::St7789;
-use ws2812_pio::Ws2812;
 
 use usb_device::{class_prelude::*, prelude::*};
-use usbd_hid::device::{
-    keyboard::NKROBootKeyboard,
-    // mouse::{WheelMouse, WheelMouseReport},
-};
 use usbd_hid::prelude::*;
 use usbd_human_interface_device as usbd_hid;
 use usbd_serial::SerialPort;
@@ -60,8 +57,7 @@ use defmt_rtt as _;
 static mut CORE1_STACK: Stack<8192> = Stack::new();
 
 // inter-core mutexes
-static CONNECTED_PERIPHERALS: Mutex<0, JBPeripherals> = Mutex::new(JBPeripherals::default());
-static PERIPHERAL_INPUTS: Mutex<1, JBPeripheralInputs> = Mutex::new(JBPeripheralInputs::default());
+static PERIPHERAL_INPUTS: Mutex<1, JBInputs> = Mutex::new(inputs_default());
 static UPDATE_TRIGGER: Mutex<2, bool> = Mutex::new(false);
 
 #[entry]
@@ -110,8 +106,16 @@ fn main() -> ! {
         // .add_device(usbd_hid::device::mouse::WheelMouseConfig::default())
         .build(&usb_bus);
     let mut usb_serial = SerialPort::new(&usb_bus);
-    // let mut usb_serial = SerialPort::new_with_store(&usb_bus, [0u8; 1024], [0u8; 1024]); // TODO ?
-    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, 0xF20A))
+    let usb_pid = if cfg!(feature = "keypad") {
+        0xF20A
+    } else if cfg!(feature = "knobpad") {
+        0xF20B
+    } else if cfg!(feature = "pedalpad") {
+        0xF20C
+    } else {
+        0xF209
+    };
+    let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x1209, usb_pid))
         .strings(&[StringDescriptors::default()
             .manufacturer("FriendTeamInc")
             .product("JukeBox V5")
@@ -134,74 +138,90 @@ fn main() -> ! {
                 &mut pac.RESETS,
             );
 
-            // set up GPIO
-            let (kb_col_pins, kb_row_pins, led_pin, rgb_pin, screen_pins) =
-                pins::configure_gpio(pins);
+            // set up GPIO and modules
+            #[cfg(feature = "keypad")]
+            let mut keyboard_mod = {
+                let kb_col_pins = [
+                    pins.gpio12.into_function().into_dyn_pin().into_pull_type(),
+                    pins.gpio13.into_function().into_dyn_pin().into_pull_type(),
+                    pins.gpio14.into_function().into_dyn_pin().into_pull_type(),
+                    pins.gpio15.into_function().into_dyn_pin().into_pull_type(),
+                ];
+                let kb_row_pins = [
+                    pins.gpio9.into_function().into_dyn_pin().into_pull_type(),
+                    pins.gpio10.into_function().into_dyn_pin().into_pull_type(),
+                    pins.gpio11.into_function().into_dyn_pin().into_pull_type(),
+                ];
+                keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down())
+            };
 
-            let (mut pio0, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
-            let ws = Ws2812::new(
-                rgb_pin,
-                &mut pio0,
-                sm0,
-                clocks.peripheral_clock.freq(),
-                timer.count_down(),
-            );
+            #[cfg(feature = "keypad")]
+            let mut screen_mod = {
+                let screen_pins = (
+                    pins.gpio21.into_function().into_dyn_pin().into_pull_type(), // data
+                    pins.gpio20.into_function().into_dyn_pin().into_pull_type(), // clock
+                    pins.gpio19.into_function().into_dyn_pin().into_pull_type(), // cs
+                    pins.gpio18.into_function().into_dyn_pin().into_pull_type(), // dc
+                    pins.gpio17.into_function().into_dyn_pin().into_pull_type(), // rst
+                    pins.gpio16.into_function().into_dyn_pin().into_pull_type(), // backlight
+                );
+                let (mut pio1, _, sm1, _, _) = pac.PIO1.split(&mut pac.RESETS);
+                let mut st = st7789::St7789::new(
+                    &mut pio1,
+                    sm1,
+                    screen_pins.0,
+                    screen_pins.1,
+                    screen_pins.2,
+                    screen_pins.3,
+                    screen_pins.4,
+                    screen_pins.5,
+                    timer.count_down(),
+                );
+                st.init();
+                screen::ScreenMod::new(st, timer.count_down())
+            };
 
-            let (mut pio1, _, sm1, _, _) = pac.PIO1.split(&mut pac.RESETS);
-            let mut st = St7789::new(
-                &mut pio1,
-                sm1,
-                screen_pins.0,
-                screen_pins.1,
-                screen_pins.2,
-                screen_pins.3,
-                screen_pins.4,
-                screen_pins.5,
-                timer.count_down(),
-            );
-            st.init();
-
-            // set up modules
-            let mut keyboard_mod =
-                keyboard::KeyboardMod::new(kb_col_pins, kb_row_pins, timer.count_down());
-
-            let mut led_mod = led::LedMod::new(led_pin, timer.count_down());
-            let mut rgb_mod = rgb::RgbMod::new(ws, timer.count_down());
-            let mut screen_mod = screen::ScreenMod::new(st, timer.count_down());
+            let mut led_mod = {
+                let led_pin = pins.led.into_function().into_dyn_pin().into_pull_type();
+                led::LedMod::new(led_pin, timer.count_down())
+            };
+            let mut rgb_mod = {
+                let rgb_pin = pins.gpio2.into_function().into_dyn_pin().into_pull_type();
+                let (mut pio0, sm0, _, _, _) = pac.PIO0.split(&mut pac.RESETS);
+                let ws = ws2812_pio::Ws2812::new(
+                    rgb_pin,
+                    &mut pio0,
+                    sm0,
+                    clocks.peripheral_clock.freq(),
+                    timer.count_down(),
+                );
+                rgb::RgbMod::new(ws, timer.count_down())
+            };
 
             loop {
                 // update input devices
+                #[cfg(feature = "keypad")]
                 keyboard_mod.update();
 
                 // update mutexes
-                CONNECTED_PERIPHERALS.with_mut_lock(|c| {
-                    c.keyboard = Connection::Connected;
-                });
                 PERIPHERAL_INPUTS.with_mut_lock(|i| {
-                    let keys = keyboard_mod.get_pressed_keys();
-                    i.keyboard.key1 = keys[0].into();
-                    i.keyboard.key2 = keys[1].into();
-                    i.keyboard.key3 = keys[2].into();
-                    i.keyboard.key4 = keys[3].into();
-                    i.keyboard.key5 = keys[4].into();
-                    i.keyboard.key6 = keys[5].into();
-                    i.keyboard.key7 = keys[6].into();
-                    i.keyboard.key8 = keys[7].into();
-                    i.keyboard.key9 = keys[8].into();
-                    i.keyboard.key10 = keys[9].into();
-                    i.keyboard.key11 = keys[10].into();
-                    i.keyboard.key12 = keys[11].into();
+                    #[cfg(feature = "keypad")]
+                    {
+                        *i = JBInputs::KeyPad(keyboard_mod.get_pressed_keys().into());
+                    }
                 });
 
                 // check if we need to shutdown "cleanly" for update
                 UPDATE_TRIGGER.with_lock(|u| {
                     if *u {
+                        #[cfg(feature = "keypad")]
                         screen_mod.clear();
+
                         led_mod.clear();
                         rgb_mod.clear();
 
                         // wait a few cycles for the IO to finish
-                        for _ in 0..2000 {
+                        for _ in 0..100 {
                             cortex_m::asm::nop();
                         }
 
@@ -212,6 +232,8 @@ fn main() -> ! {
                 // update accessories
                 led_mod.update();
                 rgb_mod.update(timer.get_counter());
+
+                #[cfg(feature = "keypad")]
                 screen_mod.update(timer.get_counter(), &timer);
             }
         })
@@ -219,26 +241,25 @@ fn main() -> ! {
 
     // main event loop (USB comms)
     loop {
-        // info!("help 0");
         // tick for hid devices
         if hid_tick.wait().is_ok() {
             // handle keyboard
-            let pressed = KeyboardMod::get_keyboard_keys(
-                serial_mod.get_connection_status().connected(),
-                &PERIPHERAL_INPUTS,
-            );
-
-            match usb_hid
-                .device::<NKROBootKeyboard<'_, _>, _>()
-                .write_report(pressed)
-            {
-                Ok(_) => {}
-                Err(UsbHidError::Duplicate) => {}
-                Err(UsbHidError::WouldBlock) => {}
-                Err(e) => {
-                    core::panic!("Failed to write keyboard report: {:?}", e)
-                }
-            }
+            // #[cfg(feature = "keypad")]
+            // let pressed = keyboard::KeyboardMod::get_keyboard_keys(
+            //     serial_mod.get_connection_status().connected(),
+            //     &PERIPHERAL_INPUTS,
+            // );
+            // match usb_hid
+            //     .device::<NKROBootKeyboard<'_, _>, _>()
+            //     .write_report(pressed)
+            // {
+            //     Ok(_) => {}
+            //     Err(UsbHidError::Duplicate) => {}
+            //     Err(UsbHidError::WouldBlock) => {}
+            //     Err(e) => {
+            //         core::panic!("Failed to write keyboard report: {:?}", e)
+            //     }
+            // }
 
             // handle mouse
             // match usb_hid
@@ -272,7 +293,6 @@ fn main() -> ! {
                 &mut usb_serial,
                 ver,
                 uid,
-                &CONNECTED_PERIPHERALS,
                 &PERIPHERAL_INPUTS,
                 &UPDATE_TRIGGER,
             );

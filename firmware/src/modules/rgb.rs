@@ -1,6 +1,7 @@
 //! RGB LEDs under the keys
 
 use embedded_hal::timer::CountDown as _;
+use jukebox_util::color::hsv2rgb;
 use rp_pico::{
     hal::{
         fugit::ExtU32,
@@ -13,8 +14,6 @@ use rp_pico::{
 use smart_leds::brightness;
 use smart_leds_trait::{SmartLedsWrite, RGB8};
 use ws2812_pio::Ws2812;
-
-use crate::color::hsv2rgb;
 
 const RGB_LEN: usize = 12;
 const FRAME_TIME: u32 = 33;

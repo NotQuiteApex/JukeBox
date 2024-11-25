@@ -1,34 +1,28 @@
 //! Serial processing module
 
-use defmt::{info, warn};
-use embedded_hal::timer::Cancel as _;
-use embedded_hal::timer::CountDown as _;
+#[allow(unused_imports)]
+use defmt::*;
+
+use embedded_hal::timer::{Cancel as _, CountDown as _};
 use itertools::Itertools;
+use jukebox_util::{
+    peripheral::{
+        Connection, JBInputs, IDENT_KEY_INPUT, IDENT_KNOB_INPUT, IDENT_PEDAL_INPUT,
+        IDENT_UNKNOWN_INPUT,
+    },
+    protocol::{
+        Command, CMD_END, RSP_DISCONNECTED, RSP_END, RSP_INPUT_HEADER, RSP_LINK_DELIMITER,
+        RSP_LINK_HEADER, RSP_UNKNOWN,
+    },
+};
 use ringbuffer::{ConstGenericRingBuffer, RingBuffer};
 use rp_pico::hal::{fugit::ExtU32, timer::CountDown, usb::UsbBus};
 use usbd_serial::SerialPort;
 
 use crate::mutex::Mutex;
-use crate::peripheral::{Connection, JBPeripheralInputs, JBPeripherals};
+use crate::peripheral::{inputs_default, inputs_write_report};
 
 const BUFFER_SIZE: usize = 2048;
-
-const RSP_UNKNOWN: &[u8] = b"?\r\n\r\n";
-const RSP_DISCONNECTED: &[u8] = b"\x04\x04\r\n\r\n";
-
-#[derive(defmt::Format)]
-enum Command {
-    Greeting,
-
-    GetInputKeys,
-    GetPeripherals,
-
-    Update,
-    Disconnect,
-    NegativeAck,
-    Test,
-    Unknown,
-}
 
 const KEEPALIVE: u32 = 250;
 
@@ -44,7 +38,7 @@ impl<'timer> SerialMod<'timer> {
 
         SerialMod {
             buffer: ConstGenericRingBuffer::new(),
-            state: Connection::NotConnected,
+            state: Connection::NotConnected(true),
             keepalive_timer: timer,
         }
     }
@@ -52,8 +46,9 @@ impl<'timer> SerialMod<'timer> {
     fn check_cmd(&mut self) -> Option<usize> {
         // we measure out a command token by looking for the end-of-command string: "\r\n"
         // if one is not found, we do not have a valid command ready to be read
+        // TODO: better match the characters in CMD_END
         for ((_, r), (i, n)) in self.buffer.iter().enumerate().tuple_windows() {
-            if *r == b'\r' && *n == b'\n' {
+            if *r == CMD_END[0] && *n == CMD_END[1] {
                 return Some(i + 1);
             }
         }
@@ -61,71 +56,67 @@ impl<'timer> SerialMod<'timer> {
         None
     }
 
-    fn send_response(serial: &mut SerialPort<UsbBus>, rsp: &[u8]) {
+    fn send(serial: &mut SerialPort<UsbBus>, rsp: &[u8]) {
         // TODO: its possible for write to drop some characters, if we're not careful.
         // we should probably handle that before we take on larger communications.
-        match serial.write(rsp) {
-            Err(_) => todo!(),
-            Ok(_) => {}
-        };
+        while let Err(_) = serial.write(rsp) {
+            let _ = serial.flush();
+            cortex_m::asm::nop();
+        }
+
+        // match serial.write(rsp) {
+        //     Err(_) => core::todo!(),
+        //     Ok(_) => {}
+        // };
+    }
+
+    fn send_full_response(serial: &mut SerialPort<UsbBus>, rsp: &[u8]) {
+        Self::send(serial, rsp);
+        Self::send_end_response(serial);
+    }
+
+    fn send_end_response(serial: &mut SerialPort<UsbBus>) {
+        Self::send(serial, RSP_END);
     }
 
     fn decode_cmd(&mut self, size: usize) -> Command {
-        // we parse the command strings into tokens here
-        // null characters are placeholders for errors or missing characters
-        // (there are exceptions to this rule, but only for the desktop parser)
-        // the character string "\r\n\r\n" indicates the end of a response
-        // its unlikely we'd run into the end of the buffer due to check_cmd()
-        // but we use unwrap_or() anyway for safety
+        if size > 4 {
+            return Command::Unknown;
+        }
 
-        let mut depth = 1;
-        let res = match self.buffer.get(0).unwrap_or(&b'\0') {
-            b'\x05' => Command::Greeting,
-            b'U' => {
-                let p2 = self.buffer.get(1).unwrap_or(&b'\0');
-                depth = 2;
+        let w1 = self.buffer.get(0).unwrap_or(&b'\0');
+        let w2 = self.buffer.get(1).unwrap_or(&b'\0');
+        let w3 = self.buffer.get(2).unwrap_or(&b'\0');
 
-                match p2 {
-                    b'\x30' => Command::GetInputKeys,
-                    b'\x31' => Command::GetPeripherals,
+        debug!("cmd: {} {} {} (size:{})", w1, w2, w3, size);
 
-                    b'\x37' => Command::Test,
-                    b'\x38' => Command::Update,
-                    b'\x39' => Command::Disconnect,
+        let cmd = Command::decode(*w1);
 
-                    _ => Command::Unknown,
-                }
+        if cmd != Command::Unknown && !(*w2 == CMD_END[0] && *w3 == CMD_END[1]) {
+            for _ in 0..size {
+                self.buffer.dequeue();
             }
-            b'\x15' => Command::NegativeAck,
-            _ => Command::Unknown,
-        };
 
-        // consume command buffer data
+            return Command::Unknown;
+        }
+
         for _ in 0..size {
             self.buffer.dequeue();
         }
 
-        // we must check the command size matches what we expect the parsed command to be
-        // we already know the buffer will end with "\r\n" thanks to check_cmd(),
-        // so that's what the +2 is for
-        if size != depth + 2 {
-            return Command::Unknown;
-        }
-
-        res
+        cmd
     }
 
+    #[allow(dead_code)]
     pub fn get_connection_status(&self) -> Connection {
         self.state.clone()
     }
 
     fn start_update(&mut self, serial: &mut SerialPort<UsbBus>, update_trigger: &Mutex<2, bool>) {
         info!("Command Update");
-        Self::send_response(serial, RSP_DISCONNECTED);
-        self.state = Connection::NotConnected;
-        update_trigger.with_mut_lock(|u| {
-            *u = true;
-        });
+        Self::send_full_response(serial, &[RSP_DISCONNECTED]);
+        self.state = Connection::NotConnected(true);
+        update_trigger.with_mut_lock(|u| *u = true);
     }
 
     pub fn update(
@@ -133,13 +124,12 @@ impl<'timer> SerialMod<'timer> {
         serial: &mut SerialPort<UsbBus>,
         firmware_version: &str,
         device_uid: &str,
-        connected_peripherals: &Mutex<0, JBPeripherals>,
-        peripheral_inputs: &Mutex<1, JBPeripheralInputs>,
+        peripheral_inputs: &Mutex<1, JBInputs>,
         update_trigger: &Mutex<2, bool>,
     ) {
         if self.state == Connection::Connected && self.keepalive_timer.wait().is_ok() {
             warn!("Keepalive triggered, disconnecting.");
-            self.state = Connection::NotConnected;
+            self.state = Connection::NotConnected(false);
         }
 
         let mut buf = [0u8; 128];
@@ -162,21 +152,33 @@ impl<'timer> SerialMod<'timer> {
 
         // process command
         let mut unknown = || {
-            Self::send_response(serial, RSP_UNKNOWN);
+            Self::send_full_response(serial, &[RSP_UNKNOWN]);
             false
         };
         let valid = match self.state {
-            Connection::NotConnected => match decode {
+            Connection::NotConnected(_) => match decode {
                 Command::Update => {
                     self.start_update(serial, update_trigger);
                     true
                 }
                 Command::Greeting => {
-                    Self::send_response(serial, b"L,");
-                    Self::send_response(serial, firmware_version.as_bytes());
-                    Self::send_response(serial, b",");
-                    Self::send_response(serial, device_uid.as_bytes());
-                    Self::send_response(serial, b",\r\n\r\n");
+                    Self::send(serial, &[RSP_LINK_HEADER, RSP_LINK_DELIMITER]);
+                    let dtype = if cfg!(feature = "keypad") {
+                        IDENT_KEY_INPUT
+                    } else if cfg!(feature = "knobpad") {
+                        IDENT_KNOB_INPUT
+                    } else if cfg!(feature = "pedalpad") {
+                        IDENT_PEDAL_INPUT
+                    } else {
+                        IDENT_UNKNOWN_INPUT
+                    };
+                    Self::send(serial, &[dtype]);
+                    Self::send(serial, &[RSP_LINK_DELIMITER]);
+                    Self::send(serial, firmware_version.as_bytes());
+                    Self::send(serial, &[RSP_LINK_DELIMITER]);
+                    Self::send(serial, device_uid.as_bytes());
+                    Self::send(serial, &[RSP_LINK_DELIMITER]);
+                    Self::send_end_response(serial);
 
                     self.state = Connection::Connected;
                     info!("Serial Connected");
@@ -189,56 +191,32 @@ impl<'timer> SerialMod<'timer> {
                     self.start_update(serial, update_trigger);
                     true
                 }
-                Command::Test => {
-                    info!("Command Test");
-                    true
-                }
                 Command::GetInputKeys => {
-                    // info!("Command GetInputKeys");
-
                     // copy peripherals and inputs out
-                    let mut peripherals = JBPeripherals::default();
-                    let mut inputs = JBPeripheralInputs::default();
-                    connected_peripherals.with_lock(|c| {
-                        peripherals = *c;
-                    });
-                    peripheral_inputs.with_lock(|i| {
-                        inputs = *i;
-                    });
-                    let peripherals = peripherals;
-                    let inputs = inputs;
+                    let inputs = {
+                        let mut inputs = inputs_default(); // JBInputs::default();
+                        peripheral_inputs.with_lock(|i| {
+                            inputs = *i;
+                        });
+                        inputs
+                    };
 
                     // write all the inputs out
-                    Self::send_response(serial, b"I");
-                    inputs.write_report(peripherals, serial);
-                    Self::send_response(serial, b"\r\n\r\n");
+                    Self::send(serial, &[RSP_INPUT_HEADER]);
+                    inputs_write_report(inputs, serial);
+                    Self::send_end_response(serial);
 
-                    true
-                }
-                Command::GetPeripherals => {
-                    info!("Command GetPeripherals");
-
-                    // copy peripherals out
-                    let mut peripherals = JBPeripherals::default();
-                    connected_peripherals.with_lock(|c| {
-                        peripherals = *c;
-                    });
-                    let peripherals = peripherals;
-
-                    Self::send_response(serial, b"A");
-                    peripherals.write_report(serial);
-                    Self::send_response(serial, b"\r\n\r\n");
                     true
                 }
                 Command::NegativeAck => {
                     // we sent something in error, better bail
-                    self.state = Connection::NotConnected;
+                    self.state = Connection::NotConnected(false);
                     info!("Serial NegativeAck'd");
                     false
                 }
                 Command::Disconnect => {
-                    Self::send_response(serial, RSP_DISCONNECTED);
-                    self.state = Connection::NotConnected;
+                    Self::send_full_response(serial, &[RSP_DISCONNECTED]);
+                    self.state = Connection::NotConnected(true);
                     info!("Serial Disconnected");
                     true
                 }

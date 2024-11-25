@@ -73,7 +73,7 @@ where
             .buffers(rp_pico::hal::pio::Buffers::OnlyTx)
             .out_shift_direction(rp_pico::hal::pio::ShiftDirection::Left)
             .autopull(true)
-            .pull_threshold(16)
+            .pull_threshold(8)
             // misc config
             .clock_divisor_fixed_point(1, 0)
             .build(sm);
@@ -107,12 +107,24 @@ where
 
     pub fn init(&mut self) {
         // init sequence
+        // 16bit startup sequence
+        // self.write_cmd(&[0x01]); // Software reset
+        // self.write_cmd(&[0x11]); // Exit sleep mode
+        // self.write_cmd(&[0x3A, 0x55]); // Set colour mode to 16 bit
+        // self.write_cmd(&[0x36, 0x00]); // Set MADCTL: row then column, refresh is bottom to top ????
+        // self.write_cmd(&[0x2A, 0x00, SCR_W as u16]); // CASET: column addresses
+        // self.write_cmd(&[0x2B, 0x00, SCR_H as u16]); // RASET: row addresses
+        // self.write_cmd(&[0x21]); // Inversion on (supposedly a hack?)
+        // self.write_cmd(&[0x13]); // Normal display on
+        // self.write_cmd(&[0x29]); // Main screen turn on
+
+        // 8 bit startup sequence
         self.write_cmd(&[0x01]); // Software reset
         self.write_cmd(&[0x11]); // Exit sleep mode
         self.write_cmd(&[0x3A, 0x55]); // Set colour mode to 16 bit
         self.write_cmd(&[0x36, 0x00]); // Set MADCTL: row then column, refresh is bottom to top ????
-        self.write_cmd(&[0x2A, 0x00, SCR_W as u16]); // CASET: column addresses
-        self.write_cmd(&[0x2B, 0x00, SCR_H as u16]); // RASET: row addresses
+        self.write_cmd(&[0x2A, 0x00, 0x00, (SCR_W >> 8) as u8, (SCR_W & 0xFF) as u8]); // CASET: column addresses
+        self.write_cmd(&[0x2B, 0x00, 0x00, (SCR_H >> 8) as u8, (SCR_H & 0xFF) as u8]); // RASET: row addresses
         self.write_cmd(&[0x21]); // Inversion on (supposedly a hack?)
         self.write_cmd(&[0x13]); // Normal display on
         self.write_cmd(&[0x29]); // Main screen turn on
@@ -136,14 +148,14 @@ where
         }
     }
 
-    fn write(&mut self, word: u16) {
-        let w = (word as u32) << 16;
+    fn write(&mut self, word: u8) {
+        let w = (word as u32) << 24;
         while !self.tx.write(w) {
             cortex_m::asm::nop();
         }
     }
 
-    fn write_cmd(&mut self, cmd: &[u16]) {
+    fn write_cmd(&mut self, cmd: &[u8]) {
         self.wait_idle();
         self.set_dc_cs(false, false);
 
@@ -203,12 +215,12 @@ where
             let y = unsafe { FB.get_unchecked(y) };
             for x in 0..SCR_W {
                 let w = unsafe { y.get_unchecked(x) };
-                self.write(*w);
-                // let w1 = (*w >> 8) as u8;
-                // let w2 = *w as u8;
+                // self.write(*w);
+                let w1 = (*w >> 8) as u8;
+                let w2 = *w as u8;
 
-                // self.write(w1);
-                // self.write(w2);
+                self.write(w1);
+                self.write(w2);
             }
         }
     }

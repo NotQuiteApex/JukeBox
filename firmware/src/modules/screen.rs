@@ -1,7 +1,10 @@
 //! Screen for fun graphics
 
-use defmt::info;
+#[allow(unused_imports)]
+use defmt::*;
+
 use embedded_hal::timer::CountDown as _;
+use jukebox_util::color::{hsv2rgb, rgb565};
 use rp_pico::{
     hal::{
         fugit::ExtU32,
@@ -13,10 +16,7 @@ use rp_pico::{
     pac::PIO1,
 };
 
-use crate::{
-    color::{hsv2rgb, rgb565},
-    st7789::St7789,
-};
+use crate::st7789::St7789;
 
 const REFRESH_RATE: u32 = 50;
 
@@ -44,7 +44,7 @@ impl<'timer> ScreenMod<'timer> {
         self.st.push_framebuffer();
     }
 
-    pub fn update(&mut self, t: Instant, timer: &Timer) {
+    pub fn update(&mut self, t: Instant, _timer: &Timer) {
         if !self.timer.wait().is_ok() {
             return;
         }
@@ -53,14 +53,14 @@ impl<'timer> ScreenMod<'timer> {
         let rgb = hsv2rgb(t, 1.0, 1.0);
         let rgb = rgb565(rgb.0, rgb.1, rgb.2);
 
-        let time_start = timer.get_counter();
+        // let time_start = _timer.get_counter();
         self.st.fill_framebuffer(rgb);
-        let elapse1 = (timer.get_counter() - time_start).to_micros();
+        // let elapse1 = (_timer.get_counter() - time_start).to_micros();
 
-        let time_start = timer.get_counter();
+        // let time_start = _timer.get_counter();
         self.st.push_framebuffer();
-        let elapse2 = (timer.get_counter() - time_start).to_micros();
+        // let elapse2 = (_timer.get_counter() - time_start).to_micros();
 
-        info!("times: fill-fb={}us, write-fb={}us", elapse1, elapse2);
+        // info!("times: fill-fb={}us, write-fb={}us", elapse1, elapse2);
     }
 }
