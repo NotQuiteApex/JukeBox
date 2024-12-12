@@ -24,7 +24,7 @@ cmN = 3.3;
 // Face count on rounded objects
 $fn=32;
 // Case connector hole size
-ioHS = 20;
+ioHS = 11;
 // Case connector hole offset
 ioHO = cS-cmO-7;
 // Case connector hole buffer
@@ -241,7 +241,7 @@ module case_bottom() {
             square4(clS, cS-clS*2-cpW*2, clH) roundedsquare(cpM, cpM, cpH, cpR);
 
             // USB-C pillar
-            translate([0, ioHO-ioHS+ioHB, clH]) cube([clS, ioHS-ioHB*2, cpW+1.6]);
+            translate([0, ioHO-ioHS+ioHB, clH]) cube([1.5, ioHS-ioHB*2, 4]);
         }
 
         union() {
@@ -256,7 +256,7 @@ module case_bottom() {
             square4(cpF, cS-cpF, cpFH/2) cylinder(d1=cpFD, d2=cpFD-2, h=cpFH/2);
 
             // cutout for through hole components
-            translate([clS, ioHO-ioHS+ioHB+1, clH]) cube([10, ioHS-ioHB*2-2, cpH]);
+            translate([clS, ioHO-ioHS+ioHB, clH]) cube([10, ioHS-ioHB*2, cpH]);
         }
     }
 }
@@ -315,11 +315,12 @@ difference() {
     // cutout for io
     union() {
         // USB side
-        translate([0, ioHO-ioHS, clH]) cube([3, ioHS, 10]);
+        // translate([0, ioHO-ioHS+ioHB, clH]) cube([clS, ioHS-ioHB*2, cpW+1.6]);
+        // translate([0, ioHO-ioHS, clH]) cube([3, ioHS, 10]);
 
         // Debug pad side
-        ioHS2 = 23-1.5;
-        ioHO2 = cS-cmO-2.5;
+        ioHS2 = 23-3;
+        ioHO2 = cS-cmO-2.5-1.5;
         translate([cS-2.5, ioHO2-ioHS2, clH]) cube([2.5, ioHS2, 3.8]);
         translate([cS-12, ioHO2-ioHS2, clH]) cube([12, ioHS2, 3]);
     }
