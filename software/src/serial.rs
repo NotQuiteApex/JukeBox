@@ -247,10 +247,12 @@ pub fn serial_get_device() -> Result<Box<dyn SerialPort>> {
     let ports: Vec<_> = ports
         .iter()
         .filter(|p| match &p.port_type {
-            serialport::SerialPortType::UsbPort(p) => p.pid == 0xF20A && p.vid == 0x1209,
+            serialport::SerialPortType::UsbPort(p) => p.vid == 0x1209 && p.pid == 0xF20A,
             _ => false,
         })
         .collect();
+
+    log::debug!("serial ports found: {:?}", ports);
 
     if ports.len() == 0 {
         bail!("failed to find any jukebox serial ports");
@@ -328,7 +330,8 @@ pub fn serial_task(
         }
 
         let mut f = match serial_get_device() {
-            Err(_) => {
+            Err(e) => {
+                log::debug!("get_serial_device() failure: {:#}", e);
                 sleep(Duration::from_secs(1));
                 continue;
             }
@@ -337,7 +340,7 @@ pub fn serial_task(
 
         match serial_comms(&mut f, &s_cmd_rx, &s_evnt_tx) {
             Err(e) => {
-                log::warn!("Serial device error: {}", e);
+                log::warn!("Serial device error: {:#}", e);
                 s_evnt_tx
                     .send(SerialEvent::LostConnection)
                     .context("failed to send lost connection")?;
